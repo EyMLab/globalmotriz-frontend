@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${i.insumo}</td>
         <td>${i.tipo || 'N/A'}</td>
         <td>${Math.floor(i.cantidad || 1)} ${i.unidad || ''}</td>
-        <td>${new Date(i.fecha).toLocaleString()}</td>
+        <td>${new Date(i.fecha).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' })}</td>
       `;
 
       // === Checkbox ===

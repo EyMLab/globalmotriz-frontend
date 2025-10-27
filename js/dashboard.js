@@ -154,7 +154,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const tdFecha = document.createElement('td');
-      tdFecha.textContent = new Date(f.fecha).toLocaleString();
+      tdFecha.textContent = new Date(f.fecha).toLocaleString('es-EC', {
+        timeZone: 'America/Guayaquil'
+      });
       fila.appendChild(tdFecha);
 
       const tdImagen = document.createElement('td');
