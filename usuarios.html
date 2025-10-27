@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Usuarios</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <!-- NAV compartido -->
+  <div id="nav-container"></div>
+
+  <!-- Contenido principal -->
+  <div class="dashboard-container">
+    <div class="usuarios-header">
+      <h2>Usuarios</h2>
+      <button id="btn-nuevo-usuario" class="btn-primary">➕ Añadir Usuario</button>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-usuarios">
+        <!-- Renderizado dinámico en usuarios.js -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script> <!-- Navbar dinámico -->
+  <script src="js/usuarios.js"></script>
+</body>
+</html>

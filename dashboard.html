@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Facturas</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <!-- Barra de navegación cargada dinámicamente -->
+  <div id="nav-container"></div>
+
+  <!-- Contenido principal -->
+  <div class="dashboard-container">
+    <!-- Filtros -->
+    <div class="filtros facturas">
+      <div class="filtro-grupo">
+        <label for="filtro-asesor">Asesor:</label>
+        <select id="filtro-asesor"><option value="">Todos</option></select>
+      </div>
+      <div class="filtro-grupo">
+        <label for="filtro-modo">Modo de Pago:</label>
+        <select id="filtro-modo"><option value="">Todos</option></select>
+      </div>
+      <div class="filtro-grupo">
+        <label for="filtro-localidad">Localidad:</label>
+        <select id="filtro-localidad"><option value="">Todos</option></select>
+      </div>
+      <div class="filtro-grupo">
+        <label for="fecha-desde">Desde:</label>
+        <input type="date" id="fecha-desde">
+      </div>
+      <div class="filtro-grupo">
+        <label for="fecha-hasta">Hasta:</label>
+        <input type="date" id="fecha-hasta">
+      </div>
+      <div class="filtro-grupo">
+        <label for="filtro-registrado">Registradas:</label>
+        <select id="filtro-registrado">
+          <option value="">Todas</option>
+          <option value="registradas">Registradas</option>
+          <option value="no-registradas">No registradas</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Asesor</th>
+          <th>Modo de Pago</th>
+          <th>Localidad</th>
+          <th>Fecha</th>
+          <th>Imagen</th>
+          <th>Registrado</th>
+          <th>Observaciones</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-facturas">
+        <!-- Las filas se renderizan dinámicamente desde dashboard.js -->
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="pagination-controls">
+      <button id="btn-prev">Anterior</button>
+      <span id="page-info">Página 1</span>
+      <button id="btn-next">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- Modal imagen -->
+  <div id="modal-imagen" class="modal">
+    <div class="zoom-container">
+      <span class="cerrar" onclick="cerrarModal()">&times;</span>
+      <img class="modal-contenido" id="imagen-modal" alt="Factura ampliada">
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script> <!-- Navbar dinámico -->
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
