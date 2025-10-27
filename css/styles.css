@@ -467,3 +467,72 @@ table input[type="checkbox"] {
 #imagen-modal:active {
   cursor: grabbing;
 }
+
+/* ===== LOADER (pantalla de conexión) ===== */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  z-index: 2000;
+  font-size: 16px;
+  color: #0077cc;
+  font-weight: 500;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 6px solid #e3e3e3;
+  border-top: 6px solid #0077cc;
+  border-radius: 50%;
+  animation: girar 1.2s linear infinite;
+}
+
+@keyframes girar {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==== Badge usuario mejorado ==== */
+.usuario-badge {
+  background: rgba(255, 255, 255, 0.18);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #fff;
+  display: inline-block;
+}
+
+/* ===== Botones del navbar (mejorados) ===== */
+.btn-nav {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 6px 14px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+}
+
+.btn-nav:hover {
+  background: #ffffff;
+  color: #0077cc;
+  border-color: transparent;
+}
+
+.btn-nav.logout {
+  background: rgba(255, 80, 80, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.btn-nav.logout:hover {
+  background: #ff4d4d;
+  color: white;
+}

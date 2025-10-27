@@ -11,8 +11,14 @@
   <!-- Barra de navegación cargada dinámicamente -->
   <div id="nav-container"></div>
 
+  <!-- ✅ LOADER (nuevo) -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader"></div>
+    <p>Conectando con el servidor...</p>
+  </div>
+
   <!-- Contenido principal -->
-  <div class="dashboard-container">
+  <div class="dashboard-container" style="display:none;" id="contenido-dashboard">
     <!-- Filtros -->
     <div class="filtros facturas">
       <div class="filtro-grupo">

@@ -1,6 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
   const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
 
+  // === LOADER Y CONTENIDO ===
+  const loader = document.getElementById('loader');
+  const contenido = document.getElementById('contenido-dashboard');
+  if (loader) loader.style.display = 'flex';
+  if (contenido) contenido.style.display = 'none';
+
   // === Elementos del DOM ===
   const tabla = document.getElementById('tabla-facturas');
   const filtroAsesor = document.getElementById('filtro-asesor');
@@ -25,12 +31,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // === Helper: mostrar contenido final ===
+  function mostrarContenido() {
+    if (loader) loader.style.display = 'none';
+    if (contenido) contenido.style.display = 'block';
+  }
+
   // === Verificar sesión y cargar datos iniciales ===
   async function verificarSesion(reintento = 0) {
+    const inicio = Date.now();
     try {
       const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { 'Authorization': 'Bearer ' + token }
       });
+
+      const duracion = Date.now() - inicio;
+      if (duracion > 1500) {
+        // Render dormido → mostrar mensaje
+        loader.querySelector('p').textContent = "Conectando con el servidor...";
+      }
 
       if (res.status === 401 || res.status === 403) {
         localStorage.clear();
@@ -44,10 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
       rol = data.rol;
       if (spanUsuario) spanUsuario.textContent = `${data.usuario} (${rol})`;
 
-      // ✅ Primero carga facturas
-      aplicarFiltros();
-      // ✅ Luego carga filtros (evita duplicados visuales)
-      cargarFiltrosIniciales();
+      // ✅ Primero cargar filtros
+      await cargarFiltrosIniciales();
+
+      // ✅ Luego cargar facturas
+      await aplicarFiltros();
+
+      // ✅ Mostrar contenido final
+      mostrarContenido();
 
     } catch (err) {
       if (reintento < 2) {
@@ -63,17 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
   verificarSesion();
 
   // === Cargar filtros dinámicos (sin duplicados) ===
-  function cargarFiltrosIniciales() {
-    fetch(`${API_BASE_URL}/facturas/filtros`, {
+  async function cargarFiltrosIniciales() {
+    const res = await fetch(`${API_BASE_URL}/facturas/filtros`, {
       headers: { Authorization: 'Bearer ' + token }
-    })
-      .then(res => res.json())
-      .then(data => {
-        crearOpciones(filtroAsesor, [...new Set(data.asesores)]);
-        crearOpciones(filtroModo, [...new Set(data.modos)]);
-        crearOpciones(filtroLocalidad, [...new Set(data.localidades)]);
-      })
-      .catch(err => console.error('❌ Error al cargar filtros:', err));
+    });
+    const data = await res.json();
+    crearOpciones(filtroAsesor, [...new Set(data.asesores)]);
+    crearOpciones(filtroModo, [...new Set(data.modos)]);
+    crearOpciones(filtroLocalidad, [...new Set(data.localidades)]);
   }
 
   function crearOpciones(select, data) {
@@ -105,18 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // === Aplicar filtros y cargar facturas ===
-  function aplicarFiltros() {
-    fetch(construirURLConFiltros(), { headers: { Authorization: 'Bearer ' + token } })
-      .then(res => res.json())
-      .then(data => {
-        facturas = data;
-        paginaActual = 1;
-        mostrarPagina(paginaActual);
-      })
-      .catch(err => {
-        console.error('❌ Error al cargar facturas:', err);
-        tabla.innerHTML = `<tr><td colspan="9">Error al cargar facturas</td></tr>`;
-      });
+  async function aplicarFiltros() {
+    const res = await fetch(construirURLConFiltros(), { headers: { Authorization: 'Bearer ' + token }});
+    const data = await res.json();
+    facturas = data;
+    paginaActual = 1;
+    mostrarPagina(paginaActual);
   }
 
   // === Paginación ===

@@ -1,83 +1,76 @@
 // auth.js
 
-async function verificarSesion() {
-  const token = localStorage.getItem('token');
-  const usuarioSpan = document.getElementById('nombre-usuario');
+let inactivityTimer;
 
-  if (!token) {
+// ---- CONFIG ----
+const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
+const MAX_INACTIVITY_MINUTES = 10;
+const MAX_INACTIVITY_MS = MAX_INACTIVITY_MINUTES * 60 * 1000;
+
+// ---- Reinicia el contador de inactividad ----
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
     Swal.fire({
       icon: 'warning',
-      title: 'Sesión requerida',
-      text: '⚠️ Debes iniciar sesión para continuar.',
-      confirmButtonText: 'Aceptar'
-    }).then(() => {
-      window.location.href = 'index.html';
-    });
-    return;
-  }
-
-  try {
-    const res = await fetch('https://globalmotriz-backend.onrender.com/auth/me', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-
-    if (res.status === 401) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sesión expirada',
-        text: 'Tu sesión ha caducado. Vuelve a iniciar sesión.',
-        confirmButtonText: 'Aceptar'
-      }).then(() => {
-        localStorage.clear();
-        window.location.href = 'index.html';
-      });
-      return;
-    }
-
-    if (res.status === 403) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Token inválido',
-        text: 'Hubo un problema con la autenticación. Inicia sesión nuevamente.',
-        confirmButtonText: 'Aceptar'
-      }).then(() => {
-        localStorage.clear();
-        window.location.href = 'index.html';
-      });
-      return;
-    }
-
-    if (!res.ok) {
-      console.error("❌ Error inesperado en /auth/me:", res.status);
-      return;
-    }
-
-    const data = await res.json();
-
-    // ✅ Ahora sí guardamos usuario correctamente
-    localStorage.setItem('usuario', data.usuario);
-    localStorage.setItem('rol', data.rol);
-
-    // Mostrar nombre en pantalla si existe ese span
-    if (usuarioSpan) {
-      usuarioSpan.textContent = `${data.usuario} (${data.rol})`;
-    }
-
-  } catch (err) {
-    console.error('❌ Error de conexión con /auth/me:', err.message);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar con el servidor. Inténtalo más tarde.',
+      title: 'Sesión finalizada',
+      text: 'Se cerró sesión por inactividad.',
       confirmButtonText: 'Aceptar'
     }).then(() => {
       localStorage.clear();
       window.location.href = 'index.html';
     });
+  }, MAX_INACTIVITY_MS);
+}
+
+// ---- Detectar actividad del usuario ----
+['mousemove', 'keydown', 'click'].forEach(evt => {
+  window.addEventListener(evt, resetInactivityTimer);
+});
+
+// ---- Función principal de verificación ----
+async function verificarSesion() {
+  const token = localStorage.getItem('token');
+  const usuarioSpan = document.getElementById('nombre-usuario');
+
+  if (!token) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.clear();
+      window.location.href = 'index.html';
+      return;
+    }
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    // ✅ Refresca storage en caso de cambios
+    localStorage.setItem('usuario', data.usuario);
+    localStorage.setItem('rol', data.rol);
+
+    // ✅ Reflejar en navbar si existe el span
+    if (usuarioSpan) usuarioSpan.textContent = `${data.usuario} (${data.rol})`;
+
+    // ✅ Arranca el contador de inactividad
+    resetInactivityTimer();
+
+  } catch (err) {
+    console.error('❌ Error de conexión en /auth/me:', err);
+    localStorage.clear();
+    window.location.href = 'index.html';
   }
 }
 
-// ✅ Función global para cerrar sesión
+// ---- Logout manual ----
 function cerrarSesion() {
   Swal.fire({
     icon: 'question',

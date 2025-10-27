@@ -9,40 +9,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // ===========================
+  //   Autologout (10 min)
+  // ===========================
+  let inactivityTimer;
+  const MAX_INACTIVITY = 10 * 60 * 1000; // 10 minutos
+
+  function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sesión finalizada',
+        text: 'Se cerró la sesión por inactividad.',
+        confirmButtonText: 'Aceptar'
+      }).then(() => {
+        localStorage.clear();
+        window.location.href = 'index.html';
+      });
+    }, MAX_INACTIVITY);
+  }
+
+  // Detecta actividad global
+  ['mousemove', 'keydown', 'click', 'scroll'].forEach(evt =>
+    document.addEventListener(evt, resetInactivityTimer)
+  );
+
+  resetInactivityTimer();
+
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: { Authorization: 'Bearer ' + token }
     });
 
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       localStorage.clear();
       window.location.href = "index.html";
-      return;
-    }
-
-    if (res.status === 403) {
-      Swal.fire("Acceso denegado", "Tu rol no tiene permisos para esta vista", "error");
       return;
     }
 
     const data = await res.json();
     const rol = data.rol;
 
-    // Detectar la página actual
+    // Detectar página actual
+    const path = window.location.pathname;
     let pagina = "Facturas";
-    if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
-    else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
+    if (path.includes("usuarios")) pagina = "Usuarios";
+    else if (path.includes("insumos")) pagina = "Insumos";
 
-    // Pestañas según rol
+    // Enlaces por rol
     const enlaceUsuarios = rol === 'admin'
-      ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
-      : "";
+      ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>` : "";
 
     const enlaceInsumos = ['admin', 'bodega', 'asesor'].includes(rol)
-      ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>`
-      : "";
+      ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>` : "";
 
-    // Render del navbar
+    // Render navbar
     navContainer.innerHTML = `
       <header class="navbar">
         <div class="nav-left">
@@ -55,17 +77,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${enlaceUsuarios}
         </nav>
         <div class="nav-right">
-          <p id="usuario-info">Sesión: ${data.usuario} (${rol})</p>
-          <button onclick="abrirModalCambioClave()">Cambiar contraseña</button>
-          <button id="btn-cerrar-sesion">Cerrar sesión</button>
+          <span class="usuario-badge">${data.usuario} (${rol})</span>
+          <button class="btn-nav" onclick="abrirModalCambioClave()">Cambiar contraseña</button>
+          <button class="btn-nav logout" id="btn-cerrar-sesion">Cerrar sesión</button>
         </div>
       </header>
     `;
 
-    document.getElementById("btn-cerrar-sesion")?.addEventListener("click", cerrarSesion);
+    const btnCerrar = document.getElementById("btn-cerrar-sesion");
+    if (btnCerrar) btnCerrar.addEventListener("click", cerrarSesion);
 
   } catch (err) {
-    console.error("❌ Error al cargar nav:", err.message);
+    console.error("❌ Error al cargar nav:", err);
     Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
   }
 });
@@ -76,7 +99,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function abrirModalCambioClave() {
   const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
   const token = localStorage.getItem('token');
-
   if (!token) {
     Swal.fire('Error', 'Debes iniciar sesión para cambiar la contraseña.', 'error');
     return;
@@ -105,7 +127,7 @@ async function abrirModalCambioClave() {
   if (!formValues) return;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/cambiar-password`, {
+    const res = await fetch(`${API_BASE_URL}/login/cambiar-password`, {
       method: 'PATCH',
       headers: {
         'Authorization': 'Bearer ' + token,
