@@ -9,62 +9,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // ===========================
-  //   Autologout (10 min)
-  // ===========================
-  let inactivityTimer;
-  const MAX_INACTIVITY = 10 * 60 * 1000; // 10 minutos
-
-  function resetInactivityTimer() {
-    clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(() => {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sesión finalizada',
-        text: 'Se cerró la sesión por inactividad.',
-        confirmButtonText: 'Aceptar'
-      }).then(() => {
-        localStorage.clear();
-        window.location.href = 'index.html';
-      });
-    }, MAX_INACTIVITY);
-  }
-
-  // Detecta actividad global
-  ['mousemove', 'keydown', 'click', 'scroll'].forEach(evt =>
-    document.addEventListener(evt, resetInactivityTimer)
-  );
-
-  resetInactivityTimer();
-
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: { Authorization: 'Bearer ' + token }
     });
 
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       localStorage.clear();
       window.location.href = "index.html";
+      return;
+    }
+
+    if (res.status === 403) {
+      Swal.fire("Acceso denegado", "Tu rol no tiene permisos para esta vista", "error");
       return;
     }
 
     const data = await res.json();
     const rol = data.rol;
 
-    // Detectar página actual
-    const path = window.location.pathname;
+    // Detectar la página actual
     let pagina = "Facturas";
-    if (path.includes("usuarios")) pagina = "Usuarios";
-    else if (path.includes("insumos")) pagina = "Insumos";
+    if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
+    else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
 
-    // Enlaces por rol
+    // Pestañas según rol
     const enlaceUsuarios = rol === 'admin'
-      ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>` : "";
+      ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
+      : "";
 
     const enlaceInsumos = ['admin', 'bodega', 'asesor'].includes(rol)
-      ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>` : "";
+      ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>`
+      : "";
 
-    // Render navbar
     navContainer.innerHTML = `
       <header class="navbar">
         <div class="nav-left">
@@ -77,9 +54,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${enlaceUsuarios}
         </nav>
         <div class="nav-right">
-          <span class="usuario-badge">${data.usuario} (${rol})</span>
+          <p id="usuario-info" class="usuario-badge">${data.usuario} (${rol})</p>
           <button class="btn-nav" onclick="abrirModalCambioClave()">Cambiar contraseña</button>
-          <button class="btn-nav logout" id="btn-cerrar-sesion">Cerrar sesión</button>
+          <button id="btn-cerrar-sesion" class="btn-nav logout">Cerrar sesión</button>
         </div>
       </header>
     `;
@@ -88,10 +65,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnCerrar) btnCerrar.addEventListener("click", cerrarSesion);
 
   } catch (err) {
-    console.error("❌ Error al cargar nav:", err);
+    console.error("❌ Error al cargar nav:", err.message);
     Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
   }
 });
+
 
 // ===================================================
 // 🔐 Modal para cambiar contraseña
@@ -127,7 +105,8 @@ async function abrirModalCambioClave() {
   if (!formValues) return;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/login/cambiar-password`, {
+    // ✅ Ruta correcta
+    const res = await fetch(`${API_BASE_URL}/cambiar-password`, {
       method: 'PATCH',
       headers: {
         'Authorization': 'Bearer ' + token,
@@ -147,6 +126,7 @@ async function abrirModalCambioClave() {
     Swal.fire('❌ Error', err.message || 'No se pudo cambiar la contraseña.', 'error');
   }
 }
+
 
 // ===================================================
 // 🚪 Cerrar sesión
