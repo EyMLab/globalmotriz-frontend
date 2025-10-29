@@ -318,13 +318,26 @@ window.cerrarModal = () => {
 
   let zoom = 1;
 
-  // Zoom con scroll
+  // Zoom con scroll (hacia el puntero)
   img.addEventListener('wheel', (e) => {
     e.preventDefault();
+
+    // Obtener la posición relativa del mouse dentro de la imagen
+    const rect = img.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    const xPercent = (offsetX / rect.width) * 100;
+    const yPercent = (offsetY / rect.height) * 100;
+
+    // Establecer nuevo punto de origen del zoom
+    img.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+
+    // Aplicar zoom
     zoom += e.deltaY * -0.0015;
     zoom = Math.min(Math.max(zoom, 1), 4);
     img.style.transform = `scale(${zoom})`;
   });
+
 
   // Zoom doble clic
   img.addEventListener('dblclick', () => {
