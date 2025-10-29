@@ -293,18 +293,48 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(() => Swal.fire('❌ Error', 'No se pudieron cargar observaciones.', 'error'));
   };
 
-  // === Modal de imagen ===
-  window.abrirModal = url => {
-    const modal = document.getElementById('modal-imagen');
-    const img = document.getElementById('imagen-modal');
-    if (modal && img) {
-      modal.style.display = 'block';
-      img.src = url;
-    }
-  };
+// === Modal de imagen (con zoom y ESC) ===
+window.abrirModal = (url) => {
+  const modal = document.getElementById('modal-imagen');
+  const img = document.getElementById('imagen-modal');
+  if (modal && img) {
+    modal.style.display = 'block';
+    img.src = url;
+    img.dataset.zoom = 1;
+    img.style.transform = "scale(1)";
+  }
+};
 
-  window.cerrarModal = () => {
-    const modal = document.getElementById('modal-imagen');
-    if (modal) modal.style.display = 'none';
-  };
-});
+window.cerrarModal = () => {
+  const modal = document.getElementById('modal-imagen');
+  if (modal) modal.style.display = 'none';
+};
+
+// === LÓGICA DE ZOOM Y ESC ===
+(() => {
+  const modal = document.getElementById('modal-imagen');
+  const img = document.getElementById('imagen-modal');
+  if (!modal || !img) return;
+
+  let zoom = 1;
+
+  // Zoom con scroll
+  img.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoom += e.deltaY * -0.0015;
+    zoom = Math.min(Math.max(zoom, 1), 4);
+    img.style.transform = `scale(${zoom})`;
+  });
+
+  // Zoom doble clic
+  img.addEventListener('dblclick', () => {
+    zoom = zoom > 1 ? 1 : 3;
+    img.style.transform = `scale(${zoom})`;
+  });
+
+  // Cerrar con ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") window.cerrarModal();
+  });
+})();
+
