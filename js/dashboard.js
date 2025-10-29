@@ -337,4 +337,4 @@ window.cerrarModal = () => {
     if (e.key === "Escape") window.cerrarModal();
   });
 })();
-
+});   // 👈 ESTA LLAVE ESTABA FALTANDO
