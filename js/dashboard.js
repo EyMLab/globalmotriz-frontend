@@ -160,8 +160,16 @@ document.addEventListener('DOMContentLoaded', () => {
       fila.appendChild(tdFecha);
 
       const tdImagen = document.createElement('td');
-      const imageUrl = `${API_BASE_URL}${f.imagen_url}`;
+      // ✅ Detectar si la URL ya es pública (GCS)
+      let imageUrl = f.imagen_url;
+
+      // Si NO empieza con "http", quiere decir que es local → concatenar API_BASE_URL
+      if (!imageUrl.startsWith('http')) {
+        imageUrl = API_BASE_URL + imageUrl;
+      }
+
       tdImagen.innerHTML = `<img src="${imageUrl}" width="60" style="cursor:pointer" onclick="abrirModal('${imageUrl}')">`;
+
       fila.appendChild(tdImagen);
 
       // === Checkbox registrado según rol ===
