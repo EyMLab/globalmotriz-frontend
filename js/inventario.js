@@ -47,8 +47,8 @@ async function cargarInventario() {
 
     list.forEach(item => {
       const estadoColor =
-        item.estado === "OK" ? "green" :
-        item.estado === "MEDIO" ? "orange" : "red";
+        item.estado === "green" ? "green" :
+        item.estado === "yellow" ? "orange" : "red";
 
       tableBody.innerHTML += `
         <tr>
@@ -57,7 +57,7 @@ async function cargarInventario() {
           <td>${item.tipo}</td>
           <td>${item.unidad ?? '-'}</td>
           <td>${item.stock ?? 0}</td>
-          <td>${item.minimo ?? 0}</td>
+          <td>${item.min_stock ?? 0}</td>
           <td style="color:${estadoColor}; font-weight:bold">${item.estado}</td>
           <td>
             <button class="btn btn-sm btn-primary">Editar</button>
