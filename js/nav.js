@@ -32,14 +32,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pagina = "Facturas";
     if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
     else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
+    else if (window.location.pathname.includes("inventario")) pagina = "Inventario";
 
-    // Pestañas según rol
+    // ✅ Pestañas según rol
     const enlaceUsuarios = rol === 'admin'
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
       : "";
 
     const enlaceInsumos = ['admin', 'bodega', 'asesor'].includes(rol)
       ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>`
+      : "";
+
+    const enlaceInventario = ['admin', 'bodega', 'asesor'].includes(rol)
+      ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Inventario</a>`
       : "";
 
     navContainer.innerHTML = `
@@ -51,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <nav class="nav-center nav-links">
           <a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>
           ${enlaceInsumos}
+          ${enlaceInventario}
           ${enlaceUsuarios}
         </nav>
         <div class="nav-right">
@@ -69,6 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
   }
 });
+
 
 
 // ===================================================
