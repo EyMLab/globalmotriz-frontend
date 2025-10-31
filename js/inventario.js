@@ -1,44 +1,74 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return (window.location.href = "index.html");
+document.addEventListener('DOMContentLoaded', async () => {
+  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
+  const token = localStorage.getItem('token');
 
-  const tabla = document.querySelector("#tabla-inventario tbody");
+  if (!token) {
+    window.location.href = "index.html";
+    return;
+  }
 
-  const res = await fetch(`${API_BASE_URL}/inventario/list`, {
-    headers: { "Authorization": "Bearer " + token }
-  });
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
 
-  const data = await res.json();
+    const data = await res.json();
+    const rol = data.rol;
 
-  tabla.innerHTML = "";
+    // Si no es admin ni bodega → redirigir
+    if (!['admin', 'bodega'].includes(rol)) {
+      Swal.fire("Acceso denegado", "No tienes permiso para Inventario", "error");
+      window.location.href = "dashboard.html";
+      return;
+    }
 
-  data.forEach(item => {
-    const tr = document.createElement("tr");
+    // ✅ CARGAR INVENTARIO
+    cargarInventario();
 
-    const color = item.estado === "green" ? "🟢"
-                : item.estado === "yellow" ? "🟡"
-                : "🔴";
-
-    tr.innerHTML = `
-      <td>${item.codigo}</td>
-      <td>${item.nombre}</td>
-      <td>${item.tipo}</td>
-      <td>${item.unidad ?? "-"}</td>
-      <td>${item.stock}</td>
-      <td>${item.min_stock}</td>
-      <td>${color}</td>
-      <td>
-        <button onclick="aumentar('${item.codigo}')">➕ Stock</button>
-        <button onclick="editar('${item.codigo}')">✏️ Editar</button>
-        <button onclick="eliminar('${item.codigo}')">🗑️</button>
-      </td>
-    `;
-
-    tabla.appendChild(tr);
-  });
+  } catch (error) {
+    console.error("Error:", error);
+    Swal.fire("Error", "No se pudo verificar el usuario", "error");
+  }
 });
 
-// Se crearán en pasos posteriores
-function aumentar(cod){ alert("Aumentar stock: " + cod); }
-function editar(cod){ alert("Editar: " + cod); }
-function eliminar(cod){ alert("Eliminar: " + cod); }
+async function cargarInventario() {
+  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
+  const token = localStorage.getItem('token');
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventario`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+
+    const list = await res.json();
+
+    const tableBody = document.querySelector("#tablaInventario tbody");
+    tableBody.innerHTML = "";
+
+    list.forEach(item => {
+      const estadoColor =
+        item.estado === "OK" ? "green" :
+        item.estado === "MEDIO" ? "orange" : "red";
+
+      tableBody.innerHTML += `
+        <tr>
+          <td>${item.codigo}</td>
+          <td>${item.nombre}</td>
+          <td>${item.tipo}</td>
+          <td>${item.unidad ?? '-'}</td>
+          <td>${item.stock ?? 0}</td>
+          <td>${item.minimo ?? 0}</td>
+          <td style="color:${estadoColor}; font-weight:bold">${item.estado}</td>
+          <td>
+            <button class="btn btn-sm btn-primary">Editar</button>
+            <button class="btn btn-sm btn-warning">Stock +</button>
+          </td>
+        </tr>
+      `;
+    });
+
+  } catch (err) {
+    console.error("Error cargando inventario:", err);
+    Swal.fire("Error", "No se pudo obtener inventario", "error");
+  }
+}
