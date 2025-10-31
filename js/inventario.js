@@ -36,7 +36,7 @@ async function cargarInventario() {
   const token = localStorage.getItem('token');
 
   try {
-    const res = await fetch(`${API_BASE_URL}/inventario`, {
+    const res = await fetch(`${API_BASE_URL}/inventario/list`, {
       headers: { Authorization: 'Bearer ' + token }
     });
 
