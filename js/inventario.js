@@ -47,8 +47,8 @@ async function cargarInventario() {
         <td>${item.nombre}</td>
         <td>${item.tipo}</td>
         <td>${item.unidad ?? "-"}</td>
-        <td>${item.stock ?? 0}</td>
-        <td>${item.min_stock ?? 0}</td>
+        <td>${item.stock_actual ?? 0}</td>
+        <td>${item.stock_minimo ?? 0}</td>
         <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
         <td>
           <button class="btn-obs" onclick="modalEditar('${item.codigo}')">✏️ Editar</button>
