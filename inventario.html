@@ -1,20 +1,45 @@
-<h2>Inventario de Insumos</h2>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario de Insumos</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
 
-<table id="tablaInventario" class="table table-striped">
-  <thead>
-    <tr>
-      <th>Código</th>
-      <th>Insumo</th>
-      <th>Tipo</th>
-      <th>Unidad</th>
-      <th>Stock</th>
-      <th>Mínimo</th>
-      <th>Estado</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<body>
+  <div id="nav-container"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="js/inventario.js"></script>
+  <div class="dashboard-container">
+
+    <!-- Botones superiores -->
+    <div style="margin-bottom:15px; display:flex; gap:10px;">
+      <button id="btnNuevo" class="btn-obs">➕ Nuevo Insumo</button>
+      <button id="btnImportar" class="btn-obs">📎 Importar Excel</button>
+      <button id="btnPlantilla" class="btn-obs">⬇ Plantilla</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Insumo</th>
+          <th>Tipo</th>
+          <th>Unidad</th>
+          <th>Stock</th>
+          <th>Mínimo</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaInventario"></tbody>
+    </table>
+
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/inventario.js"></script>
+</body>
+</html>
