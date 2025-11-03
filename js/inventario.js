@@ -197,27 +197,64 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.modalStock = async function(codigo) {
-    const { value } = await Swal.fire({
-      title: `Agregar stock a ${codigo}`,
-      input: "number",
-      inputPlaceholder: "Cantidad",
-      showCancelButton: true,
-      confirmButtonText: "Agregar"
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: "Bearer " + localStorage.getItem("token") }
     });
-    if (!value) return;
+    const data = await res.json();
+    const esAdmin = data.rol === "admin";
 
-    await fetch(`${API_BASE_URL}/inventario/stock`, {
+    const { value: form } = await Swal.fire({
+      title: `Actualizar stock · ${codigo}`,
+      html: `
+        <label>Cantidad:</label>
+        <input id="qty" type="number" class="swal2-input" placeholder="Ej: 5">
+
+        ${
+          esAdmin
+          ? `
+          <label>Tipo de ajuste:</label>
+          <select id="tipo" class="swal2-input">
+            <option value="sumar">Sumar</option>
+            <option value="restar">Restar</option>
+          </select>
+
+          <label>Motivo (obligatorio si resta):</label>
+          <input id="motivo" class="swal2-input" placeholder="Ej: Inventario, daño, ajuste...">
+          `
+          : `<p style="font-size:14px;color:#666;margin-top:8px;">
+              Solo puedes agregar stock
+            </p>`
+        }
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Aplicar",
+      preConfirm: () => {
+        const qty = Number(document.getElementById("qty").value);
+        const tipo = esAdmin ? document.getElementById("tipo").value : "sumar";
+        const motivo = esAdmin ? document.getElementById("motivo").value.trim() : "";
+
+        if (!qty || qty <= 0) return Swal.showValidationMessage("Cantidad inválida");
+        if (tipo === "restar" && !motivo) return Swal.showValidationMessage("Motivo requerido para restar");
+
+        return { codigo, qty, tipo, motivo };
+      }
+    });
+
+    if (!form) return;
+
+    await fetch(`${API_BASE_URL}/inventario/stock-adjust`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + localStorage.getItem("token")
       },
-      body: JSON.stringify({ codigo, cantidad: value })
+      body: JSON.stringify(form)
     });
 
     Swal.fire("✅ Stock actualizado", "", "success");
     cargarInventario();
   };
+
 
   window.modalEditar = async function(codigo) {
     // 1) Obtener datos actuales del insumo
