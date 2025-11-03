@@ -31,13 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // === Helper: mostrar contenido final ===
   function mostrarContenido() {
     if (loader) loader.style.display = 'none';
     if (contenido) contenido.style.display = 'block';
   }
 
-  // === Verificar sesión y cargar datos iniciales ===
   async function verificarSesion(reintento = 0) {
     const inicio = Date.now();
     try {
@@ -47,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const duracion = Date.now() - inicio;
       if (duracion > 1500) {
-        // Render dormido → mostrar mensaje
         loader.querySelector('p').textContent = "Conectando con el servidor...";
       }
 
@@ -57,19 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      if (!res.ok) throw new Error('Servidor no respondió correctamente.');
+      if (!res.ok) throw new Error();
 
       const data = await res.json();
       rol = data.rol;
       if (spanUsuario) spanUsuario.textContent = `${data.usuario} (${rol})`;
 
-      // ✅ Primero cargar filtros
       await cargarFiltrosIniciales();
-
-      // ✅ Luego cargar facturas
       await aplicarFiltros();
-
-      // ✅ Mostrar contenido final
       mostrarContenido();
 
     } catch (err) {
@@ -85,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   verificarSesion();
 
-  // === Cargar filtros dinámicos (sin duplicados) ===
   async function cargarFiltrosIniciales() {
     const res = await fetch(`${API_BASE_URL}/facturas/filtros`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -106,11 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // === Eventos de filtros ===
   [filtroAsesor, filtroModo, filtroLocalidad, filtroRegistrado, fechaDesde, fechaHasta]
     .forEach(el => el.addEventListener('change', aplicarFiltros));
 
-  // === Construir URL con filtros activos ===
   function construirURLConFiltros() {
     const params = new URLSearchParams();
     if (filtroAsesor.value) params.append('asesor', filtroAsesor.value);
@@ -124,16 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${API_BASE_URL}/facturas?${params.toString()}`;
   }
 
-  // === Aplicar filtros y cargar facturas ===
   async function aplicarFiltros() {
     const res = await fetch(construirURLConFiltros(), { headers: { Authorization: 'Bearer ' + token }});
-    const data = await res.json();
-    facturas = data;
+    facturas = await res.json();
     paginaActual = 1;
     mostrarPagina(paginaActual);
   }
 
-  // === Paginación ===
   function mostrarPagina(pagina) {
     tabla.innerHTML = '';
     const inicio = (pagina - 1) * filasPorPagina;
@@ -154,25 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const tdFecha = document.createElement('td');
-      tdFecha.textContent = new Date(f.fecha).toLocaleString('es-EC', {
-        timeZone: 'America/Guayaquil'
-      });
+      tdFecha.textContent = new Date(f.fecha).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' });
       fila.appendChild(tdFecha);
 
       const tdImagen = document.createElement('td');
-      // ✅ Detectar si la URL ya es pública (GCS)
       let imageUrl = f.imagen_url;
-
-      // Si NO empieza con "http", quiere decir que es local → concatenar API_BASE_URL
-      if (!imageUrl.startsWith('http')) {
-        imageUrl = API_BASE_URL + imageUrl;
-      }
+      if (!imageUrl.startsWith('http')) imageUrl = API_BASE_URL + imageUrl;
 
       tdImagen.innerHTML = `<img src="${imageUrl}" width="60" style="cursor:pointer" onclick="abrirModal('${imageUrl}')">`;
-
       fila.appendChild(tdImagen);
 
-      // === Checkbox registrado según rol ===
       const tdRegistrado = document.createElement('td');
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -202,14 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
       tdRegistrado.appendChild(checkbox);
       fila.appendChild(tdRegistrado);
 
-      // === Observaciones ===
       const tdObs = document.createElement('td');
-      tdObs.innerHTML = `<button class="btn-obs" onclick="abrirModalObservaciones(${f.id})">${
-        f.observaciones?.trim() ? '📝' : '➕'
-      }</button>`;
+      tdObs.innerHTML = `<button class="btn-obs" onclick="abrirModalObservaciones(${f.id})">${f.observaciones?.trim() ? '📝' : '➕'}</button>`;
       fila.appendChild(tdObs);
 
-      // === Eliminar solo admin ===
       const tdEliminar = document.createElement('td');
       if (rol === 'admin') {
         tdEliminar.innerHTML = `<button class="btn-eliminar" onclick="eliminarFactura(${f.id})">Eliminar</button>`;
@@ -227,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
   btnPrev.addEventListener('click', () => paginaActual > 1 && mostrarPagina(--paginaActual));
   btnNext.addEventListener('click', () => paginaActual * filasPorPagina < facturas.length && mostrarPagina(++paginaActual));
 
-  // === Registrar / desregistrar factura ===
   function cambiarRegistrado(id, valor, checkbox) {
     fetch(`${API_BASE_URL}/facturas/${id}/registrado`, {
       method: 'PATCH',
@@ -245,18 +217,32 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  // === Eliminar factura ===
-  function eliminarFactura(id) {
-    fetch(`${API_BASE_URL}/facturas/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: 'Bearer ' + token }
-    })
-      .then(res => res.json())
-      .then(() => aplicarFiltros())
-      .catch(() => Swal.fire('Error', 'No se pudo eliminar la factura.', 'error'));
-  }
+  // === ✅ ELIMINAR FACTURA CON CONFIRMACIÓN SWEETALERT ===
+  window.eliminarFactura = function(id) {
+    Swal.fire({
+      title: `¿Eliminar factura ${id}?`,
+      text: "La imagen también será eliminada del servidor.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    }).then((result) => {
+      if (!result.isConfirmed) return;
 
-  // === Observaciones ===
+      fetch(`${API_BASE_URL}/facturas/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        Swal.fire("✅ Eliminada", data.message, "success");
+        aplicarFiltros();
+      })
+      .catch(() => Swal.fire("❌ Error", "No se pudo eliminar la factura.", "error"));
+    });
+  };
+
+  // === OBSERVACIONES ===
   window.abrirModalObservaciones = function (id) {
     fetch(`${API_BASE_URL}/facturas/${id}/observaciones`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -293,61 +279,51 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(() => Swal.fire('❌ Error', 'No se pudieron cargar observaciones.', 'error'));
   };
 
-// === Modal de imagen (con zoom y ESC) ===
-window.abrirModal = (url) => {
-  const modal = document.getElementById('modal-imagen');
-  const img = document.getElementById('imagen-modal');
-  if (modal && img) {
-    modal.style.display = 'block';
-    img.src = url;
-    img.dataset.zoom = 1;
-    img.style.transform = "scale(1)";
-  }
-};
+  // === MODAL IMAGEN + ZOOM ===
+  window.abrirModal = (url) => {
+    const modal = document.getElementById('modal-imagen');
+    const img = document.getElementById('imagen-modal');
+    if (modal && img) {
+      modal.style.display = 'block';
+      img.src = url;
+      img.dataset.zoom = 1;
+      img.style.transform = "scale(1)";
+    }
+  };
 
-window.cerrarModal = () => {
-  const modal = document.getElementById('modal-imagen');
-  if (modal) modal.style.display = 'none';
-};
+  window.cerrarModal = () => {
+    const modal = document.getElementById('modal-imagen');
+    if (modal) modal.style.display = 'none';
+  };
 
-// === LÓGICA DE ZOOM Y ESC ===
-(() => {
-  const modal = document.getElementById('modal-imagen');
-  const img = document.getElementById('imagen-modal');
-  if (!modal || !img) return;
+  (() => {
+    const modal = document.getElementById('modal-imagen');
+    const img = document.getElementById('imagen-modal');
+    if (!modal || !img) return;
 
-  let zoom = 1;
+    let zoom = 1;
 
-  // Zoom con scroll (hacia el puntero)
-  img.addEventListener('wheel', (e) => {
-    e.preventDefault();
+    img.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = img.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+      const xPercent = (offsetX / rect.width) * 100;
+      const yPercent = (offsetY / rect.height) * 100;
+      img.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+      zoom += e.deltaY * -0.0015;
+      zoom = Math.min(Math.max(zoom, 1), 4);
+      img.style.transform = `scale(${zoom})`;
+    });
 
-    // Obtener la posición relativa del mouse dentro de la imagen
-    const rect = img.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-    const xPercent = (offsetX / rect.width) * 100;
-    const yPercent = (offsetY / rect.height) * 100;
+    img.addEventListener('dblclick', () => {
+      zoom = zoom > 1 ? 1 : 3;
+      img.style.transform = `scale(${zoom})`;
+    });
 
-    // Establecer nuevo punto de origen del zoom
-    img.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === "Escape") window.cerrarModal();
+    });
+  })();
 
-    // Aplicar zoom
-    zoom += e.deltaY * -0.0015;
-    zoom = Math.min(Math.max(zoom, 1), 4);
-    img.style.transform = `scale(${zoom})`;
-  });
-
-
-  // Zoom doble clic
-  img.addEventListener('dblclick', () => {
-    zoom = zoom > 1 ? 1 : 3;
-    img.style.transform = `scale(${zoom})`;
-  });
-
-  // Cerrar con ESC
-  document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") window.cerrarModal();
-  });
-})();
-});   // 👈 ESTA LLAVE ESTABA FALTANDO
+});
