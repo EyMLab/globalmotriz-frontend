@@ -1,25 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventario de Insumos</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-
 <body>
   <div id="nav-container"></div>
 
   <div class="dashboard-container">
+    <!-- Filtros -->
+    <div class="filtros insumos" style="margin-bottom:12px;">
+      <div class="filtro-grupo">
+        <label for="filtro-q">Buscar (código o nombre):</label>
+        <input type="text" id="filtro-q" placeholder="Ej: INS001 o Lija 80">
+      </div>
+      <div class="filtro-grupo">
+        <label for="filtro-tipo">Tipo:</label>
+        <select id="filtro-tipo">
+          <option value="">Todos</option>
+          <option value="STOCK">STOCK</option>
+          <option value="DIRECTO">DIRECTO</option>
+        </select>
+      </div>
+      <div class="filtro-grupo">
+        <label for="filtro-estado">Estado:</label>
+        <select id="filtro-estado">
+          <option value="">Todos</option>
+          <option value="red">Rojo (<= mínimo)</option>
+          <option value="yellow">Amarillo (cerca del mínimo)</option>
+          <option value="green">Verde (OK)</option>
+        </select>
+      </div>
+    </div>
 
     <!-- Botones superiores -->
     <div style="margin-bottom:15px; display:flex; gap:10px;">
-      <button id="btnNuevo" class="btn-obs">➕ Nuevo Insumo</button>
-      <button id="btnImportar" class="btn-obs">📎 Importar Excel</button>
-      <button id="btnPlantilla" class="btn-obs">⬇ Plantilla</button>
+      <button id="btnNuevo" class="btn-obs">Nuevo Insumo</button>
+      <button id="btnImportar" class="btn-obs">Importar Excel</button>
+      <button id="btnPlantilla" class="btn-obs">Plantilla</button>
     </div>
 
+    <!-- Tabla -->
     <table>
       <thead>
         <tr>
@@ -36,6 +60,12 @@
       <tbody id="tablaInventario"></tbody>
     </table>
 
+    <!-- Paginación -->
+    <div class="pagination-controls">
+      <button id="btn-prev">Anterior</button>
+      <span id="page-info">Página 1</span>
+      <button id="btn-next">Siguiente</button>
+    </div>
   </div>
 
   <script src="js/auth.js"></script>
