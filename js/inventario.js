@@ -141,14 +141,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderTabla(items) {
     tbody.innerHTML = '';
+
     if (!items.length) {
       tbody.innerHTML = `<tr><td colspan="${esAsesor ? 7 : 8}">Sin resultados</td></tr>`;
       return;
     }
 
     items.forEach(item => {
-      const color = item.estado === "green" ? "green" :
-                    item.estado === "yellow" ? "orange" : "red";
+      const estado = item.estado || 'red'; // fallback
+      const color = estado === "green" ? "green" :
+                    estado === "yellow" ? "orange" : "red";
 
       const tr = document.createElement('tr');
 
@@ -159,21 +161,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td>${item.unidad ?? "-"}</td>
         <td>${item.stock ?? 0}</td>
         <td>${item.min_stock ?? 0}</td>
-        <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
+        <td style="font-weight:bold;color:${color}">
+          ${(estado || "").toUpperCase()}
+        </td>
+
         ${
           esAsesor
-            ? ""
-            : `<td>
-                <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
-                <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
-                ${esAdmin ? `<button class="btn-danger" onclick="modalEliminar('${item.codigo}')">Eliminar</button>` : ""}
-              </td>`
+          ? ""
+          : `<td>
+              <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
+              <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
+              ${esAdmin ? `<button class="btn-danger" onclick="modalEliminar('${item.codigo}')">Eliminar</button>` : ""}
+            </td>`
         }
       `;
 
       tbody.appendChild(tr);
     });
   }
+
 
   function renderPaginacion() {
     const maxPage = Math.ceil(state.total / state.pageSize) || 1;
