@@ -177,6 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>
             <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
             <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
+            ${esAdmin ? `<button class="btn-danger" onclick="modalEliminar('${item.codigo}')">Eliminar</button>` : ""}
           </td>
         `;
       }
@@ -293,6 +294,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     Swal.fire("✅ Stock actualizado", "", "success");
     cargarInventario();
   };
+
+  window.modalEliminar = async function(codigo) {
+    const confirm = await Swal.fire({
+      title: "Eliminar insumo",
+      html: `<b>${codigo}</b><br><br>¿Estás seguro?<br>No podrás deshacer esta acción.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const res = await fetch(`${API_BASE_URL}/inventario/${codigo}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return Swal.fire("Error", data.error || "No se pudo eliminar", "error");
+    }
+
+    Swal.fire("✅ Eliminado", data.message, "success");
+    cargarInventario();
+  };
+
 
   window.modalEditar = async function(codigo) {
     const res = await fetch(`${API_BASE_URL}/inventario/info/${codigo}`, {
