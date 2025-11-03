@@ -3,7 +3,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) return window.location.href = "index.html";
 
-  // Verificar rol (asesor puede ver en modo lectura)
+  // ✅ Variables de rol (deben estar antes de usarse)
+  let esAdmin = false;
+  let esBodega = false;
+  let esAsesor = false;
+
+  // ✅ Verificar rol (asesor puede ver en modo lectura)
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -15,13 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     esBodega = rol === 'bodega';
     esAsesor = rol === 'asesor';
 
-    // Si no es ninguno de los tres, fuera
     if (!esAdmin && !esBodega && !esAsesor) {
       Swal.fire("Acceso denegado", "No tienes permiso para Inventario", "error");
       return window.location.href = "dashboard.html";
     }
 
-    // Si es asesor, ocultar los 3 botones de la parte superior
+    // Ocultar botones para asesor
     if (esAsesor) {
       const btnNuevo     = document.getElementById("btnNuevo");
       const btnImportar  = document.getElementById("btnImportar");
@@ -30,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btnImportar)  btnImportar.style.display = "none";
       if (btnPlantilla) btnPlantilla.style.display = "none";
 
-      // Ocultar cabecera de la columna de acciones
+      // Ocultar encabezado de acciones
       const thAcciones = document.querySelector(".col-acciones");
       if (thAcciones) thAcciones.style.display = "none";
     }
@@ -38,7 +42,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     Swal.fire("Error", "No se pudo verificar el usuario", "error");
     return window.location.href = "index.html";
   }
-
 
   // DOM
   const tbody = document.getElementById('tablaInventario');
@@ -50,14 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selTipo = document.getElementById('filtro-tipo');
   const selEstado = document.getElementById('filtro-estado');
 
-  let esAdmin = false;
-  let esBodega = false;
-  let esAsesor = false;
-
-
-  document.getElementById("btnNuevo").addEventListener("click", modalNuevoInsumo);
-  document.getElementById("btnImportar").addEventListener("click", modalImportarExcel);
-  document.getElementById("btnPlantilla").addEventListener("click", descargarPlantilla);
+  if (!esAsesor) {
+    document.getElementById("btnNuevo").addEventListener("click", modalNuevoInsumo);
+    document.getElementById("btnImportar").addEventListener("click", modalImportarExcel);
+    document.getElementById("btnPlantilla").addEventListener("click", descargarPlantilla);
+  }
 
   // Estado
   const state = {
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
-  // Listeners filtros (búsqueda en vivo)
+  // Listeners filtros
   inputQ.addEventListener('input', debounce(() => {
     state.q = inputQ.value.trim();
     state.page = 1;
@@ -136,7 +136,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       renderTabla(items);
       renderPaginacion();
-
     } catch (err) {
       console.error("Error cargando inventario:", err);
       Swal.fire("Error", "No se pudo obtener inventario", "error");
@@ -156,7 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const tr = document.createElement('tr');
 
-      // Si es asesor, no mostramos la columna de acciones
       if (esAsesor) {
         tr.innerHTML = `
           <td>${item.codigo}</td>
@@ -186,7 +184,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.appendChild(tr);
     }
   }
-
 
   function renderPaginacion() {
     const maxPage = Math.ceil(state.total / state.pageSize) || 1;
@@ -297,17 +294,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarInventario();
   };
 
-
   window.modalEditar = async function(codigo) {
-    // 1) Obtener datos actuales del insumo
     const res = await fetch(`${API_BASE_URL}/inventario/info/${codigo}`, {
       headers: { Authorization: "Bearer " + localStorage.getItem("token") }
     });
 
     const data = await res.json();
-    const { nombre, unidad, min_stock, tipo, esAdmin } = data; // backend enviará esAdmin
+    const { nombre, unidad, min_stock, tipo, esAdmin } = data;
 
-    // 2) Modal
     const { value: form } = await Swal.fire({
       title: `Editar ${codigo}`,
       html: `
@@ -351,7 +345,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!form) return;
 
-    // 3) Enviar cambios
     await fetch(`${API_BASE_URL}/inventario/update/${codigo}`, {
       method: "PATCH",
       headers: {
@@ -364,7 +357,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     Swal.fire("✅ Actualizado", "Cambios guardados", "success");
     cargarInventario();
   };
-
 
   async function modalImportarExcel() {
     const { value: file } = await Swal.fire({
@@ -390,7 +382,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function descargarPlantilla() {
-    // Plantilla con columnas: codigo,nombre,cantidad
     const csv = "codigo,nombre,cantidad\n";
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
