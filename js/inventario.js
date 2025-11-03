@@ -373,23 +373,60 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   // ✅ Nueva versión segura para descargar plantilla
-  async function descargarPlantilla() {
-    const res = await fetch(`${API_BASE_URL}/inventario/plantilla`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  // ✅ Descargar plantilla Excel
+async function descargarPlantilla() {
+  const res = await fetch(`${API_BASE_URL}/inventario/plantilla`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-    if (!res.ok) return Swal.fire("Error", "No se pudo descargar", "error");
+  if (!res.ok) return Swal.fire("Error", "No se pudo descargar", "error");
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "plantilla_inventario.xlsx";
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "plantilla_inventario.xlsx";
-    a.click();
+// ✅ Importar Excel
+async function modalImportarExcel() {
+  const { value: file } = await Swal.fire({
+    title: "Importar inventario",
+    html: `
+      <p style="font-size:14px;margin-bottom:6px">Seleccione archivo .xlsx</p>
+      <input type="file" id="fileExcel" class="swal2-file" accept=".xlsx">
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Subir",
+    preConfirm: () => {
+      const fileInput = document.getElementById("fileExcel");
+      if (!fileInput.files.length) {
+        Swal.showValidationMessage("Seleccione un archivo");
+      }
+      return fileInput.files[0];
+    }
+  });
 
-    window.URL.revokeObjectURL(url);
-  }
+  if (!file) return;
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(`${API_BASE_URL}/inventario/import`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    body: fd
+  });
+
+  const data = await res.json();
+  if (!res.ok) return Swal.fire("Error", data.error, "error");
+
+  Swal.fire("✅ Importado", "Inventario actualizado", "success");
+  cargarInventario();
+}
+
 
   // ✅ Primera carga
   cargarInventario();
