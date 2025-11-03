@@ -413,16 +413,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function descargarPlantilla() {
-    const csv = "codigo,nombre,cantidad\n";
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "plantilla_inventario.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    const token = localStorage.getItem("token");
+    window.location.href = `${API_BASE_URL}/inventario/plantilla?token=${token}`;
   }
+
 
   // Primera carga
   cargarInventario();
