@@ -3,12 +3,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) return window.location.href = "index.html";
 
-  // ✅ Variables de rol (deben estar antes de usarse)
+  // ✅ Variables de rol declaradas antes de usarse
   let esAdmin = false;
   let esBodega = false;
   let esAsesor = false;
 
-  // ✅ Verificar rol (asesor puede ver en modo lectura)
+  // ✅ Verificar rol
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -25,16 +25,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return window.location.href = "dashboard.html";
     }
 
-    // Ocultar botones para asesor
+    // ✅ Ocultar botones de acciones para asesor
     if (esAsesor) {
-      const btnNuevo     = document.getElementById("btnNuevo");
-      const btnImportar  = document.getElementById("btnImportar");
-      const btnPlantilla = document.getElementById("btnPlantilla");
-      if (btnNuevo)     btnNuevo.style.display = "none";
-      if (btnImportar)  btnImportar.style.display = "none";
-      if (btnPlantilla) btnPlantilla.style.display = "none";
+      ["btnNuevo","btnImportar","btnPlantilla"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.style.display = "none";
+      });
 
-      // Ocultar encabezado de acciones
       const thAcciones = document.querySelector(".col-acciones");
       if (thAcciones) thAcciones.style.display = "none";
     }
@@ -48,15 +45,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
   const pageInfo = document.getElementById('page-info');
-
   const inputQ = document.getElementById('filtro-q');
   const selTipo = document.getElementById('filtro-tipo');
   const selEstado = document.getElementById('filtro-estado');
 
+  // ✅ Solo Admin y Bodega activan botones
   if (!esAsesor) {
-    document.getElementById("btnNuevo").addEventListener("click", modalNuevoInsumo);
-    document.getElementById("btnImportar").addEventListener("click", modalImportarExcel);
-    document.getElementById("btnPlantilla").addEventListener("click", descargarPlantilla);
+    document.getElementById("btnNuevo")?.addEventListener("click", modalNuevoInsumo);
+    document.getElementById("btnImportar")?.addEventListener("click", modalImportarExcel);
+    document.getElementById("btnPlantilla")?.addEventListener("click", descargarPlantilla);
   }
 
   // Estado
@@ -69,8 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     estado: ''
   };
 
-  // Debounce para búsqueda
-  let debounceTimer = null;
+  // Debounce
+  let debounceTimer;
   function debounce(fn, delay = 300) {
     return (...args) => {
       clearTimeout(debounceTimer);
@@ -78,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
-  // Listeners filtros
+  // Filtros
   inputQ.addEventListener('input', debounce(() => {
     state.q = inputQ.value.trim();
     state.page = 1;
@@ -113,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Cargar datos
+  // ✅ Cargar Inventario
   async function cargarInventario() {
     try {
       const params = new URLSearchParams({
@@ -124,10 +121,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (state.tipo) params.append('tipo', state.tipo);
       if (state.estado) params.append('estado', state.estado);
 
-      const res = await fetch(`${API_BASE_URL}/inventario/list?` + params.toString(), {
-        headers: { Authorization: 'Bearer ' + token }
+      const res = await fetch(`${API_BASE_URL}/inventario/list?${params}`, {
+        headers: { Authorization: "Bearer " + token }
       });
-      if (!res.ok) throw new Error('No se pudo cargar inventario');
+
+      if (!res.ok) throw new Error();
 
       const { items, page, pageSize, total } = await res.json();
       state.page = page;
@@ -137,53 +135,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderTabla(items);
       renderPaginacion();
     } catch (err) {
-      console.error("Error cargando inventario:", err);
       Swal.fire("Error", "No se pudo obtener inventario", "error");
     }
   }
 
   function renderTabla(items) {
     tbody.innerHTML = '';
-    if (!items || items.length === 0) {
+    if (!items.length) {
       tbody.innerHTML = `<tr><td colspan="${esAsesor ? 7 : 8}">Sin resultados</td></tr>`;
       return;
     }
 
-    for (const item of items) {
+    items.forEach(item => {
       const color = item.estado === "green" ? "green" :
                     item.estado === "yellow" ? "orange" : "red";
 
       const tr = document.createElement('tr');
 
-      if (esAsesor) {
-        tr.innerHTML = `
-          <td>${item.codigo}</td>
-          <td>${item.nombre}</td>
-          <td>${item.tipo}</td>
-          <td>${item.unidad ?? "-"}</td>
-          <td>${item.stock ?? 0}</td>
-          <td>${item.min_stock ?? 0}</td>
-          <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
-        `;
-      } else {
-        tr.innerHTML = `
-          <td>${item.codigo}</td>
-          <td>${item.nombre}</td>
-          <td>${item.tipo}</td>
-          <td>${item.unidad ?? "-"}</td>
-          <td>${item.stock ?? 0}</td>
-          <td>${item.min_stock ?? 0}</td>
-          <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
-          <td>
-            <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
-            <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
-            ${esAdmin ? `<button class="btn-danger" onclick="modalEliminar('${item.codigo}')">Eliminar</button>` : ""}
-          </td>
-        `;
-      }
+      tr.innerHTML = `
+        <td>${item.codigo}</td>
+        <td>${item.nombre}</td>
+        <td>${item.tipo}</td>
+        <td>${item.unidad ?? "-"}</td>
+        <td>${item.stock ?? 0}</td>
+        <td>${item.min_stock ?? 0}</td>
+        <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
+        ${
+          esAsesor
+            ? ""
+            : `<td>
+                <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
+                <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
+                ${esAdmin ? `<button class="btn-danger" onclick="modalEliminar('${item.codigo}')">Eliminar</button>` : ""}
+              </td>`
+        }
+      `;
 
       tbody.appendChild(tr);
-    }
+    });
   }
 
   function renderPaginacion() {
@@ -193,7 +182,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnNext.disabled = state.page >= maxPage;
   }
 
-  // === Acciones ===
+  // === Modales ===
+
   async function modalNuevoInsumo() {
     const { value: form } = await Swal.fire({
       title: "Nuevo Insumo",
@@ -204,19 +194,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           <option value="STOCK">STOCK</option>
           <option value="DIRECTO">DIRECTO</option>
         </select>
-        <input id="unidad" class="swal2-input" placeholder="Unidad (ej: Unidad, ML, LT)">
+        <input id="unidad" class="swal2-input" placeholder="Unidad (ML, LT, UND)">
         <input id="stock" type="number" class="swal2-input" placeholder="Stock inicial">
         <input id="min_stock" type="number" class="swal2-input" placeholder="Stock mínimo">
       `,
       showCancelButton: true,
       confirmButtonText: "Guardar",
       preConfirm: () => ({
-        codigo: document.getElementById('codigo').value.trim(),
-        nombre: document.getElementById('nombre').value.trim(),
-        tipo: document.getElementById('tipo').value,
-        unidad: document.getElementById('unidad').value.trim(),
-        stock: document.getElementById('stock').value,
-        min_stock: document.getElementById('min_stock').value
+        codigo: codigo.value.trim(),
+        nombre: nombre.value.trim(),
+        tipo: tipo.value,
+        unidad: unidad.value.trim(),
+        stock: stock.value,
+        min_stock: min_stock.value
       })
     });
 
@@ -226,19 +216,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       },
       body: JSON.stringify(form)
     });
 
     Swal.fire("✅ Guardado", "Insumo creado", "success");
-    state.page = 1;
     cargarInventario();
   }
 
-  window.modalStock = async function(codigo) {
+  window.modalStock = async codigo => {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+      headers: { Authorization: "Bearer " + token }
     });
     const data = await res.json();
     const esAdmin = data.rol === "admin";
@@ -247,23 +236,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       title: `Actualizar stock · ${codigo}`,
       html: `
         <label>Cantidad:</label>
-        <input id="qty" type="number" class="swal2-input" placeholder="Ej: 5">
+        <input id="qty" type="number" class="swal2-input">
 
         ${
           esAdmin
-          ? `
-          <label>Tipo de ajuste:</label>
-          <select id="tipo" class="swal2-input">
-            <option value="sumar">Sumar</option>
-            <option value="restar">Restar</option>
-          </select>
-
-          <label>Motivo (obligatorio si resta):</label>
-          <input id="motivo" class="swal2-input" placeholder="Ej: Inventario, daño, ajuste...">
-          `
-          : `<p style="font-size:14px;color:#666;margin-top:8px;">
-              Solo puedes agregar stock
-            </p>`
+            ? `
+            <label>Tipo:</label>
+            <select id="tipo" class="swal2-input">
+              <option value="sumar">Sumar</option>
+              <option value="restar">Restar</option>
+            </select>
+            <label>Motivo (si resta):</label>
+            <input id="motivo" class="swal2-input">
+            `
+            : `<p style="font-size:14px;color:#666;margin-top:6px;">Solo puedes sumar</p>`
         }
       `,
       showCancelButton: true,
@@ -274,7 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const motivo = esAdmin ? document.getElementById("motivo").value.trim() : "";
 
         if (!qty || qty <= 0) return Swal.showValidationMessage("Cantidad inválida");
-        if (tipo === "restar" && !motivo) return Swal.showValidationMessage("Motivo requerido para restar");
+        if (tipo === "restar" && !motivo) return Swal.showValidationMessage("Motivo requerido");
 
         return { codigo, qty, tipo, motivo };
       }
@@ -286,48 +272,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       },
       body: JSON.stringify(form)
     });
 
-    Swal.fire("✅ Stock actualizado", "", "success");
+    Swal.fire("✅ Stock actualizado");
     cargarInventario();
   };
 
-  window.modalEliminar = async function(codigo) {
+  window.modalEliminar = async codigo => {
     const confirm = await Swal.fire({
       title: "Eliminar insumo",
-      html: `<b>${codigo}</b><br><br>¿Estás seguro?<br>No podrás deshacer esta acción.`,
+      html: `<b>${codigo}</b><br>¿Seguro?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar"
+      confirmButtonText: "Sí, eliminar"
     });
 
     if (!confirm.isConfirmed) return;
 
     const res = await fetch(`${API_BASE_URL}/inventario/${codigo}`, {
       method: "DELETE",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
+      headers: { Authorization: "Bearer " + token }
     });
 
     const data = await res.json();
-    if (!res.ok) {
-      return Swal.fire("Error", data.error || "No se pudo eliminar", "error");
-    }
+    if (!res.ok) return Swal.fire("Error", data.error, "error");
 
     Swal.fire("✅ Eliminado", data.message, "success");
     cargarInventario();
   };
 
-
-  window.modalEditar = async function(codigo) {
+  window.modalEditar = async codigo => {
     const res = await fetch(`${API_BASE_URL}/inventario/info/${codigo}`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+      headers: { Authorization: "Bearer " + token }
     });
 
     const data = await res.json();
@@ -337,28 +317,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       title: `Editar ${codigo}`,
       html: `
         <label>Nombre:</label>
-        <input id="edit-nombre" class="swal2-input" value="${nombre ?? ''}" placeholder="Nombre">
+        <input id="edit-nombre" class="swal2-input" value="${nombre ?? ''}">
 
         <label>Unidad:</label>
-        <input id="edit-unidad" class="swal2-input" value="${unidad ?? ''}" placeholder="Unidad (ej: ML, LT, UND)">
+        <input id="edit-unidad" class="swal2-input" value="${unidad ?? ''}">
 
         <label>Stock Mínimo:</label>
-        <input id="edit-min" type="number" class="swal2-input" value="${min_stock ?? 0}" placeholder="Mínimo">
-
+        <input id="edit-min" type="number" class="swal2-input" value="${min_stock ?? 0}">
+        
         ${
           esAdmin
             ? `
               <hr>
-              <div style="font-size:13px;color:#444;font-weight:bold;margin-bottom:4px;">Configuración avanzada</div>
-
               <label>Tipo:</label>
               <select id="edit-tipo" class="swal2-input">
-                <option value="STOCK" ${tipo === "STOCK" ? "selected" : ""}>STOCK</option>
-                <option value="DIRECTO" ${tipo === "DIRECTO" ? "selected" : ""}>DIRECTO</option>
+                <option value="STOCK" ${tipo==="STOCK"?"selected":""}>STOCK</option>
+                <option value="DIRECTO" ${tipo==="DIRECTO"?"selected":""}>DIRECTO</option>
               </select>
-
-              <label>Nuevo Código (opcional):</label>
-              <input id="edit-codigo-new" class="swal2-input" placeholder="Ej: INS050">
+              <label>Nuevo código:</label>
+              <input id="edit-codigo-new" class="swal2-input">
             `
             : ""
         }
@@ -371,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         min_stock: Number(document.getElementById("edit-min").value),
         tipo: esAdmin ? document.getElementById("edit-tipo").value : undefined,
         newCodigo: esAdmin ? document.getElementById("edit-codigo-new").value.trim() : undefined
-      }),
+      })
     });
 
     if (!form) return;
@@ -380,44 +357,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       },
       body: JSON.stringify(form)
     });
 
-    Swal.fire("✅ Actualizado", "Cambios guardados", "success");
+    Swal.fire("✅ Guardado");
     cargarInventario();
   };
 
-  async function modalImportarExcel() {
-    const { value: file } = await Swal.fire({
-      title: "Importar Excel",
-      input: "file",
-      inputAttributes: { accept: ".xlsx,.xls" },
-      showCancelButton: true
-    });
-    if (!file) return;
-
-    const form = new FormData();
-    form.append("file", file);
-
-    await fetch(`${API_BASE_URL}/inventario/import`, {
-      method: "POST",
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
-      body: form
+  // ✅ Nueva versión segura para descargar plantilla
+  async function descargarPlantilla() {
+    const res = await fetch(`${API_BASE_URL}/inventario/plantilla`, {
+      headers: { Authorization: `Bearer ${token}` }
     });
 
-    Swal.fire("✅ Inventario actualizado");
-    state.page = 1;
-    cargarInventario();
+    if (!res.ok) return Swal.fire("Error", "No se pudo descargar", "error");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "plantilla_inventario.xlsx";
+    a.click();
+
+    window.URL.revokeObjectURL(url);
   }
 
-  function descargarPlantilla() {
-    const token = localStorage.getItem("token");
-    window.location.href = `${API_BASE_URL}/inventario/plantilla?token=${token}`;
-  }
-
-
-  // Primera carga
+  // ✅ Primera carga
   cargarInventario();
 });
