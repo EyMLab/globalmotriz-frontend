@@ -220,27 +220,72 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   window.modalEditar = async function(codigo) {
-    const { value } = await Swal.fire({
-      title: `Nuevo mínimo para ${codigo}`,
-      input: "number",
-      inputPlaceholder: "Ej: 5",
-      showCancelButton: true,
-      confirmButtonText: "Guardar"
+    // 1) Obtener datos actuales del insumo
+    const res = await fetch(`${API_BASE_URL}/inventario/info/${codigo}`, {
+      headers: { Authorization: "Bearer " + localStorage.getItem("token") }
     });
-    if (value == null) return;
 
-    await fetch(`${API_BASE_URL}/inventario/min`, {
+    const data = await res.json();
+    const { nombre, unidad, min_stock, tipo, esAdmin } = data; // backend enviará esAdmin
+
+    // 2) Modal
+    const { value: form } = await Swal.fire({
+      title: `Editar ${codigo}`,
+      html: `
+        <label>Nombre:</label>
+        <input id="edit-nombre" class="swal2-input" value="${nombre ?? ''}" placeholder="Nombre">
+
+        <label>Unidad:</label>
+        <input id="edit-unidad" class="swal2-input" value="${unidad ?? ''}" placeholder="Unidad (ej: ML, LT, UND)">
+
+        <label>Stock Mínimo:</label>
+        <input id="edit-min" type="number" class="swal2-input" value="${min_stock ?? 0}" placeholder="Mínimo">
+
+        ${
+          esAdmin
+            ? `
+              <hr>
+              <div style="font-size:13px;color:#444;font-weight:bold;margin-bottom:4px;">Configuración avanzada</div>
+
+              <label>Tipo:</label>
+              <select id="edit-tipo" class="swal2-input">
+                <option value="STOCK" ${tipo === "STOCK" ? "selected" : ""}>STOCK</option>
+                <option value="DIRECTO" ${tipo === "DIRECTO" ? "selected" : ""}>DIRECTO</option>
+              </select>
+
+              <label>Nuevo Código (opcional):</label>
+              <input id="edit-codigo-new" class="swal2-input" placeholder="Ej: INS050">
+            `
+            : ""
+        }
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Guardar",
+      preConfirm: () => ({
+        nombre: document.getElementById("edit-nombre").value.trim(),
+        unidad: document.getElementById("edit-unidad").value.trim(),
+        min_stock: Number(document.getElementById("edit-min").value),
+        tipo: esAdmin ? document.getElementById("edit-tipo").value : undefined,
+        newCodigo: esAdmin ? document.getElementById("edit-codigo-new").value.trim() : undefined
+      }),
+    });
+
+    if (!form) return;
+
+    // 3) Enviar cambios
+    await fetch(`${API_BASE_URL}/inventario/update/${codigo}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + localStorage.getItem("token")
       },
-      body: JSON.stringify({ codigo, min_stock: value })
+      body: JSON.stringify(form)
     });
 
-    Swal.fire("✅ Actualizado", "", "success");
+    Swal.fire("✅ Actualizado", "Cambios guardados", "success");
     cargarInventario();
   };
+
 
   async function modalImportarExcel() {
     const { value: file } = await Swal.fire({
