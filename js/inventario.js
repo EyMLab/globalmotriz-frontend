@@ -3,21 +3,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) return window.location.href = "index.html";
 
-  // Verificar rol
+  // Verificar rol (asesor puede ver en modo lectura)
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: { Authorization: 'Bearer ' + token }
     });
     const data = await res.json();
     const rol = data.rol;
-    if (!['admin', 'bodega'].includes(rol)) {
+
+    esAdmin  = rol === 'admin';
+    esBodega = rol === 'bodega';
+    esAsesor = rol === 'asesor';
+
+    // Si no es ninguno de los tres, fuera
+    if (!esAdmin && !esBodega && !esAsesor) {
       Swal.fire("Acceso denegado", "No tienes permiso para Inventario", "error");
       return window.location.href = "dashboard.html";
+    }
+
+    // Si es asesor, ocultar los 3 botones de la parte superior
+    if (esAsesor) {
+      const btnNuevo     = document.getElementById("btnNuevo");
+      const btnImportar  = document.getElementById("btnImportar");
+      const btnPlantilla = document.getElementById("btnPlantilla");
+      if (btnNuevo)     btnNuevo.style.display = "none";
+      if (btnImportar)  btnImportar.style.display = "none";
+      if (btnPlantilla) btnPlantilla.style.display = "none";
+
+      // Ocultar cabecera de la columna de acciones
+      const thAcciones = document.querySelector(".col-acciones");
+      if (thAcciones) thAcciones.style.display = "none";
     }
   } catch {
     Swal.fire("Error", "No se pudo verificar el usuario", "error");
     return window.location.href = "index.html";
   }
+
 
   // DOM
   const tbody = document.getElementById('tablaInventario');
@@ -28,6 +49,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputQ = document.getElementById('filtro-q');
   const selTipo = document.getElementById('filtro-tipo');
   const selEstado = document.getElementById('filtro-estado');
+
+  let esAdmin = false;
+  let esBodega = false;
+  let esAsesor = false;
+
 
   document.getElementById("btnNuevo").addEventListener("click", modalNuevoInsumo);
   document.getElementById("btnImportar").addEventListener("click", modalImportarExcel);
@@ -120,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderTabla(items) {
     tbody.innerHTML = '';
     if (!items || items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8">Sin resultados</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${esAsesor ? 7 : 8}">Sin resultados</td></tr>`;
       return;
     }
 
@@ -129,22 +155,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                     item.estado === "yellow" ? "orange" : "red";
 
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${item.codigo}</td>
-        <td>${item.nombre}</td>
-        <td>${item.tipo}</td>
-        <td>${item.unidad ?? "-"}</td>
-        <td>${item.stock ?? 0}</td>
-        <td>${item.min_stock ?? 0}</td>
-        <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
-        <td>
-          <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
-          <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
-        </td>
-      `;
+
+      // Si es asesor, no mostramos la columna de acciones
+      if (esAsesor) {
+        tr.innerHTML = `
+          <td>${item.codigo}</td>
+          <td>${item.nombre}</td>
+          <td>${item.tipo}</td>
+          <td>${item.unidad ?? "-"}</td>
+          <td>${item.stock ?? 0}</td>
+          <td>${item.min_stock ?? 0}</td>
+          <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
+        `;
+      } else {
+        tr.innerHTML = `
+          <td>${item.codigo}</td>
+          <td>${item.nombre}</td>
+          <td>${item.tipo}</td>
+          <td>${item.unidad ?? "-"}</td>
+          <td>${item.stock ?? 0}</td>
+          <td>${item.min_stock ?? 0}</td>
+          <td style="font-weight:bold;color:${color}">${item.estado.toUpperCase()}</td>
+          <td>
+            <button class="btn-obs" onclick="modalEditar('${item.codigo}')">Editar</button>
+            <button class="btn-obs" onclick="modalStock('${item.codigo}')">Stock</button>
+          </td>
+        `;
+      }
+
       tbody.appendChild(tr);
     }
   }
+
 
   function renderPaginacion() {
     const maxPage = Math.ceil(state.total / state.pageSize) || 1;
