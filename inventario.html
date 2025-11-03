@@ -11,6 +11,7 @@
   <div id="nav-container"></div>
 
   <div class="dashboard-container">
+
     <!-- Filtros -->
     <div class="filtros insumos" style="margin-bottom:12px;">
       <div class="filtro-grupo">
@@ -22,7 +23,7 @@
         <select id="filtro-tipo">
           <option value="">Todos</option>
           <option value="STOCK">STOCK</option>
-          <option value="DIRECTO">DIRECTO</option>
+          <option value="DIRECTTO">DIRECTO</option>
         </select>
       </div>
       <div class="filtro-grupo">
@@ -38,9 +39,10 @@
 
     <!-- Botones superiores -->
     <div style="margin-bottom:15px; display:flex; gap:10px;">
-      <button id="btnNuevo" class="btn-obs">Nuevo Insumo</button>
-      <button id="btnImportar" class="btn-obs">Importar Excel</button>
-      <button id="btnPlantilla" class="btn-obs">Plantilla</button>
+      <!-- ✅ type="button" para evitar navegación por defecto -->
+      <button id="btnNuevo" type="button" class="btn-obs">Nuevo Insumo</button>
+      <button id="btnImportar" type="button" class="btn-obs">Importar Excel</button>
+      <button id="btnPlantilla" type="button" class="btn-obs">Plantilla</button>
     </div>
 
     <!-- Tabla -->
@@ -62,9 +64,9 @@
 
     <!-- Paginación -->
     <div class="pagination-controls">
-      <button id="btn-prev">Anterior</button>
+      <button id="btn-prev" type="button">Anterior</button>
       <span id="page-info">Página 1</span>
-      <button id="btn-next">Siguiente</button>
+      <button id="btn-next" type="button">Siguiente</button>
     </div>
   </div>
 
