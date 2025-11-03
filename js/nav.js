@@ -154,3 +154,21 @@ function cerrarSesion() {
     }
   });
 }
+
+// Mantener backend activo mientras el usuario está usando el sistema
+(function () {
+  const token = localStorage.getItem("token");
+  if (!token) return; // Si no está logueado, no hacer ping
+
+  function keepBackendAwake() {
+    fetch("https://globalmotriz-backend.onrender.com/health", {
+      headers: { Authorization: "Bearer " + token }
+    }).catch(() => {});
+  }
+
+  // Ping inicial
+  keepBackendAwake();
+
+  // Ping cada 10 minutos
+  setInterval(keepBackendAwake, 10 * 60 * 1000);
+})();
