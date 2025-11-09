@@ -28,13 +28,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await res.json();
     const rol = data.rol;
 
-    // Detectar la página actual
+    // Detectar página actual
     let pagina = "Facturas";
     if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
     else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
     else if (window.location.pathname.includes("inventario")) pagina = "Inventario";
 
-    // ✅ Pestañas según rol
+    // Pestañas según rol
     const enlaceUsuarios = rol === 'admin'
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
       : "";
@@ -53,12 +53,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           <img src="img/logo.png" alt="Logo" class="logo-header">
           <span class="nav-title">${pagina}</span>
         </div>
+
         <nav class="nav-center nav-links">
           <a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>
           ${enlaceInsumos}
           ${enlaceInventario}
           ${enlaceUsuarios}
         </nav>
+
         <div class="nav-right">
           <p id="usuario-info" class="usuario-badge">${data.usuario} (${rol})</p>
           <button class="btn-nav" onclick="abrirModalCambioClave()">Cambiar contraseña</button>
@@ -77,13 +79,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-
 // ===================================================
 // 🔐 Modal para cambiar contraseña
 // ===================================================
 async function abrirModalCambioClave() {
   const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
   const token = localStorage.getItem('token');
+
   if (!token) {
     Swal.fire('Error', 'Debes iniciar sesión para cambiar la contraseña.', 'error');
     return;
@@ -97,10 +99,10 @@ async function abrirModalCambioClave() {
     `,
     showCancelButton: true,
     confirmButtonText: 'Guardar',
-    cancelButtonText: 'Cancelar',
     preConfirm: () => {
       const actual = document.getElementById('pass-actual').value.trim();
       const nueva = document.getElementById('pass-nueva').value.trim();
+
       if (!actual || !nueva) {
         Swal.showValidationMessage('Por favor completa ambos campos');
         return false;
@@ -112,8 +114,8 @@ async function abrirModalCambioClave() {
   if (!formValues) return;
 
   try {
-    // ✅ Ruta correcta
-    const res = await fetch(`${API_BASE_URL}/cambiar-password`, {
+    // ✅ Ruta corregida
+    const res = await fetch(`${API_BASE_URL}/login/cambiar-password`, {
       method: 'PATCH',
       headers: {
         'Authorization': 'Bearer ' + token,
@@ -145,7 +147,6 @@ function cerrarSesion() {
     text: '¿Seguro que deseas cerrar sesión?',
     showCancelButton: true,
     confirmButtonText: 'Sí, salir',
-    cancelButtonText: 'Cancelar',
     confirmButtonColor: '#d33'
   }).then(result => {
     if (result.isConfirmed) {
@@ -155,10 +156,13 @@ function cerrarSesion() {
   });
 }
 
-// Mantener backend activo mientras el usuario está usando el sistema
+
+// ===================================================
+// 🟢 Mantener backend activo
+// ===================================================
 (function () {
   const token = localStorage.getItem("token");
-  if (!token) return; // Si no está logueado, no hacer ping
+  if (!token) return;
 
   function keepBackendAwake() {
     fetch("https://globalmotriz-backend.onrender.com/health", {
@@ -166,9 +170,6 @@ function cerrarSesion() {
     }).catch(() => {});
   }
 
-  // Ping inicial
   keepBackendAwake();
-
-  // Ping cada 10 minutos
   setInterval(keepBackendAwake, 10 * 60 * 1000);
 })();

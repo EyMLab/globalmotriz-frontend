@@ -7,20 +7,34 @@
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
   <div id="nav-container"></div>
 
   <div class="dashboard-container">
 
+    <!-- FILTROS -->
     <div class="filtros insumos">
+
       <div class="filtro-grupo">
         <label for="filtro-ot">Orden de Trabajo:</label>
         <input type="text" id="filtro-ot" placeholder="Ej: 12345">
       </div>
+
       <div class="filtro-grupo">
-        <label for="filtro-insumo">Código o Nombre:</label>
-        <input type="text" id="filtro-insumo" placeholder="Ej: lija 80">
+        <label for="filtro-insumo">Código / Nombre:</label>
+        <input type="text" id="filtro-insumo" placeholder="Ej: Lija 80">
       </div>
+
+      <div class="filtro-grupo">
+        <label for="filtro-localidad">Localidad:</label>
+        <select id="filtro-localidad">
+          <option value="">Todas</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+
       <div class="filtro-grupo">
         <label for="filtro-registrado">Estado:</label>
         <select id="filtro-registrado">
@@ -29,33 +43,41 @@
           <option value="no-registrados">No registrados</option>
         </select>
       </div>
+
       <div class="filtro-grupo">
         <label for="fecha-desde">Desde:</label>
         <input type="date" id="fecha-desde">
       </div>
+
       <div class="filtro-grupo">
         <label for="fecha-hasta">Hasta:</label>
         <input type="date" id="fecha-hasta">
       </div>
+
     </div>
 
+    <!-- TABLA -->
     <table>
       <thead>
         <tr>
           <th>ID</th>
-          <th>Orden de Trabajo</th>
-          <th>Código de Barras</th>
+          <th>OT</th>
+          <th>Código</th>
           <th>Insumo</th>
           <th>Tipo</th>
-          <th>Cantidad</th>
+          <th>Cant</th>
+          <th>Unidad</th>
           <th>Fecha</th>
+          <th>Localidad</th>
           <th>Registrado</th>
           <th>Acciones</th>
         </tr>
       </thead>
+
       <tbody id="tabla-insumos"></tbody>
     </table>
 
+    <!-- PAGINACIÓN -->
     <div class="pagination-controls">
       <button id="btn-prev">Anterior</button>
       <span id="page-info">Página 1</span>

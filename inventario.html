@@ -14,10 +14,12 @@
 
     <!-- Filtros -->
     <div class="filtros insumos" style="margin-bottom:12px;">
+
       <div class="filtro-grupo">
         <label for="filtro-q">Buscar (código o nombre):</label>
         <input type="text" id="filtro-q" placeholder="Ej: INS001 o Lija 80">
       </div>
+
       <div class="filtro-grupo">
         <label for="filtro-tipo">Tipo:</label>
         <select id="filtro-tipo">
@@ -26,6 +28,7 @@
           <option value="DIRECTO">DIRECTO</option>
         </select>
       </div>
+
       <div class="filtro-grupo">
         <label for="filtro-estado">Estado:</label>
         <select id="filtro-estado">
@@ -35,11 +38,21 @@
           <option value="green">Verde</option>
         </select>
       </div>
+
+      <!-- ✅ NUEVO: FILTRO DE LOCALIDAD -->
+      <div class="filtro-grupo">
+        <label for="filtro-localidad">Localidad:</label>
+        <select id="filtro-localidad">
+          <option value="">Todas</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+
     </div>
 
     <!-- Botones superiores -->
     <div style="margin-bottom:15px; display:flex; gap:10px;">
-      <!-- ✅ type="button" para evitar navegación por defecto -->
       <button id="btnNuevo" type="button" class="btn-obs">Nuevo Insumo</button>
       <button id="btnImportar" type="button" class="btn-obs">Importar Excel</button>
       <button id="btnPlantilla" type="button" class="btn-obs">Plantilla</button>
@@ -53,6 +66,7 @@
           <th>Insumo</th>
           <th>Tipo</th>
           <th>Unidad</th>
+          <th>Localidad</th>   <!-- ✅ Nueva columna -->
           <th>Stock</th>
           <th>Mínimo</th>
           <th>Estado</th>
