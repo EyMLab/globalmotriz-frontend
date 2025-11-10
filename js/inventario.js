@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (esAsesor) {
+
       ["btnNuevo","btnImportar","btnPlantilla"].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.style.display = "none";
@@ -391,12 +392,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   /* =========================================================
-     ✅ Descargar plantilla
+     ✅ Descargar plantilla (nuevo nombre uniforme)
   ========================================================= */
   async function descargarPlantilla() {
-    const loc = state.localidad || "SUCURSAL";
-
-    const res = await fetch(`${API_BASE_URL}/inventario/plantilla?localidad=${loc}`, {
+    const res = await fetch(`${API_BASE_URL}/inventario/plantilla`, {
       headers: { Authorization: "Bearer " + token }
     });
 
@@ -406,7 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `plantilla_${loc}.xlsx`;
+    a.download = `plantilla_inventario.xlsx`;
     a.click();
     window.URL.revokeObjectURL(url);
   }
@@ -414,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById("btnPlantilla").onclick = descargarPlantilla;
 
   /* =========================================================
-     ✅ Importar Excel
+     ✅ Importar Excel (con mensaje exacto del backend)
   ========================================================= */
   async function modalImportarExcel() {
     const { value: f } = await Swal.fire({
@@ -454,12 +453,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await res.json();
     if (!res.ok) return Swal.fire("Error", data.error, "error");
 
-    Swal.fire("✅ Importado");
+    Swal.fire("✅ Importado", data.message, "success");
     cargarInventario();
   }
 
   document.getElementById("btnImportar").onclick = modalImportarExcel;
-
 
   /* =========================================================
      ✅ BOTÓN NUEVO
