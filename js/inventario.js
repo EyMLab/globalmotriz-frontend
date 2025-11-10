@@ -32,17 +32,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       return window.location.href = "dashboard.html";
     }
 
-    if (esAsesor) {
-
-      ["btnNuevo","btnImportar","btnPlantilla"].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.style.display = "none";
-      });
-
-      const thAcciones = document.querySelector(".col-acciones");
-      if (thAcciones) thAcciones.style.display = "none";
-    }
-
   } catch {
     Swal.fire("Error", "No se pudo verificar el usuario", "error");
     return window.location.href = "index.html";
@@ -70,6 +59,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     estado: '',
     localidad: ''
   };
+
+  /* =========================================================
+     ✅ Ajustes para ASESORES
+  ========================================================= */
+  if (esAsesor) {
+
+    // Ocultar botones
+    ["btnNuevo","btnImportar","btnPlantilla"].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.style.display = "none";
+    });
+
+    // Ocultar columna acciones
+    const thAcciones = document.querySelector(".col-acciones");
+    if (thAcciones) thAcciones.style.display = "none";
+
+    // Fijar localidad
+    selLocalidad.innerHTML = `<option value="${localidadUsuario}">${localidadUsuario}</option>`;
+    selLocalidad.value = localidadUsuario;
+    selLocalidad.disabled = true;
+
+    // Aplicar al estado
+    state.localidad = localidadUsuario;
+  }
 
   /* =========================================================
      ✅ Eventos
@@ -214,12 +227,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       html: `
         <input id="codigo" class="swal2-input" placeholder="Código">
         <input id="nombre" class="swal2-input" placeholder="Nombre">
-
         <select id="tipo" class="swal2-input">
           <option value="STOCK">STOCK</option>
           <option value="DIRECTO">DIRECTO</option>
         </select>
-
         <input id="unidad" class="swal2-input" placeholder="Unidad">
         <input id="min_stock" type="number" class="swal2-input" placeholder="Stock mínimo">
       `,
@@ -392,7 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   /* =========================================================
-     ✅ Descargar plantilla (nuevo nombre uniforme)
+     ✅ Descargar plantilla (nuevo nombre fijo)
   ========================================================= */
   async function descargarPlantilla() {
     const res = await fetch(`${API_BASE_URL}/inventario/plantilla`, {
@@ -413,7 +424,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById("btnPlantilla").onclick = descargarPlantilla;
 
   /* =========================================================
-     ✅ Importar Excel (con mensaje exacto del backend)
+     ✅ Importar Excel
   ========================================================= */
   async function modalImportarExcel() {
     const { value: f } = await Swal.fire({
