@@ -114,8 +114,7 @@ async function abrirModalCambioClave() {
   if (!formValues) return;
 
   try {
-    // ✅ Ruta corregida
-    const res = await fetch(`${API_BASE_URL}/login/cambiar-password`, {
+    const res = await fetch(`${API_BASE_URL}/auth/cambiar-password`, {
       method: 'PATCH',
       headers: {
         'Authorization': 'Bearer ' + token,
@@ -135,6 +134,7 @@ async function abrirModalCambioClave() {
     Swal.fire('❌ Error', err.message || 'No se pudo cambiar la contraseña.', 'error');
   }
 }
+
 
 
 // ===================================================
