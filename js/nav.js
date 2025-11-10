@@ -114,7 +114,7 @@ async function abrirModalCambioClave() {
   if (!formValues) return;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/login/cambiar-password`, {
+    const res = await fetch(`${API_BASE_URL}/cambiar-password`, {
       method: 'PATCH',
       headers: {
         'Authorization': 'Bearer ' + token,
