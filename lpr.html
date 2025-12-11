@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taller - Estado en Tiempo Real</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/lpr.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+
+    <h2 class="titulo-kanban">Estado del Taller</h2>
+
+    <div id="kanban-container" class="kanban-grid"></div>
+
+    <div class="kanban-footer">
+      <span id="totalEnTaller"></span>
+      <span id="ultimaActualizacion"></span>
+    </div>
+
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/lpr.js"></script>
+</body>
+</html>
