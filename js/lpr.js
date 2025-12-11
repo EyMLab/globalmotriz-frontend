@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
     data.estaciones.forEach(est => {
       const col = document.createElement("div");
       col.className = "kanban-column";
+      col.style.borderTop = `6px solid ${est.color}`;
+      col.style.background = est.color + "20"; // agrega transparencia
 
       col.innerHTML = `
         <div class="kanban-title">${est.estacion}</div>
@@ -49,7 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="time">En taller: ${formatTime(v.segundos_total)}</div>
         `;
 
+        card.addEventListener("click", () => abrirModalVehiculo(est, v));
         col.appendChild(card);
+
       });
 
       container.appendChild(col);
@@ -71,5 +75,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setInterval(cargarLPR, 3000);
   cargarLPR();
+
+// Modal elements
+const modal = document.getElementById("modal-vehiculo");
+const modalPlaca = document.getElementById("modal-placa");
+const modalEstacion = document.getElementById("modal-estacion");
+const modalTiempoEst = document.getElementById("modal-tiempo-estacion");
+const modalTiempoTotal = document.getElementById("modal-tiempo-total");
+const modalHistorial = document.getElementById("modal-historial");
+document.getElementById("modal-close").onclick = () => modal.style.display = "none";
+
+// FUNCION PARA ABRIR MODAL
+async function abrirModalVehiculo(estacion, veh) {
+  modalPlaca.textContent = veh.placa;
+  modalEstacion.textContent = estacion.estacion;
+  modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
+  modalTiempoTotal.textContent = formatTime(veh.segundos_total);
+
+  // Cargar historial desde backend
+  const res = await fetch(`${API_BASE_URL}/lpr/historial/${veh.placa}`, {
+    headers: { Authorization: "Bearer " + TOKEN }
+  });
+  const data = await res.json();
+
+  modalHistorial.innerHTML = "";
+
+  data.historial.forEach(h => {
+    const li = document.createElement("li");
+    li.textContent = `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")}`;
+    modalHistorial.appendChild(li);
+  });
+
+  modal.style.display = "flex";
+}
+
+
 
 }); // FIN DOMContentLoaded
