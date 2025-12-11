@@ -28,13 +28,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await res.json();
     const rol = data.rol;
 
+    // ============================================
     // Detectar página actual
+    // ============================================
     let pagina = "Facturas";
+
     if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
     else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
     else if (window.location.pathname.includes("inventario")) pagina = "Inventario";
+    else if (window.location.pathname.includes("lpr")) pagina = "Taller";   // ← IMPORTANTE
 
-    // Pestañas según rol
+    // ============================================
+    // Enlaces según rol
+    // ============================================
     const enlaceUsuarios = rol === 'admin'
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
       : "";
@@ -47,6 +53,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Inventario</a>`
       : "";
 
+    // ================ NUEVO BOTÓN TALLER (LPR) =================
+    const enlaceLPR = ['admin', 'bodega', 'asesor'].includes(rol)
+      ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
+      : "";
+
+    // ============================================
+    // Renderizado del navbar
+    // ============================================
+
     navContainer.innerHTML = `
       <header class="navbar">
         <div class="nav-left">
@@ -58,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>
           ${enlaceInsumos}
           ${enlaceInventario}
+          ${enlaceLPR}
           ${enlaceUsuarios}
         </nav>
 
@@ -134,7 +150,6 @@ async function abrirModalCambioClave() {
     Swal.fire('❌ Error', err.message || 'No se pudo cambiar la contraseña.', 'error');
   }
 }
-
 
 
 // ===================================================
