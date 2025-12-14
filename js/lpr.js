@@ -113,7 +113,7 @@ async function abrirModalVehiculo(estacion, veh) {
 
   data.historial.forEach(h => {
     const li = document.createElement("li");
-    li.textContent = `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")}`;
+    li.textContent = `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")} (${formatTime(h.segundos_estacion)})`;
     modalHistorial.appendChild(li);
   });
 
