@@ -68,10 +68,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+    const totalMinutes = Math.floor(seconds / 60);
+
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+
+    let parts = [];
+
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    parts.push(`${String(minutes).padStart(2, '0')}m`);
+
+    return parts.join(" ");
   }
+
 
   setInterval(cargarLPR, 3000);
   cargarLPR();
