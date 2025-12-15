@@ -601,6 +601,7 @@ table input[type="checkbox"] {
   color: #ffffff;
   border: 1px solid #0077cc;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .kanban-footer .btn-footer:hover {
@@ -608,17 +609,34 @@ table input[type="checkbox"] {
   color: #ffffff;
 }
 
+.kanban-footer {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #eef6ff;
+  border-radius: 10px;
+  border: 1px solid #d4e4f7;
+  font-size: 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kanban-footer span {
+  white-space: nowrap;
+}
+
+.kanban-footer .btn-footer {
+  margin-left: auto;
+}
+
+
 
 @keyframes aparecer {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
-}
-
-#modal-close {
-  float: right;
-  cursor: pointer;
-  font-size: 22px;
-  color: red;
 }
 
 /* ======================================================================

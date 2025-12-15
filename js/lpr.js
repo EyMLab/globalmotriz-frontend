@@ -7,6 +7,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let placaSeleccionada = null;
 
   // =====================================================
+  // UTILIDAD: cerrar todos los modales
+  // =====================================================
+  function cerrarTodosLosModales() {
+    document.querySelectorAll(".modal-vehiculo").forEach(m => {
+      m.style.display = "none";
+    });
+  }
+
+  // =====================================================
   // FORMATEO TIEMPO
   // =====================================================
   function formatTime(seconds) {
@@ -90,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // =====================================================
   // MODAL VEHÍCULO
   // =====================================================
-  const modal = document.getElementById("modal-vehiculo");
+  const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
   const modalEstacion = document.getElementById("modal-estacion");
   const modalTiempoEst = document.getElementById("modal-tiempo-estacion");
@@ -98,11 +107,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalHistorial = document.getElementById("modal-historial");
 
   document.getElementById("modal-close").onclick = () => {
-    modal.style.display = "none";
+    cerrarTodosLosModales();
     pausaLPR = false;
   };
 
   async function abrirModalVehiculo(est, veh) {
+    cerrarTodosLosModales();
     pausaLPR = true;
     placaSeleccionada = veh.placa;
 
@@ -119,13 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) return;
 
       const data = await res.json();
-
       modalHistorial.innerHTML = "";
+
       data.historial.slice(0, 5).forEach(h => {
         const li = document.createElement("li");
         li.textContent =
           `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")}
-          (${formatTime(h.segundos_estacion)})`;
+           (${formatTime(h.segundos_estacion)})`;
         modalHistorial.appendChild(li);
       });
 
@@ -133,11 +143,12 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("❌ Error historial", err);
     }
 
-    modal.style.display = "flex";
+    modalVehiculo.style.display = "flex";
   }
 
-  document.getElementById("btn-historial-completo").onclick =
-    () => abrirModalHistorialCompleto(placaSeleccionada);
+  document.getElementById("btn-historial-completo").onclick = () => {
+    if (placaSeleccionada) abrirModalHistorialCompleto(placaSeleccionada);
+  };
 
   // =====================================================
   // MODAL HISTORIAL COMPLETO
@@ -146,11 +157,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const tablaHistComp = document.getElementById("tabla-historial-completo");
 
   document.getElementById("modal-historial-close").onclick = () => {
-    modalHistComp.style.display = "none";
+    cerrarTodosLosModales();
     pausaLPR = false;
   };
 
   async function abrirModalHistorialCompleto(placa) {
+    cerrarTodosLosModales();
     pausaLPR = true;
 
     try {
@@ -193,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let ultimoTotal = 0;
 
   document.getElementById("btn-ver-salidas").onclick = () => {
+    cerrarTodosLosModales();
     paginaSalidas = 1;
     pausaLPR = true;
     modalSalidas.style.display = "flex";
@@ -200,9 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   document.getElementById("modal-salidas-close").onclick = () => {
-    modalSalidas.style.display = "none";
-    tablaSalidas.innerHTML = "";
-    pageInfo.textContent = "";
+    cerrarTodosLosModales();
     pausaLPR = false;
   };
 
@@ -268,9 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
     data.data.forEach(v => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td class="placa-link" data-placa="${v.placa}">
-          ${v.placa}
-        </td>
+        <td class="placa-link" data-placa="${v.placa}">${v.placa}</td>
         <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
         <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
         <td>${formatTime(v.segundos_total)}</td>
@@ -278,17 +287,12 @@ document.addEventListener("DOMContentLoaded", () => {
       tablaSalidas.appendChild(tr);
     });
 
-    // 🔥 EVENTO CLICK (AQUÍ es donde debe ir)
     document.querySelectorAll(".placa-link").forEach(td => {
-      td.addEventListener("click", () => {
-        const placa = td.dataset.placa;
-        abrirModalHistorialCompleto(placa);
-      });
+      td.onclick = () => abrirModalHistorialCompleto(td.dataset.placa);
     });
 
     pageInfo.textContent =
       `Página ${data.page} de ${Math.ceil(data.total / data.limit)}`;
   }
-
 
 });
