@@ -637,3 +637,67 @@ table input[type="checkbox"] {
   font-size: 22px;
   color: red;
 }
+
+/* ===== MODAL SALIDAS ===== */
+.modal-grande {
+  width: 800px;
+}
+
+.filtros-modal {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.filtros-modal input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.btn-modal {
+  background: #0077cc;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-modal:hover {
+  background: #005fa3;
+}
+
+.tabla-modal {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.tabla-modal th {
+  background: #0077cc;
+  color: white;
+  padding: 10px;
+}
+
+.tabla-modal td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.paginacion-modal {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
+  align-items: center;
+}
+
+.modal-close {
+  float: right;
+  cursor: pointer;
+  font-size: 22px;
+  color: red;
+}

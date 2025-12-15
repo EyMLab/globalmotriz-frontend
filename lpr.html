@@ -44,18 +44,23 @@
 
     <!-- MODAL SALIDAS -->
     <div id="modal-salidas" class="modal-vehiculo">
-      <div class="modal-content" style="width:700px;">
-        <span id="modal-salidas-close">&times;</span>
+      <div class="modal-content modal-grande">
+        <span id="modal-salidas-close" class="modal-close">&times;</span>
 
         <h3>Vehículos que salieron</h3>
 
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <!-- Filtros -->
+        <div class="filtros-modal">
           <input type="date" id="salidas-desde">
           <input type="date" id="salidas-hasta">
-          <button id="btn-filtrar-salidas" class="btn-nav">Filtrar</button>
+          <input type="text" id="salidas-placa" placeholder="Buscar placa">
+          <button id="btn-filtrar-salidas" class="btn-modal">
+            Filtrar
+          </button>
         </div>
 
-        <table>
+        <!-- Tabla -->
+        <table class="tabla-modal">
           <thead>
             <tr>
               <th>Placa</th>
@@ -66,6 +71,13 @@
           </thead>
           <tbody id="tabla-salidas"></tbody>
         </table>
+
+        <!-- Paginación -->
+        <div class="paginacion-modal">
+          <button id="salidas-prev" class="btn-modal">Anterior</button>
+          <span id="salidas-page-info"></span>
+          <button id="salidas-next" class="btn-modal">Siguiente</button>
+        </div>
       </div>
     </div>
 

@@ -134,61 +134,114 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.style.display = "flex";
   }
 
-  // ===============================
-  // MODAL SALIDAS
-  // ===============================
-  const modalSalidas = document.getElementById("modal-salidas");
-  const tablaSalidas = document.getElementById("tabla-salidas");
+// ===============================
+// MODAL SALIDAS
+// ===============================
+const modalSalidas = document.getElementById("modal-salidas");
+const tablaSalidas = document.getElementById("tabla-salidas");
+const pageInfo = document.getElementById("salidas-page-info");
 
-  document.getElementById("btn-ver-salidas").onclick = () => {
-    modalSalidas.style.display = "flex";
-    cargarSalidas();
-  };
+let salidasData = [];
+let paginaSalidas = 1;
+const filasPorPagina = 10;
 
-  document.getElementById("modal-salidas-close").onclick = () => {
-    modalSalidas.style.display = "none";
-  };
+document.getElementById("btn-ver-salidas").onclick = () => {
+  modalSalidas.style.display = "flex";
+  paginaSalidas = 1;
+  cargarSalidas();
+};
 
-  document.getElementById("btn-filtrar-salidas").onclick = cargarSalidas;
+document.getElementById("modal-salidas-close").onclick = () => {
+  modalSalidas.style.display = "none";
+};
 
-  async function cargarSalidas() {
-    const desde = document.getElementById("salidas-desde").value;
-    const hasta = document.getElementById("salidas-hasta").value;
+document.getElementById("btn-filtrar-salidas").onclick = () => {
+  paginaSalidas = 1;
+  cargarSalidas();
+};
 
-    const params = new URLSearchParams();
-    if (desde) params.append("desde", desde);
-    if (hasta) params.append("hasta", hasta);
+document.getElementById("salidas-prev").onclick = () => {
+  if (paginaSalidas > 1) {
+    paginaSalidas--;
+    renderSalidas();
+  }
+};
 
-    const res = await fetch(
-      `${API_BASE_URL}/lpr/salidas?${params.toString()}`,
-      { headers: { Authorization: "Bearer " + TOKEN } }
-    );
+document.getElementById("salidas-next").onclick = () => {
+  if (paginaSalidas * filasPorPagina < salidasData.length) {
+    paginaSalidas++;
+    renderSalidas();
+  }
+};
 
-    const data = await res.json();
-    renderSalidas(data.data || []);
+// ===============================
+// Cargar salidas
+// ===============================
+async function cargarSalidas() {
+  const desde = document.getElementById("salidas-desde").value;
+  const hasta = document.getElementById("salidas-hasta").value;
+  const placa = document.getElementById("salidas-placa").value.trim();
+
+  const params = new URLSearchParams();
+  if (desde) params.append("desde", desde);
+  if (hasta) params.append("hasta", hasta);
+  if (placa) params.append("placa", placa);
+
+  const res = await fetch(`${API_BASE_URL}/lpr/salidas?${params}`, {
+    headers: { Authorization: "Bearer " + TOKEN }
+  });
+
+  const data = await res.json();
+  salidasData = data.data || [];
+  renderSalidas();
+}
+
+// ===============================
+// Render tabla con paginación
+// ===============================
+function renderSalidas() {
+  tablaSalidas.innerHTML = "";
+
+  if (!salidasData.length) {
+    tablaSalidas.innerHTML =
+      `<tr><td colspan="4">Sin resultados</td></tr>`;
+    pageInfo.textContent = "";
+    return;
   }
 
-  function renderSalidas(lista) {
-    tablaSalidas.innerHTML = "";
+  const start = (paginaSalidas - 1) * filasPorPagina;
+  const end = start + filasPorPagina;
+  const pageData = salidasData.slice(start, end);
 
-    if (!lista.length) {
-      tablaSalidas.innerHTML =
-        `<tr><td colspan="4">Sin resultados</td></tr>`;
-      return;
-    }
+  pageData.forEach(v => {
+    const tr = document.createElement("tr");
 
-    lista.forEach(v => {
-      const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${v.placa}</td>
+      <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
+      <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
+      <td>${formatearDuracion(v.segundos_total)}</td>
+    `;
 
-      tr.innerHTML = `
-        <td>${v.placa}</td>
-        <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
-        <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
-        <td>${formatTime(v.segundos_total)}</td>
-      `;
+    tablaSalidas.appendChild(tr);
+  });
 
-      tablaSalidas.appendChild(tr);
-    });
-  }
+  const totalPages = Math.ceil(salidasData.length / filasPorPagina);
+  pageInfo.textContent = `Página ${paginaSalidas} de ${totalPages}`;
+}
+
+function formatearDuracion(segundos) {
+  const dias = Math.floor(segundos / 86400);
+  const horas = Math.floor((segundos % 86400) / 3600);
+  const minutos = Math.floor((segundos % 3600) / 60);
+
+  let txt = "";
+  if (dias > 0) txt += `${dias}d `;
+  if (horas > 0 || dias > 0) txt += `${horas}h `;
+  txt += `${minutos}m`;
+
+  return txt;
+}
+
 
 });
