@@ -6,11 +6,11 @@
   <title>Taller - Estado en Tiempo Real</title>
 
   <link rel="stylesheet" href="css/styles.css">
-
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
+
   <div id="nav-container"></div>
 
   <div class="dashboard-container">
@@ -22,26 +22,58 @@
     <div class="kanban-footer">
       <span id="totalEnTaller"></span>
       <span id="ultimaActualizacion"></span>
+      <button id="btn-ver-salidas" class="btn-nav">
+        Vehículos que salieron
+      </button>
     </div>
 
+    <!-- MODAL VEHÍCULO -->
     <div id="modal-vehiculo" class="modal-vehiculo">
-        <div class="modal-content">
-            <span id="modal-close">&times;</span>
-            <h3 id="modal-placa"></h3>
-            <p><b>Estación actual:</b> <span id="modal-estacion"></span></p>
-            <p><b>Tiempo en estación:</b> <span id="modal-tiempo-estacion"></span></p>
-            <p><b>Tiempo total en taller:</b> <span id="modal-tiempo-total"></span></p>
+      <div class="modal-content">
+        <span id="modal-close">&times;</span>
 
-            <h4>Historial</h4>
-            <ul id="modal-historial"></ul>
-        </div>
+        <h3 id="modal-placa"></h3>
+        <p><b>Estación actual:</b> <span id="modal-estacion"></span></p>
+        <p><b>Tiempo en estación:</b> <span id="modal-tiempo-estacion"></span></p>
+        <p><b>Tiempo total en taller:</b> <span id="modal-tiempo-total"></span></p>
+
+        <h4>Historial</h4>
+        <ul id="modal-historial"></ul>
+      </div>
     </div>
 
+    <!-- MODAL SALIDAS -->
+    <div id="modal-salidas" class="modal-vehiculo">
+      <div class="modal-content" style="width:700px;">
+        <span id="modal-salidas-close">&times;</span>
+
+        <h3>Vehículos que salieron</h3>
+
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+          <input type="date" id="salidas-desde">
+          <input type="date" id="salidas-hasta">
+          <button id="btn-filtrar-salidas" class="btn-nav">Filtrar</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+              <th>Tiempo total</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-salidas"></tbody>
+        </table>
+      </div>
+    </div>
 
   </div>
 
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/lpr.js"></script>
+
 </body>
 </html>
