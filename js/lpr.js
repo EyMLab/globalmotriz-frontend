@@ -3,38 +3,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
 
-  if (!TOKEN) {
-    window.location.href = "index.html";
-    return;
+  /* ================= UTILIDADES ================= */
+
+  function formatearTiempo(segundos) {
+    const dias = Math.floor(segundos / 86400);
+    const horas = Math.floor((segundos % 86400) / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+
+    let out = [];
+    if (dias > 0) out.push(`${dias}d`);
+    if (horas > 0 || dias > 0) out.push(`${horas}h`);
+    out.push(`${String(minutos).padStart(2,'0')}m`);
+    return out.join(" ");
   }
 
-  // ===============================
-  // CARGAR KANBAN
-  // ===============================
+  /* ================= KANBAN ================= */
+
   async function cargarLPR() {
-    try {
-      const res = await fetch(`${API_BASE_URL}/lpr/estado`, {
-        headers: {
-          Authorization: "Bearer " + TOKEN
-        }
-      });
-
-      if (!res.ok) {
-        console.error("❌ Error HTTP:", res.status);
-        return;
-      }
-
-      const data = await res.json();
-      renderKanban(data);
-
-    } catch (err) {
-      console.error("❌ Error cargando estado LPR:", err);
-    }
+    const res = await fetch(`${API_BASE_URL}/lpr/estado`, {
+      headers: { Authorization: "Bearer " + TOKEN }
+    });
+    const data = await res.json();
+    renderKanban(data);
   }
 
   function renderKanban(data) {
-    const container = document.getElementById("kanban-container");
-    container.innerHTML = "";
+    const cont = document.getElementById("kanban-container");
+    cont.innerHTML = "";
 
     data.estaciones.forEach(est => {
       const col = document.createElement("div");
@@ -44,204 +39,151 @@ document.addEventListener("DOMContentLoaded", () => {
 
       col.innerHTML = `
         <div class="kanban-title">${est.estacion}</div>
-        ${est.vehiculos.length === 0
-          ? "<p style='opacity:0.5;text-align:center;'>Sin vehículos</p>"
-          : ""
-        }
+        ${est.vehiculos.length === 0 ? "<p style='text-align:center;opacity:.6'>Sin vehículos</p>" : ""}
       `;
 
       est.vehiculos.forEach(v => {
         const card = document.createElement("div");
         card.className = "vehicle-card";
-
         card.innerHTML = `
           <div class="placa">${v.placa}</div>
-          <div class="time">En estación: ${formatTime(v.segundos_estacion)}</div>
-          <div class="time">En taller: ${formatTime(v.segundos_total)}</div>
+          <div class="time">En estación: ${formatearTiempo(v.segundos_estacion)}</div>
+          <div class="time">En taller: ${formatearTiempo(v.segundos_total)}</div>
         `;
-
-        card.addEventListener("click", () => abrirModalVehiculo(est, v));
+        card.onclick = () => abrirModalVehiculo(est, v);
         col.appendChild(card);
       });
 
-      container.appendChild(col);
+      cont.appendChild(col);
     });
 
     document.getElementById("totalEnTaller").innerText =
-      "Vehículos en taller: " + data.total_en_taller;
+      `Vehículos en taller: ${data.total_en_taller}`;
 
     document.getElementById("ultimaActualizacion").innerText =
-      "Última actualización: " +
-      new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC");
-  }
-
-  // ===============================
-  // FORMATEAR TIEMPO (ÚNICO)
-  // ===============================
-  function formatTime(seconds) {
-    const totalMinutes = Math.floor(seconds / 60);
-
-    const days = Math.floor(totalMinutes / (60 * 24));
-    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-    const minutes = totalMinutes % 60;
-
-    let parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (hours > 0 || days > 0) parts.push(`${hours}h`);
-    parts.push(`${String(minutes).padStart(2, "0")}m`);
-
-    return parts.join(" ");
+      `Última actualización: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
   }
 
   setInterval(cargarLPR, 3000);
   cargarLPR();
 
-  // ===============================
-  // MODAL VEHÍCULO
-  // ===============================
-  const modal = document.getElementById("modal-vehiculo");
+  /* ================= MODAL VEHÍCULO ================= */
+
+  const modalVeh = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
-  const modalEstacion = document.getElementById("modal-estacion");
-  const modalTiempoEst = document.getElementById("modal-tiempo-estacion");
-  const modalTiempoTotal = document.getElementById("modal-tiempo-total");
-  const modalHistorial = document.getElementById("modal-historial");
+  const modalEst = document.getElementById("modal-estacion");
+  const modalTE = document.getElementById("modal-tiempo-estacion");
+  const modalTT = document.getElementById("modal-tiempo-total");
+  const modalHist = document.getElementById("modal-historial");
 
-  document.getElementById("modal-close").onclick = () => {
-    modal.style.display = "none";
-  };
+  document.getElementById("modal-close").onclick = () => modalVeh.style.display = "none";
 
-  async function abrirModalVehiculo(estacion, veh) {
+  async function abrirModalVehiculo(est, veh) {
     modalPlaca.textContent = veh.placa;
-    modalEstacion.textContent = estacion.estacion;
-    modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
-    modalTiempoTotal.textContent = formatTime(veh.segundos_total);
+    modalEst.textContent = est.estacion;
+    modalTE.textContent = formatearTiempo(veh.segundos_estacion);
+    modalTT.textContent = formatearTiempo(veh.segundos_total);
 
-    const res = await fetch(
-      `${API_BASE_URL}/lpr/historial/${veh.placa}`,
-      { headers: { Authorization: "Bearer " + TOKEN } }
-    );
-
+    const res = await fetch(`${API_BASE_URL}/lpr/historial/${veh.placa}`, {
+      headers: { Authorization: "Bearer " + TOKEN }
+    });
     const data = await res.json();
-    modalHistorial.innerHTML = "";
 
-    data.historial.forEach(h => {
+    modalHist.innerHTML = "";
+    data.historial.slice(0,5).forEach(h => {
       const li = document.createElement("li");
-      li.textContent =
-        `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")}`;
-      modalHistorial.appendChild(li);
+      li.textContent = `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")} (${formatearTiempo(h.segundos_estacion)})`;
+      modalHist.appendChild(li);
     });
 
-    modal.style.display = "flex";
+    document.getElementById("btn-historial-completo").onclick =
+      () => abrirModalHistorialCompleto(veh.placa);
+
+    modalVeh.style.display = "flex";
   }
 
-// ===============================
-// MODAL SALIDAS
-// ===============================
-const modalSalidas = document.getElementById("modal-salidas");
-const tablaSalidas = document.getElementById("tabla-salidas");
-const pageInfo = document.getElementById("salidas-page-info");
+  /* ================= MODAL HISTORIAL COMPLETO ================= */
 
-let salidasData = [];
-let paginaSalidas = 1;
-const filasPorPagina = 10;
+  const modalHC = document.getElementById("modal-historial-completo");
+  const tablaHC = document.getElementById("tabla-historial-completo");
 
-document.getElementById("btn-ver-salidas").onclick = () => {
-  modalSalidas.style.display = "flex";
-  paginaSalidas = 1;
-  cargarSalidas();
-};
+  document.getElementById("modal-historial-close").onclick =
+    () => modalHC.style.display = "none";
 
-document.getElementById("modal-salidas-close").onclick = () => {
-  modalSalidas.style.display = "none";
-};
+  async function abrirModalHistorialCompleto(placa) {
+    const res = await fetch(`${API_BASE_URL}/lpr/historial/${placa}`, {
+      headers: { Authorization: "Bearer " + TOKEN }
+    });
+    const data = await res.json();
 
-document.getElementById("btn-filtrar-salidas").onclick = () => {
-  paginaSalidas = 1;
-  cargarSalidas();
-};
+    tablaHC.innerHTML = "";
+    data.historial.forEach(h => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${h.estacion}</td>
+        <td>${new Date(h.inicio).toLocaleString("es-EC")}</td>
+        <td>${h.fin ? new Date(h.fin).toLocaleString("es-EC") : "-"}</td>
+        <td>${formatearTiempo(h.segundos_estacion)}</td>
+      `;
+      tablaHC.appendChild(tr);
+    });
 
-document.getElementById("salidas-prev").onclick = () => {
-  if (paginaSalidas > 1) {
-    paginaSalidas--;
-    renderSalidas();
-  }
-};
-
-document.getElementById("salidas-next").onclick = () => {
-  if (paginaSalidas * filasPorPagina < salidasData.length) {
-    paginaSalidas++;
-    renderSalidas();
-  }
-};
-
-// ===============================
-// Cargar salidas
-// ===============================
-async function cargarSalidas() {
-  const desde = document.getElementById("salidas-desde").value;
-  const hasta = document.getElementById("salidas-hasta").value;
-  const placa = document.getElementById("salidas-placa").value.trim();
-
-  const params = new URLSearchParams();
-  if (desde) params.append("desde", desde);
-  if (hasta) params.append("hasta", hasta);
-  if (placa) params.append("placa", placa);
-
-  const res = await fetch(`${API_BASE_URL}/lpr/salidas?${params}`, {
-    headers: { Authorization: "Bearer " + TOKEN }
-  });
-
-  const data = await res.json();
-  salidasData = data.data || [];
-  renderSalidas();
-}
-
-// ===============================
-// Render tabla con paginación
-// ===============================
-function renderSalidas() {
-  tablaSalidas.innerHTML = "";
-
-  if (!salidasData.length) {
-    tablaSalidas.innerHTML =
-      `<tr><td colspan="4">Sin resultados</td></tr>`;
-    pageInfo.textContent = "";
-    return;
+    modalHC.style.display = "flex";
   }
 
-  const start = (paginaSalidas - 1) * filasPorPagina;
-  const end = start + filasPorPagina;
-  const pageData = salidasData.slice(start, end);
+  /* ================= MODAL SALIDAS ================= */
 
-  pageData.forEach(v => {
-    const tr = document.createElement("tr");
+  const modalSal = document.getElementById("modal-salidas");
+  const tablaSal = document.getElementById("tabla-salidas");
+  let pagina = 1;
+  const porPagina = 10;
 
-    tr.innerHTML = `
-      <td>${v.placa}</td>
-      <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
-      <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
-      <td>${formatearDuracion(v.segundos_total)}</td>
-    `;
+  document.getElementById("btn-ver-salidas").onclick = () => {
+    modalSal.style.display = "flex";
+    cargarSalidas();
+  };
+  document.getElementById("modal-salidas-close").onclick =
+    () => modalSal.style.display = "none";
 
-    tablaSalidas.appendChild(tr);
-  });
+  document.getElementById("btn-filtrar-salidas").onclick = () => {
+    pagina = 1;
+    cargarSalidas();
+  };
 
-  const totalPages = Math.ceil(salidasData.length / filasPorPagina);
-  pageInfo.textContent = `Página ${paginaSalidas} de ${totalPages}`;
-}
+  async function cargarSalidas() {
+    const params = new URLSearchParams({
+      desde: salidas-desde.value,
+      hasta: salidas-hasta.value,
+      placa: salidas-placa.value,
+      page: pagina,
+      limit: porPagina
+    });
 
-function formatearDuracion(segundos) {
-  const dias = Math.floor(segundos / 86400);
-  const horas = Math.floor((segundos % 86400) / 3600);
-  const minutos = Math.floor((segundos % 3600) / 60);
+    const res = await fetch(`${API_BASE_URL}/lpr/salidas?${params}`, {
+      headers: { Authorization: "Bearer " + TOKEN }
+    });
+    const data = await res.json();
 
-  let txt = "";
-  if (dias > 0) txt += `${dias}d `;
-  if (horas > 0 || dias > 0) txt += `${horas}h `;
-  txt += `${minutos}m`;
+    tablaSal.innerHTML = "";
+    data.data.forEach(v => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${v.placa}</td>
+        <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
+        <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
+        <td>${formatearTiempo(v.segundos_total)}</td>
+      `;
+      tablaSal.appendChild(tr);
+    });
 
-  return txt;
-}
+    document.getElementById("pagina-salidas").innerText = `Página ${pagina}`;
+  }
 
+  document.getElementById("prev-salidas").onclick = () => {
+    if (pagina > 1) { pagina--; cargarSalidas(); }
+  };
+  document.getElementById("next-salidas").onclick = () => {
+    pagina++; cargarSalidas();
+  };
 
 });

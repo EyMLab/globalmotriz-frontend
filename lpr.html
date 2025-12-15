@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taller - Estado en Tiempo Real</title>
+  <title>Estado del Taller</title>
 
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -22,65 +22,87 @@
     <div class="kanban-footer">
       <span id="totalEnTaller"></span>
       <span id="ultimaActualizacion"></span>
-      <button id="btn-ver-salidas" class="btn-nav btn-footer">
+
+      <button id="btn-ver-salidas" class="btn-nav">
         Vehículos que salieron
       </button>
     </div>
 
-    <!-- MODAL VEHÍCULO -->
-    <div id="modal-vehiculo" class="modal-vehiculo">
-      <div class="modal-content">
-        <span id="modal-close">&times;</span>
+  </div>
 
-        <h3 id="modal-placa"></h3>
-        <p><b>Estación actual:</b> <span id="modal-estacion"></span></p>
-        <p><b>Tiempo en estación:</b> <span id="modal-tiempo-estacion"></span></p>
-        <p><b>Tiempo total en taller:</b> <span id="modal-tiempo-total"></span></p>
+  <!-- ================= MODAL VEHÍCULO ================= -->
+  <div id="modal-vehiculo" class="modal-vehiculo">
+    <div class="modal-content">
+      <span id="modal-close">&times;</span>
 
-        <h4>Historial</h4>
-        <ul id="modal-historial"></ul>
+      <h3 id="modal-placa"></h3>
+
+      <p><b>Estación actual:</b> <span id="modal-estacion"></span></p>
+      <p><b>Tiempo en estación:</b> <span id="modal-tiempo-estacion"></span></p>
+      <p><b>Tiempo total en taller:</b> <span id="modal-tiempo-total"></span></p>
+
+      <h4>Últimos movimientos</h4>
+      <ul id="modal-historial"></ul>
+
+      <button id="btn-historial-completo" class="btn-nav" style="margin-top:15px;">
+        Ver historial completo
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL HISTORIAL COMPLETO ================= -->
+  <div id="modal-historial-completo" class="modal-vehiculo">
+    <div class="modal-content" style="width:800px;">
+      <span id="modal-historial-close">&times;</span>
+
+      <h3>Historial completo del vehículo</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Estación</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Tiempo</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-historial-completo"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= MODAL SALIDAS ================= -->
+  <div id="modal-salidas" class="modal-vehiculo">
+    <div class="modal-content" style="width:900px;">
+      <span id="modal-salidas-close">&times;</span>
+
+      <h3>Vehículos que salieron</h3>
+
+      <div style="display:flex; gap:10px; margin:15px 0;">
+        <input type="date" id="salidas-desde">
+        <input type="date" id="salidas-hasta">
+        <input type="text" id="salidas-placa" placeholder="Placa">
+        <button id="btn-filtrar-salidas" class="btn-nav">Filtrar</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Placa</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Tiempo total</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-salidas"></tbody>
+      </table>
+
+      <div style="margin-top:15px; display:flex; justify-content:space-between;">
+        <button id="prev-salidas" class="btn-nav">Anterior</button>
+        <span id="pagina-salidas"></span>
+        <button id="next-salidas" class="btn-nav">Siguiente</button>
       </div>
     </div>
-
-    <!-- MODAL SALIDAS -->
-    <div id="modal-salidas" class="modal-vehiculo">
-      <div class="modal-content modal-grande">
-        <span id="modal-salidas-close" class="modal-close">&times;</span>
-
-        <h3>Vehículos que salieron</h3>
-
-        <!-- Filtros -->
-        <div class="filtros-modal">
-          <input type="date" id="salidas-desde">
-          <input type="date" id="salidas-hasta">
-          <input type="text" id="salidas-placa" placeholder="Buscar placa">
-          <button id="btn-filtrar-salidas" class="btn-modal">
-            Filtrar
-          </button>
-        </div>
-
-        <!-- Tabla -->
-        <table class="tabla-modal">
-          <thead>
-            <tr>
-              <th>Placa</th>
-              <th>Entrada</th>
-              <th>Salida</th>
-              <th>Tiempo total</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-salidas"></tbody>
-        </table>
-
-        <!-- Paginación -->
-        <div class="paginacion-modal">
-          <button id="salidas-prev" class="btn-modal">Anterior</button>
-          <span id="salidas-page-info"></span>
-          <button id="salidas-next" class="btn-modal">Siguiente</button>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <script src="js/auth.js"></script>
