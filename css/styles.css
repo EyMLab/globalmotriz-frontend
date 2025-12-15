@@ -701,3 +701,16 @@ table input[type="checkbox"] {
   font-size: 22px;
   color: red;
 }
+
+/* ===== Botón footer LPR ===== */
+.kanban-footer .btn-footer {
+  background: #0077cc;
+  color: #ffffff;
+  border: 1px solid #0077cc;
+  font-weight: 600;
+}
+
+.kanban-footer .btn-footer:hover {
+  background: #005fa3;
+  color: #ffffff;
+}
