@@ -3,6 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
 
+  let pausaLPR = false;
+  let placaSeleccionada = null;
+
   // =====================================================
   // FORMATEO TIEMPO
   // =====================================================
@@ -23,12 +26,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // CARGAR KANBAN
   // =====================================================
   async function cargarLPR() {
-    const res = await fetch(`${API_BASE_URL}/lpr/estado`, {
-      headers: { Authorization: "Bearer " + TOKEN }
-    });
+    if (pausaLPR) return;
 
-    const data = await res.json();
-    renderKanban(data);
+    try {
+      const res = await fetch(`${API_BASE_URL}/lpr/estado`, {
+        headers: { Authorization: "Bearer " + TOKEN }
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      renderKanban(data);
+
+    } catch (err) {
+      console.error("❌ Error cargando LPR", err);
+    }
   }
 
   function renderKanban(data) {
@@ -43,7 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       col.innerHTML = `
         <div class="kanban-title">${est.estacion}</div>
-        ${est.vehiculos.length === 0 ? "<p style='text-align:center;opacity:.5'>Sin vehículos</p>" : ""}
+        ${est.vehiculos.length === 0
+          ? "<p style='text-align:center;opacity:.5'>Sin vehículos</p>"
+          : ""}
       `;
 
       est.vehiculos.forEach(v => {
@@ -83,32 +97,47 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalTiempoTotal = document.getElementById("modal-tiempo-total");
   const modalHistorial = document.getElementById("modal-historial");
 
-  document.getElementById("modal-close").onclick = () => modal.style.display = "none";
+  document.getElementById("modal-close").onclick = () => {
+    modal.style.display = "none";
+    pausaLPR = false;
+  };
 
   async function abrirModalVehiculo(est, veh) {
+    pausaLPR = true;
+    placaSeleccionada = veh.placa;
+
     modalPlaca.textContent = veh.placa;
     modalEstacion.textContent = est.estacion;
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
 
-    const res = await fetch(`${API_BASE_URL}/lpr/historial/${veh.placa}`, {
-      headers: { Authorization: "Bearer " + TOKEN }
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch(`${API_BASE_URL}/lpr/historial/${veh.placa}`, {
+        headers: { Authorization: "Bearer " + TOKEN }
+      });
 
-    modalHistorial.innerHTML = "";
-    data.historial.slice(0, 5).forEach(h => {
-      const li = document.createElement("li");
-      li.textContent =
-        `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")} (${formatTime(h.segundos_estacion)})`;
-      modalHistorial.appendChild(li);
-    });
+      if (!res.ok) return;
 
-    document.getElementById("btn-historial-completo").onclick =
-      () => abrirModalHistorialCompleto(veh.placa);
+      const data = await res.json();
+
+      modalHistorial.innerHTML = "";
+      data.historial.slice(0, 5).forEach(h => {
+        const li = document.createElement("li");
+        li.textContent =
+          `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")}
+          (${formatTime(h.segundos_estacion)})`;
+        modalHistorial.appendChild(li);
+      });
+
+    } catch (err) {
+      console.error("❌ Error historial", err);
+    }
 
     modal.style.display = "flex";
   }
+
+  document.getElementById("btn-historial-completo").onclick =
+    () => abrirModalHistorialCompleto(placaSeleccionada);
 
   // =====================================================
   // MODAL HISTORIAL COMPLETO
@@ -116,28 +145,139 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalHistComp = document.getElementById("modal-historial-completo");
   const tablaHistComp = document.getElementById("tabla-historial-completo");
 
-  document.getElementById("modal-historial-close").onclick =
-    () => modalHistComp.style.display = "none";
+  document.getElementById("modal-historial-close").onclick = () => {
+    modalHistComp.style.display = "none";
+    pausaLPR = false;
+  };
 
   async function abrirModalHistorialCompleto(placa) {
-    const res = await fetch(`${API_BASE_URL}/lpr/historial/${placa}`, {
-      headers: { Authorization: "Bearer " + TOKEN }
-    });
-    const data = await res.json();
+    pausaLPR = true;
 
-    tablaHistComp.innerHTML = "";
-    data.historial.forEach(h => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/lpr/historial/${placa}`, {
+        headers: { Authorization: "Bearer " + TOKEN }
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      tablaHistComp.innerHTML = "";
+
+      data.historial.forEach(h => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${h.estacion}</td>
+          <td>${new Date(h.inicio).toLocaleString("es-EC")}</td>
+          <td>${h.fin ? new Date(h.fin).toLocaleString("es-EC") : "-"}</td>
+          <td>${formatTime(h.segundos_estacion)}</td>
+        `;
+        tablaHistComp.appendChild(tr);
+      });
+
+      modalHistComp.style.display = "flex";
+
+    } catch (err) {
+      console.error("❌ Error historial completo", err);
+    }
+  }
+
+  // =====================================================
+  // MODAL SALIDAS
+  // =====================================================
+  const modalSalidas = document.getElementById("modal-salidas");
+  const tablaSalidas = document.getElementById("tabla-salidas");
+  const pageInfo = document.getElementById("salidas-page-info");
+
+  let paginaSalidas = 1;
+  const limiteSalidas = 10;
+  let ultimoTotal = 0;
+
+  document.getElementById("btn-ver-salidas").onclick = () => {
+    paginaSalidas = 1;
+    pausaLPR = true;
+    modalSalidas.style.display = "flex";
+    cargarSalidas();
+  };
+
+  document.getElementById("modal-salidas-close").onclick = () => {
+    modalSalidas.style.display = "none";
+    tablaSalidas.innerHTML = "";
+    pageInfo.textContent = "";
+    pausaLPR = false;
+  };
+
+  document.getElementById("btn-filtrar-salidas").onclick = () => {
+    paginaSalidas = 1;
+    cargarSalidas();
+  };
+
+  document.getElementById("salidas-prev").onclick = () => {
+    if (paginaSalidas > 1) {
+      paginaSalidas--;
+      cargarSalidas();
+    }
+  };
+
+  document.getElementById("salidas-next").onclick = () => {
+    if (paginaSalidas < Math.ceil(ultimoTotal / limiteSalidas)) {
+      paginaSalidas++;
+      cargarSalidas();
+    }
+  };
+
+  async function cargarSalidas() {
+    const desde = document.getElementById("salidas-desde").value;
+    const hasta = document.getElementById("salidas-hasta").value;
+    const placa = document.getElementById("salidas-placa").value;
+
+    const params = new URLSearchParams({
+      page: paginaSalidas,
+      limit: limiteSalidas
+    });
+
+    if (desde) params.append("desde", desde);
+    if (hasta) params.append("hasta", hasta);
+    if (placa) params.append("placa", placa);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/lpr/salidas?${params}`, {
+        headers: { Authorization: "Bearer " + TOKEN }
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      renderSalidas(data);
+
+    } catch (err) {
+      console.error("❌ Error salidas", err);
+    }
+  }
+
+  function renderSalidas(data) {
+    tablaSalidas.innerHTML = "";
+    ultimoTotal = data.total;
+
+    if (!data.data.length) {
+      tablaSalidas.innerHTML =
+        `<tr><td colspan="4">Sin resultados</td></tr>`;
+      pageInfo.textContent = "";
+      return;
+    }
+
+    data.data.forEach(v => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${h.estacion}</td>
-        <td>${new Date(h.inicio).toLocaleString("es-EC")}</td>
-        <td>${h.fin ? new Date(h.fin).toLocaleString("es-EC") : "-"}</td>
-        <td>${formatTime(h.segundos_estacion)}</td>
+        <td>${v.placa}</td>
+        <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
+        <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
+        <td>${formatTime(v.segundos_total)}</td>
       `;
-      tablaHistComp.appendChild(tr);
+      tablaSalidas.appendChild(tr);
     });
 
-    modalHistComp.style.display = "flex";
+    pageInfo.textContent =
+      `Página ${data.page} de ${Math.ceil(data.total / data.limit)}`;
   }
 
 });
