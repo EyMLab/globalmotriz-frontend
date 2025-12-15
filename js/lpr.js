@@ -268,7 +268,9 @@ document.addEventListener("DOMContentLoaded", () => {
     data.data.forEach(v => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${v.placa}</td>
+        <td class="placa-link" data-placa="${v.placa}">
+          ${v.placa}
+        </td>
         <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
         <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
         <td>${formatTime(v.segundos_total)}</td>
@@ -276,8 +278,17 @@ document.addEventListener("DOMContentLoaded", () => {
       tablaSalidas.appendChild(tr);
     });
 
+    // 🔥 EVENTO CLICK (AQUÍ es donde debe ir)
+    document.querySelectorAll(".placa-link").forEach(td => {
+      td.addEventListener("click", () => {
+        const placa = td.dataset.placa;
+        abrirModalHistorialCompleto(placa);
+      });
+    });
+
     pageInfo.textContent =
       `Página ${data.page} de ${Math.ceil(data.total / data.limit)}`;
   }
+
 
 });

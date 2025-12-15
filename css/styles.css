@@ -595,18 +595,19 @@ table input[type="checkbox"] {
   margin-top: 4px;
 }
 
-/* ======== FOOTER ======== */
-.kanban-footer {
-  margin-top: 20px;
-  padding: 12px;
-  text-align: center;
-  background: #eef6ff;
-  border-radius: 10px;
-  border: 1px solid #d4e4f7;
-  font-size: 15px;
-  display: flex;
-  justify-content: space-between;
+/* Botón footer LPR */
+.kanban-footer .btn-footer {
+  background: #0077cc;
+  color: #ffffff;
+  border: 1px solid #0077cc;
+  font-weight: 600;
 }
+
+.kanban-footer .btn-footer:hover {
+  background: #005fa3;
+  color: #ffffff;
+}
+
 
 @keyframes aparecer {
   from { transform: scale(0.8); opacity: 0; }
@@ -731,6 +732,17 @@ table input[type="checkbox"] {
   background: #ccc;
   cursor: not-allowed;
 }
+
+.placa-link {
+  cursor: pointer;
+  color: #0077cc;
+  font-weight: 600;
+}
+
+.placa-link:hover {
+  text-decoration: underline;
+}
+
 
 /* ======================================================================
    ================== FIN FIX PESTAÑA TALLER ==================
