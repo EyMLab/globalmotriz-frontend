@@ -646,12 +646,14 @@ table.usuarios-table td {
 .swal2-icon.swal2-question {
   border-color: #87adbd !important;
   color: #87adbd !important;
+  font-size: 0 !important;
 }
 
 .swal2-icon.swal2-question::before {
   content: "?" !important;
   font-size: 48px !important;
-  line-height: 70px !important;
+  line-height: 64px !important;
+  display: block !important;
 }
 
 .swal2-icon.swal2-warning {
