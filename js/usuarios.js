@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         <div class="form-group">
           <label>Contraseña</label>
-          <input id="nueva-clave" type="password" class="swal2-input" placeholder="Mínimo 6 caracteres">
+          <input id="nueva-clave" type="password" class="swal2-input" placeholder="Ingresa la contraseña">
         </div>
 
         <div class="form-row">
@@ -128,11 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!usuario || !clave) {
           Swal.showValidationMessage('Todos los campos son obligatorios');
-          return false;
-        }
-
-        if (clave.length < 6) {
-          Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
           return false;
         }
 
@@ -237,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       html: `
         <div class="form-group">
           <label>Nueva contraseña</label>
-          <input id="nueva-password" type="password" class="swal2-input" placeholder="Mínimo 6 caracteres">
+          <input id="nueva-password" type="password" class="swal2-input" placeholder="Ingresa la nueva contraseña">
         </div>
       `,
       showCancelButton: true,
@@ -248,11 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!password) {
           Swal.showValidationMessage('La contraseña es obligatoria');
-          return false;
-        }
-
-        if (password.length < 6) {
-          Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
           return false;
         }
 
