@@ -896,8 +896,8 @@ table tr:hover {
 }
 
 /* ======================================================================
-   15) MÓDULO USUARIOS (EXCLUSIVO)
-   ====================================================================== */
+   15) MÓDULO USUARIOS (EXCLUSIVO – CORREGIDO)
+====================================================================== */
 
 /* Header usuarios */
 .usuarios-header {
@@ -930,7 +930,7 @@ table tr:hover {
   background: var(--primary-dark);
 }
 
-/* Tabla usuarios (ajustes suaves sin romper tablas globales) */
+/* Tabla usuarios */
 table.usuarios-table th {
   text-transform: uppercase;
   font-size: 13px;
@@ -938,46 +938,28 @@ table.usuarios-table th {
 
 table.usuarios-table td {
   vertical-align: middle;
+  font-size: 14px;
 }
 
-/* Badges */
+/* =========================
+   BADGES NEUTROS (SIN COLOR)
+========================= */
 .badge {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 10px;
   text-transform: uppercase;
+
+  background: #f1f3f5;
+  color: #333;
+  border: 1px solid #dcdcdc;
 }
 
-/* Roles */
-.badge-admin {
-  background: #e3f2fd;
-  color: #0d47a1;
-}
-
-.badge-bodega {
-  background: #e8f5e9;
-  color: #1b5e20;
-}
-
-.badge-asesor {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-/* Localidad */
-.badge-matriz {
-  background: #ede7f6;
-  color: #4527a0;
-}
-
-.badge-sucursal {
-  background: #fce4ec;
-  color: #880e4f;
-}
-
-/* Acciones */
+/* =========================
+   Acciones
+========================= */
 .user-actions {
   display: flex;
   justify-content: center;
@@ -986,6 +968,72 @@ table.usuarios-table td {
 }
 
 .user-actions button {
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-size: 13px;
+  border-radius: var(--r-sm);
+}
+
+/* =========================
+   Ajuste botones acciones
+========================= */
+.user-actions .btn-obs {
+  background: var(--primary);
+}
+
+.user-actions .btn-obs:hover {
+  background: var(--primary-dark);
+}
+
+.user-actions .btn-eliminar {
+  background: var(--danger);
+}
+
+.user-actions .btn-eliminar:hover {
+  background: var(--danger-dark);
+}
+
+
+/* ======================================================================
+   🧩 MODALES CORPORATIVOS (SweetAlert + custom)
+====================================================================== */
+
+.swal2-popup {
+  width: 420px !important;
+  padding: 28px 26px 24px !important;
+  border-radius: 14px !important;
+}
+
+.swal2-title {
+  font-size: 22px !important;
+  margin-bottom: 8px !important;
+}
+
+.swal2-html-container {
+  margin: 18px 0 10px !important;
+  text-align: left !important;
+}
+
+/* Inputs */
+.swal2-input,
+.swal2-select {
+  height: 40px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  padding: 0 12px !important;
+}
+
+/* Separación entre campos */
+.swal2-input + label,
+label + .swal2-input,
+.swal2-select + label {
+  margin-top: 10px;
+}
+
+/* Labels */
+.swal2-html-container label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0 4px;
+  color: #444;
 }
