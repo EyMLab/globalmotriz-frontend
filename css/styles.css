@@ -621,12 +621,12 @@ table.usuarios-table td {
 .swal2-popup {
   font-family: var(--font-main);
   border-radius: 14px !important;
-  padding: 28px 32px 24px !important;
+  padding: 24px 28px 22px !important;
 }
 
 /* Modales de confirmación más pequeños */
 .swal2-popup:not(:has(.form-group)):not(:has(.form-row)) {
-  width: 400px !important;
+  width: 380px !important;
 }
 
 /* Modales de formulario más anchos */
@@ -635,17 +635,23 @@ table.usuarios-table td {
   width: 480px !important;
 }
 
-/* Modal de confirmación (warning, question) */
+/* Iconos del modal */
 .swal2-icon {
-  margin: 10px auto 20px !important;
-  width: 80px !important;
-  height: 80px !important;
+  margin: 15px auto 18px !important;
+  width: 70px !important;
+  height: 70px !important;
+  border-width: 3px !important;
 }
 
 .swal2-icon.swal2-question {
   border-color: #87adbd !important;
   color: #87adbd !important;
-  font-size: 50px !important;
+}
+
+.swal2-icon.swal2-question::before {
+  content: "?" !important;
+  font-size: 48px !important;
+  line-height: 70px !important;
 }
 
 .swal2-icon.swal2-warning {
@@ -653,19 +659,34 @@ table.usuarios-table td {
   color: #f8bb86 !important;
 }
 
+.swal2-icon.swal2-success {
+  border-color: #a5dc86 !important;
+  color: #a5dc86 !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #f27474 !important;
+  color: #f27474 !important;
+}
+
+/* Título */
 .swal2-title {
   color: var(--primary);
   font-weight: 600;
-  font-size: 22px !important;
-  margin-bottom: 8px !important;
+  font-size: 20px !important;
+  margin: 0 0 12px 0 !important;
+  padding: 0 !important;
   text-align: center;
 }
 
+/* Contenido de texto */
 .swal2-html-container {
-  margin: 10px 0 20px !important;
+  margin: 0 0 20px 0 !important;
+  padding: 0 !important;
   text-align: center !important;
   font-size: 15px !important;
   color: #545454 !important;
+  line-height: 1.5 !important;
 }
 
 /* Para modales con formularios */
@@ -729,8 +750,9 @@ table.usuarios-table td {
 
 /* Botones */
 .swal2-actions {
-  margin-top: 24px !important;
-  gap: 12px !important;
+  margin: 22px 0 0 0 !important;
+  padding: 0 !important;
+  gap: 10px !important;
   justify-content: center !important;
 }
 
@@ -738,13 +760,13 @@ table.usuarios-table td {
 .swal2-cancel,
 .swal2-deny {
   border-radius: 8px !important;
-  padding: 10px 24px !important;
+  padding: 9px 22px !important;
   font-weight: 600 !important;
   font-size: 14px !important;
   transition: all 0.2s ease !important;
   border: none !important;
-  min-width: 110px !important;
-  margin: 0 6px !important;
+  min-width: 105px !important;
+  margin: 0 !important;
 }
 
 .swal2-confirm {
