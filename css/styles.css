@@ -621,19 +621,31 @@ table.usuarios-table td {
 .swal2-popup {
   font-family: var(--font-main);
   border-radius: 14px !important;
+  padding: 28px 32px 24px !important;
+}
+
+/* Modales de confirmación más pequeños */
+.swal2-popup:not(:has(.form-group)):not(:has(.form-row)) {
+  width: 400px !important;
+}
+
+/* Modales de formulario más anchos */
+.swal2-popup:has(.form-group),
+.swal2-popup:has(.form-row) {
   width: 480px !important;
-  padding: 32px 36px 28px !important;
 }
 
 /* Modal de confirmación (warning, question) */
 .swal2-icon {
-  margin: 20px auto !important;
+  margin: 10px auto 20px !important;
+  width: 80px !important;
+  height: 80px !important;
 }
 
 .swal2-icon.swal2-question {
   border-color: #87adbd !important;
   color: #87adbd !important;
-  font-size: 60px !important;
+  font-size: 50px !important;
 }
 
 .swal2-icon.swal2-warning {
@@ -644,15 +656,15 @@ table.usuarios-table td {
 .swal2-title {
   color: var(--primary);
   font-weight: 600;
-  font-size: 24px !important;
-  margin-bottom: 10px !important;
+  font-size: 22px !important;
+  margin-bottom: 8px !important;
   text-align: center;
 }
 
 .swal2-html-container {
   margin: 10px 0 20px !important;
   text-align: center !important;
-  font-size: 16px !important;
+  font-size: 15px !important;
   color: #545454 !important;
 }
 
@@ -717,7 +729,7 @@ table.usuarios-table td {
 
 /* Botones */
 .swal2-actions {
-  margin-top: 28px !important;
+  margin-top: 24px !important;
   gap: 12px !important;
   justify-content: center !important;
 }
@@ -726,12 +738,12 @@ table.usuarios-table td {
 .swal2-cancel,
 .swal2-deny {
   border-radius: 8px !important;
-  padding: 11px 28px !important;
+  padding: 10px 24px !important;
   font-weight: 600 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   transition: all 0.2s ease !important;
   border: none !important;
-  min-width: 120px !important;
+  min-width: 110px !important;
   margin: 0 6px !important;
 }
 
