@@ -299,15 +299,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // ======================================================
   cargarInventario();
 
-  // ======================================================
-  // EXPONER FUNCIONES PARA BOTONES (OBLIGATORIO)
-  // ======================================================
-  window.modalEditar = modalEditar;
-  window.modalStock = modalStock;
-  window.modalEliminar = modalEliminar;
-  window.modalNuevoInsumo = modalNuevoInsumo;
-  window.modalImportarExcel = modalImportarExcel;
-  window.descargarPlantilla = descargarPlantilla;
+// ======================================================
+// EXPONER FUNCIONES PARA BOTONES (OBLIGATORIO)
+// ======================================================
+window.modalEditar = modalEditar;
+window.modalStock = modalStock;
+window.modalEliminar = modalEliminar;
+window.modalNuevoInsumo = modalNuevoInsumo;
+window.modalImportarExcel = modalImportarExcel;
+window.descargarPlantilla = descargarPlantilla;
 
 
 });
