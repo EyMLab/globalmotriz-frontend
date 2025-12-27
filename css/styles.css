@@ -784,3 +784,113 @@ table input[type="checkbox"] {
 .placa-link:hover {
   text-decoration: underline;
 }
+
+/* ======================================================================
+   🎨 AJUSTES ESTÉTICOS (Navbar, Botones, Tablas, Kanban, Login)
+   ====================================================================== */
+
+/* =======================
+   1) NAVBAR MÁS SOBRIO
+======================= */
+.navbar {
+  background-color: #0f4c81; /* azul más sobrio */
+}
+
+.nav-links a {
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.nav-links a.active {
+  background: rgba(255,255,255,0.9);
+  color: #0f4c81;
+}
+
+/* =======================
+   2) BOTONES MÁS PLANOS
+======================= */
+.btn-obs,
+.btn-eliminar,
+.btn-nav,
+.pagination-controls button {
+  box-shadow: none;
+  transform: none !important;
+}
+
+.btn-obs:hover,
+.btn-eliminar:hover,
+.btn-nav:hover {
+  transform: none;
+}
+
+/* Hover más sutil */
+.btn-obs:hover {
+  background-color: #005fa3;
+}
+
+.btn-eliminar:hover {
+  background-color: #cc0000;
+}
+
+/* =======================
+   3) TABLAS MÁS COMPACTAS
+======================= */
+table {
+  font-size: 13px;
+}
+
+table th {
+  padding: 8px;
+}
+
+table td {
+  padding: 6px 8px;
+}
+
+table tr:hover {
+  background: #f1f7ff;
+}
+
+/* =======================
+   4) KANBAN MÁS LIMPIO
+======================= */
+.kanban-column {
+  padding: 12px;
+}
+
+.vehicle-card {
+  padding: 8px;
+  margin-bottom: 8px;
+  border-left-width: 4px;
+}
+
+.vehicle-card .placa {
+  font-size: 18px;
+}
+
+.vehicle-card .time {
+  font-size: 13px;
+}
+
+/* =======================
+   5) LOGIN MÁS MINIMALISTA
+======================= */
+.login-container {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.login-container input {
+  border-radius: 4px;
+}
+
+.login-container button {
+  border-radius: 4px;
+  background: #0f4c81;
+}
+
+.login-container button:hover {
+  background: #005fa3;
+}
