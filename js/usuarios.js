@@ -68,9 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tr.innerHTML = `
         <td>${u.usuario}</td>
-        <td>${u.rol}</td>
+        <td><span class="badge">${u.rol}</span></td>
         <td>${u.localidad}</td>
-        <td>
+        <td class="user-actions">
           <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
           <button class="btn-obs" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">Clave</button>
           <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>
@@ -88,24 +88,38 @@ document.addEventListener('DOMContentLoaded', () => {
     Swal.fire({
       title: 'Nuevo usuario',
       html: `
-        <input id="nuevo-usuario" class="swal2-input" placeholder="Usuario">
-        <input id="nueva-clave" type="password" class="swal2-input" placeholder="Contraseña">
+        <div class="form-group">
+          <label>Nombre de usuario</label>
+          <input id="nuevo-usuario" class="swal2-input" placeholder="Ej: jperez">
+        </div>
+        
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input id="nueva-clave" type="password" class="swal2-input" placeholder="Mínimo 6 caracteres">
+        </div>
 
-        <label>Rol</label>
-        <select id="nuevo-rol" class="swal2-input">
-          <option value="admin">Admin</option>
-          <option value="bodega">Bodega</option>
-          <option value="asesor">Asesor</option>
-        </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rol</label>
+            <select id="nuevo-rol" class="swal2-select">
+              <option value="admin">Admin</option>
+              <option value="bodega">Bodega</option>
+              <option value="asesor">Asesor</option>
+            </select>
+          </div>
 
-        <label>Localidad</label>
-        <select id="nueva-localidad" class="swal2-input">
-          <option value="MATRIZ">MATRIZ</option>
-          <option value="SUCURSAL">SUCURSAL</option>
-        </select>
+          <div class="form-group">
+            <label>Localidad</label>
+            <select id="nueva-localidad" class="swal2-select">
+              <option value="MATRIZ">MATRIZ</option>
+              <option value="SUCURSAL">SUCURSAL</option>
+            </select>
+          </div>
+        </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Crear',
+      cancelButtonText: 'Cancelar',
       preConfirm: () => {
         const usuario = document.getElementById('nuevo-usuario').value.trim();
         const clave = document.getElementById('nueva-clave').value.trim();
@@ -114,6 +128,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!usuario || !clave) {
           Swal.showValidationMessage('Todos los campos son obligatorios');
+          return false;
+        }
+
+        if (clave.length < 6) {
+          Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
           return false;
         }
 
@@ -133,35 +152,61 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(() => {
           Swal.fire('✅ Usuario creado', '', 'success');
           cargarUsuarios();
+        })
+        .catch(() => {
+          Swal.fire('Error', 'No se pudo crear el usuario', 'error');
         });
     });
   };
 
   // ===============================
-  // Acciones
+  // Editar usuario
   // ===============================
   window.editarUsuario = function (id, usuario, rol, localidad) {
     Swal.fire({
       title: 'Editar usuario',
       html: `
-        <input id="usuario-edit" class="swal2-input" value="${usuario}">
-        <select id="rol-edit" class="swal2-input">
-          <option value="admin" ${rol === 'admin' ? 'selected' : ''}>Admin</option>
-          <option value="bodega" ${rol === 'bodega' ? 'selected' : ''}>Bodega</option>
-          <option value="asesor" ${rol === 'asesor' ? 'selected' : ''}>Asesor</option>
-        </select>
-        <select id="localidad-edit" class="swal2-input">
-          <option value="MATRIZ" ${localidad === 'MATRIZ' ? 'selected' : ''}>MATRIZ</option>
-          <option value="SUCURSAL" ${localidad === 'SUCURSAL' ? 'selected' : ''}>SUCURSAL</option>
-        </select>
+        <div class="form-group">
+          <label>Nombre de usuario</label>
+          <input id="usuario-edit" class="swal2-input" value="${usuario}" placeholder="Nombre de usuario">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rol</label>
+            <select id="rol-edit" class="swal2-select">
+              <option value="admin" ${rol === 'admin' ? 'selected' : ''}>Admin</option>
+              <option value="bodega" ${rol === 'bodega' ? 'selected' : ''}>Bodega</option>
+              <option value="asesor" ${rol === 'asesor' ? 'selected' : ''}>Asesor</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Localidad</label>
+            <select id="localidad-edit" class="swal2-select">
+              <option value="MATRIZ" ${localidad === 'MATRIZ' ? 'selected' : ''}>MATRIZ</option>
+              <option value="SUCURSAL" ${localidad === 'SUCURSAL' ? 'selected' : ''}>SUCURSAL</option>
+            </select>
+          </div>
+        </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Guardar',
-      preConfirm: () => ({
-        usuario: document.getElementById('usuario-edit').value.trim(),
-        rol: document.getElementById('rol-edit').value,
-        localidad: document.getElementById('localidad-edit').value
-      })
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const usuarioEdit = document.getElementById('usuario-edit').value.trim();
+        
+        if (!usuarioEdit) {
+          Swal.showValidationMessage('El nombre de usuario es obligatorio');
+          return false;
+        }
+
+        return {
+          usuario: usuarioEdit,
+          rol: document.getElementById('rol-edit').value,
+          localidad: document.getElementById('localidad-edit').value
+        };
+      }
     }).then(r => {
       if (!r.isConfirmed) return;
 
@@ -172,20 +217,49 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(r.value)
-      }).then(() => {
-        Swal.fire('✅ Usuario actualizado', '', 'success');
-        cargarUsuarios();
-      });
+      })
+        .then(() => {
+          Swal.fire('✅ Usuario actualizado', '', 'success');
+          cargarUsuarios();
+        })
+        .catch(() => {
+          Swal.fire('Error', 'No se pudo actualizar el usuario', 'error');
+        });
     });
   };
 
+  // ===============================
+  // Cambiar clave
+  // ===============================
   window.cambiarClaveUsuario = function (id, usuario) {
     Swal.fire({
       title: `Cambiar clave de ${usuario}`,
-      input: 'password',
-      showCancelButton: true
+      html: `
+        <div class="form-group">
+          <label>Nueva contraseña</label>
+          <input id="nueva-password" type="password" class="swal2-input" placeholder="Mínimo 6 caracteres">
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const password = document.getElementById('nueva-password').value.trim();
+        
+        if (!password) {
+          Swal.showValidationMessage('La contraseña es obligatoria');
+          return false;
+        }
+
+        if (password.length < 6) {
+          Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+          return false;
+        }
+
+        return password;
+      }
     }).then(r => {
-      if (!r.isConfirmed || !r.value.trim()) return;
+      if (!r.isConfirmed) return;
 
       fetch(`${API_BASE_URL}/usuarios/${id}/password`, {
         method: 'PATCH',
@@ -193,29 +267,43 @@ document.addEventListener('DOMContentLoaded', () => {
           Authorization: 'Bearer ' + token,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ nueva: r.value.trim() })
-      }).then(() =>
-        Swal.fire('✅ Contraseña actualizada', '', 'success')
-      );
+        body: JSON.stringify({ nueva: r.value })
+      })
+        .then(() => {
+          Swal.fire('✅ Contraseña actualizada', '', 'success');
+        })
+        .catch(() => {
+          Swal.fire('Error', 'No se pudo actualizar la contraseña', 'error');
+        });
     });
   };
 
+  // ===============================
+  // Eliminar usuario
+  // ===============================
   window.eliminarUsuario = function (id) {
     Swal.fire({
       title: '¿Eliminar usuario?',
+      text: 'Esta acción no se puede deshacer',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33'
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
     }).then(r => {
       if (!r.isConfirmed) return;
 
       fetch(`${API_BASE_URL}/usuarios/${id}`, {
         method: 'DELETE',
         headers: { Authorization: 'Bearer ' + token }
-      }).then(() => {
-        Swal.fire('✅ Usuario eliminado', '', 'success');
-        cargarUsuarios();
-      });
+      })
+        .then(() => {
+          Swal.fire('✅ Usuario eliminado', '', 'success');
+          cargarUsuarios();
+        })
+        .catch(() => {
+          Swal.fire('Error', 'No se pudo eliminar el usuario', 'error');
+        });
     });
   };
 

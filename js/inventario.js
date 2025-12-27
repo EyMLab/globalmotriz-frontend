@@ -250,31 +250,60 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================================================
-     MODALES (ORIGINALES – FUNCIONALES)
+     MODALES MEJORADOS
   ====================================================== */
 
   async function modalNuevoInsumo() {
     const { value: form } = await Swal.fire({
       title: "Nuevo Insumo",
       html: `
-        <input id="codigo" class="swal2-input" placeholder="Código">
-        <input id="nombre" class="swal2-input" placeholder="Nombre">
-        <select id="tipo" class="swal2-input">
-          <option value="STOCK">STOCK</option>
-          <option value="DIRECTO">DIRECTO</option>
-        </select>
-        <input id="unidad" class="swal2-input" placeholder="Unidad">
-        <input id="min_stock" type="number" class="swal2-input" placeholder="Stock mínimo">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código</label>
+            <input id="codigo" class="swal2-input" placeholder="Ej: INS001">
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="tipo" class="swal2-select">
+              <option value="STOCK">STOCK</option>
+              <option value="DIRECTO">DIRECTO</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Nombre / Descripción</label>
+          <input id="nombre" class="swal2-input" placeholder="Ej: Focos 2 contactos">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unidad</label>
+            <input id="unidad" class="swal2-input" placeholder="Ej: UNIDAD, KG">
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input id="min_stock" type="number" class="swal2-input" placeholder="0" value="0">
+          </div>
+        </div>
       `,
       showCancelButton: true,
       confirmButtonText: "Crear",
-      preConfirm: () => ({
-        codigo: codigo.value.trim(),
-        nombre: nombre.value.trim(),
-        tipo: tipo.value,
-        unidad: unidad.value.trim(),
-        min_stock: min_stock.value
-      })
+      cancelButtonText: "Cancelar",
+      preConfirm: () => {
+        const codigo = document.getElementById('codigo').value.trim();
+        const nombre = document.getElementById('nombre').value.trim();
+        const tipo = document.getElementById('tipo').value;
+        const unidad = document.getElementById('unidad').value.trim();
+        const min_stock = document.getElementById('min_stock').value;
+
+        if (!codigo || !nombre) {
+          Swal.showValidationMessage('Código y Nombre son obligatorios');
+          return false;
+        }
+
+        return { codigo, nombre, tipo, unidad, min_stock };
+      }
     });
 
     if (!form) return;
@@ -285,23 +314,139 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify(form)
     });
 
-    Swal.fire('✅ Guardado');
+    Swal.fire('✅ Insumo creado', '', 'success');
+    cargarInventario();
+  }
+
+  async function modalEditar(codigo, localidad) {
+    const res = await apiFetch(`/inventario/info/${codigo}/${localidad}`);
+    const data = await safeJson(res);
+
+    if (!data) {
+      Swal.fire('Error', 'No se pudo cargar la información', 'error');
+      return;
+    }
+
+    const { value: form } = await Swal.fire({
+      title: `Editar ${codigo}`,
+      html: `
+        <div class="form-group">
+          <label>Nombre / Descripción</label>
+          <input id="nombre" class="swal2-input" value="${data.nombre}" placeholder="Nombre del insumo">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unidad</label>
+            <input id="unidad" class="swal2-input" value="${data.unidad ?? ''}" placeholder="Ej: UNIDAD, KG">
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input id="min_stock" type="number" class="swal2-input" value="${data.min_stock}" placeholder="0">
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Guardar",
+      cancelButtonText: "Cancelar",
+      preConfirm: () => {
+        const nombre = document.getElementById('nombre').value.trim();
+        const unidad = document.getElementById('unidad').value.trim();
+        const min_stock = Number(document.getElementById('min_stock').value);
+
+        if (!nombre) {
+          Swal.showValidationMessage('El nombre es obligatorio');
+          return false;
+        }
+
+        return { nombre, unidad, min_stock };
+      }
+    });
+
+    if (!form) return;
+
+    await apiFetch(`/inventario/update/${codigo}/${localidad}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    });
+
+    Swal.fire('✅ Insumo actualizado', '', 'success');
+    cargarInventario();
+  }
+
+  async function modalStock(codigo, localidad) {
+    const { value: form } = await Swal.fire({
+      title: `Stock • ${codigo}`,
+      html: `
+        <div class="form-group">
+          <label>Cantidad</label>
+          <input id="qty" type="number" class="swal2-input" placeholder="Ingresa la cantidad" min="1">
+        </div>
+        
+        <div class="form-group">
+          <label>Operación</label>
+          <select id="tipo" class="swal2-select">
+            <option value="sumar">Sumar (+)</option>
+            <option value="restar">Restar (-)</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Motivo (opcional, recomendado para restas)</label>
+          <textarea id="motivo" class="swal2-textarea" placeholder="Describe el motivo de la operación..."></textarea>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Aplicar",
+      cancelButtonText: "Cancelar",
+      preConfirm: () => {
+        const qty = Number(document.getElementById('qty').value);
+        const tipo = document.getElementById('tipo').value;
+        const motivo = document.getElementById('motivo').value.trim();
+
+        if (!qty || qty <= 0) {
+          Swal.showValidationMessage('La cantidad debe ser mayor a 0');
+          return false;
+        }
+
+        return {
+          codigo,
+          qty,
+          tipo,
+          motivo,
+          localidad
+        };
+      }
+    });
+
+    if (!form) return;
+
+    await apiFetch('/inventario/stock-adjust', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    });
+
+    Swal.fire('✅ Stock actualizado', '', 'success');
     cargarInventario();
   }
 
   async function modalEliminar(codigo, localidad) {
     const ok = await Swal.fire({
-      title: `Eliminar ${codigo}`,
+      title: `¿Eliminar ${codigo}?`,
       text: `Localidad: ${localidad}`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33'
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
     });
 
     if (!ok.isConfirmed) return;
 
     await apiFetch(`/inventario/${codigo}/${localidad}`, { method: 'DELETE' });
-    Swal.fire('✅ Eliminado');
+    Swal.fire('✅ Insumo eliminado', '', 'success');
     cargarInventario();
   }
 
@@ -320,18 +465,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const { value: f } = await Swal.fire({
       title: "Importar inventario",
       html: `
-        <select id="locX" class="swal2-input">
-          <option value="MATRIZ">MATRIZ</option>
-          <option value="SUCURSAL">SUCURSAL</option>
-        </select>
-        <input type="file" id="fileX" class="swal2-file" accept=".xlsx">
+        <div class="form-group">
+          <label>Localidad</label>
+          <select id="locX" class="swal2-select">
+            <option value="MATRIZ">MATRIZ</option>
+            <option value="SUCURSAL">SUCURSAL</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Archivo Excel (.xlsx)</label>
+          <input type="file" id="fileX" class="swal2-input" accept=".xlsx" style="padding:10px;">
+        </div>
       `,
       showCancelButton: true,
       confirmButtonText: "Subir",
+      cancelButtonText: "Cancelar",
       preConfirm: () => {
         const file = document.getElementById('fileX').files[0];
-        if (!file) return Swal.showValidationMessage('Selecciona archivo');
-        return { file, localidad: locX.value };
+        const localidad = document.getElementById('locX').value;
+
+        if (!file) {
+          Swal.showValidationMessage('Selecciona un archivo');
+          return false;
+        }
+
+        return { file, localidad };
       }
     });
 
@@ -342,73 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('localidad', f.localidad);
 
     await apiFetch('/inventario/import', { method: 'POST', body: fd });
-    Swal.fire('✅ Importado');
-    cargarInventario();
-  }
-
-  async function modalStock(codigo, localidad) {
-    const { value: form } = await Swal.fire({
-      title: `Stock · ${codigo}`,
-      html: `
-        <input id="qty" type="number" class="swal2-input" placeholder="Cantidad">
-        <select id="tipo" class="swal2-input">
-          <option value="sumar">Sumar</option>
-          <option value="restar">Restar</option>
-        </select>
-        <input id="motivo" class="swal2-input" placeholder="Motivo (solo resta)">
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Aplicar",
-      preConfirm: () => ({
-        codigo,
-        qty: Number(qty.value),
-        tipo: tipo.value,
-        motivo: motivo.value,
-        localidad
-      })
-    });
-
-    if (!form || !form.qty) return;
-
-    await apiFetch('/inventario/stock-adjust', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-
-    Swal.fire('✅ Stock actualizado');
-    cargarInventario();
-  }
-
-  async function modalEditar(codigo, localidad) {
-    const res = await apiFetch(`/inventario/info/${codigo}/${localidad}`);
-    const data = await safeJson(res);
-
-    const { value: form } = await Swal.fire({
-      title: `Editar ${codigo}`,
-      html: `
-        <input id="nombre" class="swal2-input" value="${data.nombre}">
-        <input id="unidad" class="swal2-input" value="${data.unidad ?? ''}">
-        <input id="min_stock" type="number" class="swal2-input" value="${data.min_stock}">
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Guardar",
-      preConfirm: () => ({
-        nombre: nombre.value.trim(),
-        unidad: unidad.value.trim(),
-        min_stock: Number(min_stock.value)
-      })
-    });
-
-    if (!form) return;
-
-    await apiFetch(`/inventario/update/${codigo}/${localidad}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-
-    Swal.fire('✅ Guardado');
+    Swal.fire('✅ Inventario importado', '', 'success');
     cargarInventario();
   }
 
