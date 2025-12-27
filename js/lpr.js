@@ -3,21 +3,53 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
 
+  if (!TOKEN) {
+    localStorage.clear();
+    window.location.href = "index.html";
+    return;
+  }
+
+  /* ======================================================
+     ESTADO GLOBAL
+  ====================================================== */
   let pausaLPR = false;
   let placaSeleccionada = null;
 
-  // =====================================================
-  // UTILIDAD: cerrar todos los modales
-  // =====================================================
+  let paginaSalidas = 1;
+  const limiteSalidas = 10;
+  let ultimoTotal = 0;
+
+  /* ======================================================
+     HELPERS
+  ====================================================== */
+  function redirectLogin() {
+    localStorage.clear();
+    window.location.href = "index.html";
+  }
+
+  async function apiFetch(path) {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { Authorization: "Bearer " + TOKEN }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      redirectLogin();
+      return null;
+    }
+
+    return res;
+  }
+
+  async function safeJson(res) {
+    try { return await res.json(); } catch { return null; }
+  }
+
   function cerrarTodosLosModales() {
     document.querySelectorAll(".modal-vehiculo").forEach(m => {
       m.style.display = "none";
     });
   }
 
-  // =====================================================
-  // FORMATEO TIEMPO
-  // =====================================================
   function formatTime(seconds) {
     const dias = Math.floor(seconds / 86400);
     const horas = Math.floor((seconds % 86400) / 3600);
@@ -31,20 +63,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return out.join(" ");
   }
 
-  // =====================================================
-  // CARGAR KANBAN
-  // =====================================================
+  /* ======================================================
+     KANBAN PRINCIPAL
+  ====================================================== */
   async function cargarLPR() {
     if (pausaLPR) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/lpr/estado`, {
-        headers: { Authorization: "Bearer " + TOKEN }
-      });
+      const res = await apiFetch("/lpr/estado");
+      if (!res || !res.ok) return;
 
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = await safeJson(res);
       renderKanban(data);
 
     } catch (err) {
@@ -72,13 +101,11 @@ document.addEventListener("DOMContentLoaded", () => {
       est.vehiculos.forEach(v => {
         const card = document.createElement("div");
         card.className = "vehicle-card";
-
         card.innerHTML = `
           <div class="placa">${v.placa}</div>
           <div class="time">En estación: ${formatTime(v.segundos_estacion)}</div>
           <div class="time">En taller: ${formatTime(v.segundos_total)}</div>
         `;
-
         card.onclick = () => abrirModalVehiculo(est, v);
         col.appendChild(card);
       });
@@ -96,9 +123,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(cargarLPR, 3000);
   cargarLPR();
 
-  // =====================================================
-  // MODAL VEHÍCULO
-  // =====================================================
+  /* ======================================================
+     MODAL VEHÍCULO
+  ====================================================== */
   const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
   const modalEstacion = document.getElementById("modal-estacion");
@@ -122,13 +149,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/lpr/historial/${veh.placa}`, {
-        headers: { Authorization: "Bearer " + TOKEN }
-      });
+      const res = await apiFetch(`/lpr/historial/${veh.placa}`);
+      if (!res || !res.ok) return;
 
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = await safeJson(res);
       modalHistorial.innerHTML = "";
 
       data.historial.slice(0, 5).forEach(h => {
@@ -150,9 +174,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (placaSeleccionada) abrirModalHistorialCompleto(placaSeleccionada);
   };
 
-  // =====================================================
-  // MODAL HISTORIAL COMPLETO
-  // =====================================================
+  /* ======================================================
+     MODAL HISTORIAL COMPLETO
+  ====================================================== */
   const modalHistComp = document.getElementById("modal-historial-completo");
   const tablaHistComp = document.getElementById("tabla-historial-completo");
 
@@ -166,13 +190,10 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/lpr/historial/${placa}`, {
-        headers: { Authorization: "Bearer " + TOKEN }
-      });
+      const res = await apiFetch(`/lpr/historial/${placa}`);
+      if (!res || !res.ok) return;
 
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = await safeJson(res);
       tablaHistComp.innerHTML = "";
 
       data.historial.forEach(h => {
@@ -193,16 +214,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // =====================================================
-  // MODAL SALIDAS
-  // =====================================================
+  /* ======================================================
+     MODAL SALIDAS
+  ====================================================== */
   const modalSalidas = document.getElementById("modal-salidas");
   const tablaSalidas = document.getElementById("tabla-salidas");
   const pageInfo = document.getElementById("salidas-page-info");
-
-  let paginaSalidas = 1;
-  const limiteSalidas = 10;
-  let ultimoTotal = 0;
 
   document.getElementById("btn-ver-salidas").onclick = () => {
     cerrarTodosLosModales();
@@ -251,13 +268,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (placa) params.append("placa", placa);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/lpr/salidas?${params}`, {
-        headers: { Authorization: "Bearer " + TOKEN }
-      });
+      const res = await apiFetch(`/lpr/salidas?${params}`);
+      if (!res || !res.ok) return;
 
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = await safeJson(res);
       renderSalidas(data);
 
     } catch (err) {
@@ -270,8 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ultimoTotal = data.total;
 
     if (!data.data.length) {
-      tablaSalidas.innerHTML =
-        `<tr><td colspan="4">Sin resultados</td></tr>`;
+      tablaSalidas.innerHTML = `<tr><td colspan="4">Sin resultados</td></tr>`;
       pageInfo.textContent = "";
       return;
     }
