@@ -78,9 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${u.rol}</td>
         <td>${u.localidad}</td>
         <td>
-          <button class="btn-accion" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">✏️ Editar</button>
-          <button class="btn-accion" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">🔑 Clave</button>
-          <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">🗑 Eliminar</button>
+          <button class="btn-accion" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
+          <button class="btn-accion" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">Clave</button>
+          <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>
         </td>
       `;
 
