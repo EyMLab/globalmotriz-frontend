@@ -625,17 +625,42 @@ table.usuarios-table td {
   padding: 32px 36px 28px !important;
 }
 
+/* Modal de confirmación (warning, question) */
+.swal2-icon {
+  margin: 20px auto !important;
+}
+
+.swal2-icon.swal2-question {
+  border-color: #87adbd !important;
+  color: #87adbd !important;
+  font-size: 60px !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #f8bb86 !important;
+  color: #f8bb86 !important;
+}
+
 .swal2-title {
   color: var(--primary);
   font-weight: 600;
   font-size: 24px !important;
-  margin-bottom: 24px !important;
+  margin-bottom: 10px !important;
   text-align: center;
 }
 
 .swal2-html-container {
-  margin: 0 !important;
+  margin: 10px 0 20px !important;
+  text-align: center !important;
+  font-size: 16px !important;
+  color: #545454 !important;
+}
+
+/* Para modales con formularios */
+.swal2-html-container:has(.form-group),
+.swal2-html-container:has(.form-row) {
   text-align: left !important;
+  margin: 0 !important;
 }
 
 /* Contenedor de campos del formulario */
@@ -694,11 +719,12 @@ table.usuarios-table td {
 .swal2-actions {
   margin-top: 28px !important;
   gap: 12px !important;
+  justify-content: center !important;
 }
 
-.swal2-confirm {
-  background-color: var(--primary) !important;
-  color: var(--white) !important;
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny {
   border-radius: 8px !important;
   padding: 11px 28px !important;
   font-weight: 600 !important;
@@ -706,6 +732,12 @@ table.usuarios-table td {
   transition: all 0.2s ease !important;
   border: none !important;
   min-width: 120px !important;
+  margin: 0 6px !important;
+}
+
+.swal2-confirm {
+  background-color: var(--primary) !important;
+  color: var(--white) !important;
 }
 
 .swal2-confirm:hover {
@@ -717,17 +749,20 @@ table.usuarios-table td {
 .swal2-cancel {
   background-color: #e5e7eb !important;
   color: #374151 !important;
-  border-radius: 8px !important;
-  padding: 11px 28px !important;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  transition: all 0.2s ease !important;
-  border: none !important;
-  min-width: 120px !important;
 }
 
 .swal2-cancel:hover {
   background-color: #d1d5db !important;
+  transform: translateY(-1px);
+}
+
+.swal2-deny {
+  background-color: var(--danger) !important;
+  color: var(--white) !important;
+}
+
+.swal2-deny:hover {
+  background-color: var(--danger-dark) !important;
   transform: translateY(-1px);
 }
 
