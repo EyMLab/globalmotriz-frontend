@@ -894,3 +894,98 @@ table tr:hover {
 .login-container button:hover {
   background: #005fa3;
 }
+
+/* ======================================================================
+   15) MÓDULO USUARIOS (EXCLUSIVO)
+   ====================================================================== */
+
+/* Header usuarios */
+.usuarios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.usuarios-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Botón principal */
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+/* Tabla usuarios (ajustes suaves sin romper tablas globales) */
+table.usuarios-table th {
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+table.usuarios-table td {
+  vertical-align: middle;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+/* Roles */
+.badge-admin {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.badge-bodega {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.badge-asesor {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* Localidad */
+.badge-matriz {
+  background: #ede7f6;
+  color: #4527a0;
+}
+
+.badge-sucursal {
+  background: #fce4ec;
+  color: #880e4f;
+}
+
+/* Acciones */
+.user-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-actions button {
+  padding: 5px 10px;
+  font-size: 13px;
+}
