@@ -5,49 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de Usuarios</title>
 
-  <!-- Estilos globales -->
   <link rel="stylesheet" href="css/styles.css">
-
-  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
 
-  <!-- NAVBAR dinámico -->
+  <!-- NAVBAR -->
   <div id="nav-container"></div>
 
-  <!-- CONTENIDO PRINCIPAL -->
   <div class="dashboard-container">
 
-    <!-- Header de sección -->
-    <div class="usuarios-header">
+    <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
       <h2>Usuarios</h2>
-      <button id="btn-nuevo-usuario" class="btn-primary">
+      <button id="btn-nuevo-usuario" class="btn-obs">
         + Añadir usuario
       </button>
     </div>
 
-    <!-- Tabla de usuarios -->
-    <table class="usuarios-table">
+    <table>
       <thead>
         <tr>
-          <th>ID</th>
           <th>Usuario</th>
           <th>Rol</th>
           <th>Localidad</th>
           <th class="col-acciones">Acciones</th>
         </tr>
       </thead>
-
-      <tbody id="tabla-usuarios">
-        <!-- Render dinámico -->
-      </tbody>
+      <tbody id="tabla-usuarios"></tbody>
     </table>
 
   </div>
 
-  <!-- Scripts -->
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/usuarios.js"></script>
