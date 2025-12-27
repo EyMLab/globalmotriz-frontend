@@ -1,18 +1,18 @@
 /* ======================================================================
-   styles.css (REFACOTRIZADO COMPLETO)
-   - No cambia clases/IDs
-   - Mantiene comportamiento visual
+   styles.css (REFACOTRIZADO COMPLETO - 1 archivo)
+   - Mantiene clases/IDs
    - Ordenado por secciones
+   - Elimina duplicados (sin cambiar resultado)
 ====================================================================== */
 
 /* ======================================================================
    1) VARIABLES / BASE
 ====================================================================== */
-:root{
+:root {
   --font-main: 'Poppins', sans-serif;
 
   --bg-app: #f4f6f8;
-  --text-main: #333;
+  --text: #333;
 
   --primary: #0077cc;
   --primary-dark: #005fa3;
@@ -22,8 +22,10 @@
   --danger-dark: #cc0000;
 
   --white: #fff;
+
   --gray-ccc: #ccc;
   --gray-e0: #e0e0e0;
+
   --row-even: #f9f9f9;
   --row-hover: #eaf6ff;
 
@@ -35,21 +37,21 @@
   --r-md: 8px;
   --r-lg: 12px;
 
-  --transition-fast: 0.2s;
-  --transition: 0.3s;
+  --t-fast: 0.2s;
+  --t: 0.3s;
 }
 
-body{
+body {
   font-family: var(--font-main);
   margin: 0;
   background: var(--bg-app);
-  color: var(--text-main);
+  color: var(--text);
 }
 
 /* ======================================================================
    2) LOGIN
 ====================================================================== */
-body.login{
+body.login {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   display: flex;
   height: 100vh;
@@ -57,7 +59,7 @@ body.login{
   align-items: center;
 }
 
-.login-container{
+.login-container {
   background: var(--white);
   padding: 30px 40px;
   border-radius: var(--r-lg);
@@ -67,13 +69,13 @@ body.login{
   text-align: center;
 }
 
-.login-container h2{
+.login-container h2 {
   margin: 15px 0 25px 0;
   font-weight: 600;
 }
 
 .login-container input,
-.login-container button{
+.login-container button {
   display: block;
   width: 100%;
   border-radius: var(--r-sm);
@@ -82,15 +84,15 @@ body.login{
   padding: 12px;
   border: 1px solid var(--gray-ccc);
   box-sizing: border-box;
-  transition: var(--transition);
+  transition: var(--t);
 }
 
-.login-container input:focus{
+.login-container input:focus {
   border-color: var(--primary);
   outline: none;
 }
 
-.login-container button{
+.login-container button {
   background: var(--primary-dark);
   color: var(--white);
   border: none;
@@ -98,15 +100,15 @@ body.login{
   cursor: pointer;
 }
 
-.login-container button:hover{ background: var(--primary-light); }
+.login-container button:hover { background: var(--primary-light); }
 
-#mensaje-error{
+#mensaje-error {
   color: red;
   font-size: 14px;
   min-height: 20px;
 }
 
-.logo-img{
+.logo-img {
   max-width: 150px;
   margin: 0 auto 15px;
   display: block;
@@ -114,9 +116,9 @@ body.login{
 
 /* ======================================================================
    3) HEADER DASHBOARD (legacy)
-   Nota: mantengo esto porque puede estar usado en algunas páginas.
+   (Se conserva por compatibilidad si alguna página lo usa)
 ====================================================================== */
-.header{
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -125,346 +127,18 @@ body.login{
   color: var(--white);
 }
 
-.header-left{
+.header-left {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.header-left h1{ font-size: 22px; margin: 0; }
-
-/* .logo-header estaba duplicada; dejo una sola definición efectiva (la final) */
-.logo-header{
-  width: 46px;
-  height: auto;
-  border-radius: 8px;
-  background: white;
-  padding: 3px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-}
-
-.header-right{
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.header-right button{
-  background: var(--primary-dark);
-  border: none;
-  padding: 8px 14px;
-  border-radius: var(--r-sm);
-  color: var(--white);
-  font-weight: bold;
-  cursor: pointer;
-  transition: background var(--transition);
-}
-
-.header-right button:hover{ background: var(--primary-light); }
+.header-left h1 { font-size: 22px; margin: 0; }
 
 /* ======================================================================
-   4) CONTENEDOR GENERAL
+   4) NAVBAR CORPORATIVO
 ====================================================================== */
-.dashboard-container{
-  padding: 20px;
-  margin: 20px;
-  background: var(--white);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-md);
-}
-
-/* ======================================================================
-   5) FILTROS (base + variantes)
-====================================================================== */
-.filtros{
-  background: var(--white);
-  border-radius: var(--r-sm);
-  box-shadow: var(--shadow-sm);
-  font-size: 13px;
-  margin-bottom: 15px;
-  padding: 16px 20px;
-}
-
-.filtro-grupo{
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 150px; /* del bloque facturas original */
-  min-width: 150px; /* del bloque facturas original */
-}
-
-.filtro-grupo label{
-  font-weight: 600;
-  margin-bottom: 5px;
-  color: var(--text-main);
-}
-
-.filtro-grupo input,
-.filtro-grupo select{
-  width: 100%;
-  height: 36px;
-  padding: 6px 10px;
-  font-size: 13px;
-  border: 1px solid var(--gray-ccc);
-  border-radius: var(--r-sm);
-  box-sizing: border-box;
-  font-family: inherit;
-  transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
-}
-
-.filtro-grupo input:focus,
-.filtro-grupo select:focus{
-  border-color: var(--primary);
-  box-shadow: 0 0 4px rgba(0, 119, 204, 0.3);
-  outline: none;
-}
-
-.filtro-grupo input[type="date"]{
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: white;
-}
-
-/* === Filtros Insumos (una sola fila) === */
-.filtros.insumos{
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 18px;
-}
-
-.filtros.insumos .filtro-grupo{
-  flex: 1;
-  min-width: 160px;
-}
-
-/* === Filtros Facturas (dos filas equilibradas) === */
-.filtros.facturas{
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding: 10px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* ======================================================================
-   6) TABLAS
-====================================================================== */
-table{
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  font-size: 14px;
-}
-
-table th{
-  background: var(--primary);
-  color: var(--white);
-  font-weight: 600;
-  padding: 10px;
-  border: 1px solid var(--primary-dark);
-}
-
-table td{
-  padding: 10px;
-  border: 1px solid var(--gray-e0);
-  text-align: center;
-}
-
-table tr:nth-child(even){ background: var(--row-even); }
-table tr:hover{ background: var(--row-hover); }
-
-table img{
-  max-width: 50px;
-  max-height: 50px;
-  border-radius: 4px;
-  transition: var(--transition-fast);
-}
-
-table img:hover{ transform: scale(1.1); }
-
-table th:last-child{
-  background: var(--primary);
-  border-right: 1px solid var(--primary-dark);
-}
-
-/* ----- Checkboxes en tabla ----- */
-table input[type="checkbox"]{
-  width: 20px;
-  height: 20px;
-  accent-color: var(--primary);
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-/* ======================================================================
-   7) MODAL (zoom imágenes)
-====================================================================== */
-.modal{
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  padding-top: 10px;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-}
-
-.zoom-container{
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  position: relative;
-}
-
-.modal-contenido{
-  transition: transform var(--transition-fast);
-  max-width: 97%;
-  max-height: 97%;
-}
-
-.cerrar{
-  position: absolute;
-  top: 30px;
-  right: 40px;
-  color: var(--white);
-  font-size: 40px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.cerrar:hover{ color: #ccc; }
-
-/* === Zoom natural para modal de imágenes === */
-#modal-imagen{
-  overflow: hidden;
-}
-
-#imagen-modal{
-  transition: transform var(--transition-fast) ease;
-  cursor: zoom-in;
-  transform-origin: center center;
-  user-select: none;
-  max-width: 90%;
-  max-height: 90%;
-}
-
-#imagen-modal:active{
-  cursor: grabbing;
-}
-
-/* ======================================================================
-   8) PAGINACIÓN
-====================================================================== */
-.pagination-controls{
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.pagination-controls button{
-  padding: 8px 12px;
-  border-radius: 4px;
-  background: var(--primary);
-  color: var(--white);
-  border: none;
-  cursor: pointer;
-}
-
-.pagination-controls button:disabled{
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-/* ======================================================================
-   9) SWEETALERT2 (corporativo)
-====================================================================== */
-.swal2-popup{
-  font-family: var(--font-main);
-  border-radius: 10px;
-}
-
-.swal2-title{
-  color: var(--primary);
-  font-weight: 600;
-}
-
-.swal2-confirm{
-  background-color: var(--primary) !important;
-  color: var(--white) !important;
-  border-radius: var(--r-sm) !important;
-  padding: 8px 18px !important;
-  font-weight: 600 !important;
-  transition: background var(--transition) ease;
-}
-
-.swal2-confirm:hover{ background-color: var(--primary-dark) !important; }
-
-.swal2-cancel{
-  background-color: #ccc !important;
-  color: #333 !important;
-  border-radius: var(--r-sm) !important;
-  padding: 8px 18px !important;
-  font-weight: 600 !important;
-  transition: background var(--transition) ease;
-}
-
-.swal2-cancel:hover{ background-color: #999 !important; }
-
-/* ======================================================================
-   10) BOTONES EN TABLA
-====================================================================== */
-.btn-eliminar{
-  background-color: var(--danger);
-  border: none;
-  color: var(--white);
-  font-weight: bold;
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: background var(--transition) ease, transform var(--transition-fast) ease;
-}
-
-.btn-eliminar:hover{
-  background-color: var(--danger-dark);
-  transform: scale(1.1);
-}
-
-.btn-eliminar:focus{
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(255,77,77,0.4);
-}
-
-.btn-obs{
-  background-color: var(--primary);
-  border: none;
-  color: var(--white);
-  font-weight: bold;
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: background var(--transition) ease, transform var(--transition-fast) ease;
-}
-
-.btn-obs:hover{
-  background-color: var(--primary-dark);
-  transform: scale(1.05);
-}
-
-.btn-obs:focus{
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0,119,204,0.4);
-}
-
-/* ======================================================================
-   11) NAVBAR CORPORATIVO (v2)
-====================================================================== */
-.navbar{
+.navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -477,21 +151,21 @@ table input[type="checkbox"]{
   z-index: 999;
 }
 
-.nav-left{ display: flex; align-items: center; gap: 12px; }
+.nav-left { display: flex; align-items: center; gap: 12px; }
 
-.nav-title{
+.nav-title {
   font-size: 21px;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
 
-.nav-center{
+.nav-center {
   display: flex;
   gap: 22px;
   align-items: center;
 }
 
-.nav-links a{
+.nav-links a {
   color: var(--white);
   font-weight: 500;
   text-decoration: none;
@@ -500,22 +174,22 @@ table input[type="checkbox"]{
   transition: all 0.25s ease-in-out;
 }
 
-.nav-links a:hover{ background: rgba(255, 255, 255, 0.15); }
+.nav-links a:hover { background: rgba(255, 255, 255, 0.15); }
 
-.nav-links a.active{
+.nav-links a.active {
   background: var(--white);
   color: var(--primary);
   font-weight: 600;
   box-shadow: 0 2px 5px rgba(255, 255, 255, 0.3);
 }
 
-.nav-right{
+.nav-right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-#usuario-info{
+#usuario-info {
   margin: 0;
   font-size: 14px;
   background: rgba(255, 255, 255, 0.15);
@@ -524,24 +198,7 @@ table input[type="checkbox"]{
   font-weight: 500;
 }
 
-.nav-right button{
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-  color: var(--white);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease-in-out;
-}
-
-.nav-right button:hover{
-  background: var(--white);
-  color: var(--primary);
-}
-
-/* ==== Badge usuario mejorado ==== */
-.usuario-badge{
+.usuario-badge {
   background: rgba(255, 255, 255, 0.18);
   padding: 6px 12px;
   border-radius: var(--r-sm);
@@ -551,8 +208,18 @@ table input[type="checkbox"]{
   display: inline-block;
 }
 
-/* ===== Botones del navbar (mejorados) ===== */
-.btn-nav{
+/* Logo header (estaba duplicado en el original: se unifica en uno solo) */
+.logo-header {
+  width: 46px;
+  height: auto;
+  border-radius: 8px;
+  background: white;
+  padding: 3px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* Botones de navbar */
+.btn-nav {
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.35);
   padding: 6px 14px;
@@ -563,26 +230,328 @@ table input[type="checkbox"]{
   transition: all 0.25s ease-in-out;
 }
 
-.btn-nav:hover{
+.btn-nav:hover {
   background: var(--white);
   color: var(--primary);
   border-color: transparent;
 }
 
-.btn-nav.logout{
+.btn-nav.logout {
   background: rgba(255, 80, 80, 0.2);
   border-color: rgba(255, 255, 255, 0.35);
 }
 
-.btn-nav.logout:hover{
+.btn-nav.logout:hover {
   background: var(--danger);
   color: var(--white);
 }
 
+/* Header-right (legacy) botones */
+.header-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.header-right button {
+  background: var(--primary-dark);
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  color: var(--white);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background var(--t);
+}
+
+.header-right button:hover { background: var(--primary-light); }
+
 /* ======================================================================
-   12) LOADER (pantalla de conexión)
+   5) CONTENEDORES
 ====================================================================== */
-.loader-overlay{
+.dashboard-container {
+  padding: 20px;
+  margin: 20px;
+  background: var(--white);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+}
+
+/* ======================================================================
+   6) FILTROS (base + variantes)
+====================================================================== */
+.filtros {
+  background: var(--white);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+  font-size: 13px;
+  margin-bottom: 15px;
+  padding: 16px 20px;
+}
+
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 150px;
+  min-width: 150px;
+}
+
+.filtro-grupo label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text);
+}
+
+.filtro-grupo input,
+.filtro-grupo select {
+  width: 100%;
+  height: 36px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--gray-ccc);
+  border-radius: var(--r-sm);
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease;
+}
+
+.filtro-grupo input:focus,
+.filtro-grupo select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 4px rgba(0, 119, 204, 0.3);
+  outline: none;
+}
+
+.filtro-grupo input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: white;
+}
+
+/* Insumos: una sola fila */
+.filtros.insumos {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+}
+
+.filtros.insumos .filtro-grupo {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Facturas: dos filas equilibradas */
+.filtros.facturas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ======================================================================
+   7) TABLAS
+====================================================================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+table th {
+  background: var(--primary);
+  color: var(--white);
+  font-weight: 600;
+  padding: 10px;
+  border: 1px solid var(--primary-dark);
+}
+
+table td {
+  padding: 10px;
+  border: 1px solid var(--gray-e0);
+  text-align: center;
+}
+
+table tr:nth-child(even) { background: var(--row-even); }
+table tr:hover { background: var(--row-hover); }
+
+table img {
+  max-width: 50px;
+  max-height: 50px;
+  border-radius: 4px;
+  transition: var(--t-fast);
+}
+
+table img:hover { transform: scale(1.1); }
+
+table th:last-child {
+  background: var(--primary);
+  border-right: 1px solid var(--primary-dark);
+}
+
+table input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* ======================================================================
+   8) MODALES (imágenes y LPR)
+====================================================================== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  padding-top: 10px;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+}
+
+.zoom-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+}
+
+.modal-contenido {
+  transition: transform var(--t-fast);
+  max-width: 97%;
+  max-height: 97%;
+}
+
+.cerrar {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  color: var(--white);
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.cerrar:hover { color: #ccc; }
+
+/* Zoom natural */
+#modal-imagen { overflow: hidden; }
+
+#imagen-modal {
+  transition: transform var(--t-fast) ease;
+  cursor: zoom-in;
+  transform-origin: center center;
+  user-select: none;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+#imagen-modal:active { cursor: grabbing; }
+
+/* ======================================================================
+   9) PAGINACIÓN
+====================================================================== */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.pagination-controls button {
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+}
+
+.pagination-controls button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* ======================================================================
+   10) SWEETALERT2 (corporativo)
+====================================================================== */
+.swal2-popup {
+  font-family: var(--font-main);
+  border-radius: 10px;
+}
+
+.swal2-title {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.swal2-confirm {
+  background-color: var(--primary) !important;
+  color: var(--white) !important;
+  border-radius: var(--r-sm) !important;
+  padding: 8px 18px !important;
+  font-weight: 600 !important;
+  transition: background var(--t) ease;
+}
+
+.swal2-confirm:hover { background-color: var(--primary-dark) !important; }
+
+.swal2-cancel {
+  background-color: #ccc !important;
+  color: #333 !important;
+  border-radius: var(--r-sm) !important;
+  padding: 8px 18px !important;
+  font-weight: 600 !important;
+  transition: background var(--t) ease;
+}
+
+.swal2-cancel:hover { background-color: #999 !important; }
+
+/* ======================================================================
+   11) BOTONES TABLA
+====================================================================== */
+.btn-eliminar {
+  background-color: var(--danger);
+  border: none;
+  color: var(--white);
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--t) ease, transform var(--t-fast) ease;
+}
+
+.btn-eliminar:hover { background-color: var(--danger-dark); transform: scale(1.1); }
+
+.btn-eliminar:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,77,77,0.4); }
+
+.btn-obs {
+  background-color: var(--primary);
+  border: none;
+  color: var(--white);
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--t) ease, transform var(--t-fast) ease;
+}
+
+.btn-obs:hover { background-color: var(--primary-dark); transform: scale(1.05); }
+
+.btn-obs:focus { outline: none; box-shadow: 0 0 0 3px rgba(0,119,204,0.4); }
+
+/* ======================================================================
+   12) LOADER
+====================================================================== */
+.loader-overlay {
   position: fixed;
   inset: 0;
   background: rgba(255,255,255,0.9);
@@ -597,7 +566,7 @@ table input[type="checkbox"]{
   font-weight: 500;
 }
 
-.loader{
+.loader {
   width: 48px;
   height: 48px;
   border: 6px solid #e3e3e3;
@@ -606,7 +575,7 @@ table input[type="checkbox"]{
   animation: girar 1.2s linear infinite;
 }
 
-@keyframes girar{
+@keyframes girar {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
@@ -614,20 +583,20 @@ table input[type="checkbox"]{
 /* ======================================================================
    13) LPR / KANBAN
 ====================================================================== */
-.titulo-kanban{
+.titulo-kanban {
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 20px;
   color: var(--primary);
 }
 
-.kanban-grid{
+.kanban-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
 }
 
-.kanban-column{
+.kanban-column {
   background: var(--white);
   border-radius: 10px;
   padding: 15px;
@@ -635,7 +604,7 @@ table input[type="checkbox"]{
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.kanban-title{
+.kanban-title {
   text-align: center;
   font-size: 18px;
   font-weight: bold;
@@ -643,7 +612,7 @@ table input[type="checkbox"]{
   margin-bottom: 12px;
 }
 
-.vehicle-card{
+.vehicle-card {
   background: #f1f7ff;
   padding: 12px;
   border-radius: 8px;
@@ -652,22 +621,21 @@ table input[type="checkbox"]{
   transition: transform .15s ease;
 }
 
-.vehicle-card:hover{ transform: scale(1.02); }
+.vehicle-card:hover { transform: scale(1.02); }
 
-.vehicle-card .placa{
+.vehicle-card .placa {
   font-size: 20px;
   font-weight: bold;
   color: #003f80;
 }
 
-.vehicle-card .time{
+.vehicle-card .time {
   font-size: 14px;
   color: #444;
   margin-top: 4px;
 }
 
-/* Footer LPR */
-.kanban-footer{
+.kanban-footer {
   margin-top: 20px;
   padding: 12px 16px;
   background: #eef6ff;
@@ -682,11 +650,9 @@ table input[type="checkbox"]{
   flex-wrap: wrap;
 }
 
-.kanban-footer span{
-  white-space: nowrap;
-}
+.kanban-footer span { white-space: nowrap; }
 
-.kanban-footer .btn-footer{
+.kanban-footer .btn-footer {
   background: var(--primary);
   color: var(--white);
   border: 1px solid var(--primary);
@@ -695,13 +661,12 @@ table input[type="checkbox"]{
   margin-left: auto;
 }
 
-.kanban-footer .btn-footer:hover{
+.kanban-footer .btn-footer:hover {
   background: var(--primary-dark);
   color: var(--white);
 }
 
-/* Animación (estaba suelta en el original) */
-@keyframes aparecer{
+@keyframes aparecer {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
@@ -709,9 +674,7 @@ table input[type="checkbox"]{
 /* ======================================================================
    14) FIX EXCLUSIVO PESTAÑA TALLER (LPR)
 ====================================================================== */
-
-/* MODALES LPR */
-.modal-vehiculo{
+.modal-vehiculo {
   display: none;
   position: fixed;
   inset: 0;
@@ -721,7 +684,7 @@ table input[type="checkbox"]{
   z-index: 3000;
 }
 
-.modal-vehiculo .modal-content{
+.modal-vehiculo .modal-content {
   background: var(--white);
   padding: 20px;
   border-radius: 10px;
@@ -731,9 +694,8 @@ table input[type="checkbox"]{
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
-/* BOTONES DENTRO DE MODALES LPR */
 .modal-vehiculo .btn-nav,
-.modal-vehiculo button{
+.modal-vehiculo button {
   background: var(--primary);
   color: var(--white);
   border: none;
@@ -744,13 +706,12 @@ table input[type="checkbox"]{
 }
 
 .modal-vehiculo .btn-nav:hover,
-.modal-vehiculo button:hover{
+.modal-vehiculo button:hover {
   background: var(--primary-dark);
 }
 
-/* INPUTS MODAL SALIDAS */
 #modal-salidas input[type="date"],
-#modal-salidas input[type="text"]{
+#modal-salidas input[type="text"] {
   background: var(--white);
   color: #333;
   border: 1px solid #ccc;
@@ -759,27 +720,25 @@ table input[type="checkbox"]{
   font-size: 14px;
 }
 
-/* TABLA EN MODALES LPR */
-.modal-vehiculo table{
+.modal-vehiculo table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
 
-.modal-vehiculo table th{
+.modal-vehiculo table th {
   background: var(--primary);
   color: var(--white);
   padding: 10px;
 }
 
-.modal-vehiculo table td{
+.modal-vehiculo table td {
   padding: 10px;
   border: 1px solid #ddd;
   text-align: center;
 }
 
-/* BOTÓN "VER HISTORIAL COMPLETO" */
-#btn-historial-completo{
+#btn-historial-completo {
   margin-top: 15px;
   width: 100%;
   background: var(--primary-dark);
@@ -787,14 +746,13 @@ table input[type="checkbox"]{
   font-weight: 600;
 }
 
-#btn-historial-completo:hover{
+#btn-historial-completo:hover {
   background: #003f80;
 }
 
-/* CERRAR MODALES */
 #modal-close,
 #modal-historial-close,
-#modal-salidas-close{
+#modal-salidas-close {
   float: right;
   cursor: pointer;
   font-size: 22px;
@@ -803,31 +761,26 @@ table input[type="checkbox"]{
 
 #modal-close:hover,
 #modal-historial-close:hover,
-#modal-salidas-close:hover{
+#modal-salidas-close:hover {
   color: var(--danger-dark);
 }
 
-/* PAGINACIÓN MODAL SALIDAS */
-#modal-salidas .pagination-controls button{
+#modal-salidas .pagination-controls button {
   background: var(--primary);
   color: var(--white);
 }
 
-#modal-salidas .pagination-controls button:disabled{
+#modal-salidas .pagination-controls button:disabled {
   background: #ccc;
   cursor: not-allowed;
 }
 
-.placa-link{
+.placa-link {
   cursor: pointer;
   color: var(--primary);
   font-weight: 600;
 }
 
-.placa-link:hover{
+.placa-link:hover {
   text-decoration: underline;
 }
-
-/* ======================================================================
-   FIN
-====================================================================== */
