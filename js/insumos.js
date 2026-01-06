@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
         <td>${i.id}</td>
         <td>${i.orden_trabajo}</td>
+        <td>${i.empleado ?? '—'}</td>
         <td>${i.codigo_barras}</td>
         <td>${i.insumo}</td>
         <td>${i.tipo}</td>
