@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de Usuarios</title>
+  <title>Gestión de Usuarios y Empleados</title>
 
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -16,8 +16,11 @@
 
   <div class="dashboard-container">
 
+    <!-- =========================
+         SECCIÓN USUARIOS
+    ========================== -->
     <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-      <h2>Usuarios</h2>
+      <h2>Usuarios del sistema</h2>
       <button id="btn-nuevo-usuario" class="btn-obs">
         + Añadir usuario
       </button>
@@ -35,11 +38,39 @@
       <tbody id="tabla-usuarios"></tbody>
     </table>
 
+    <hr style="margin:40px 0;">
+
+    <!-- =========================
+         SECCIÓN EMPLEADOS
+    ========================== -->
+    <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+      <h2>Empleados (TAG / Insumos)</h2>
+      <button id="btn-nuevo-empleado" class="btn-obs">
+        + Añadir empleado
+      </button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre completo</th>
+          <th>Cargo</th>
+          <th>UID TAG</th>
+          <th>Estado</th>
+          <th class="col-acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-empleados"></tbody>
+    </table>
+
   </div>
 
+  <!-- JS -->
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/usuarios.js"></script>
+  <script src="js/empleados.js"></script>
 
 </body>
 </html>
