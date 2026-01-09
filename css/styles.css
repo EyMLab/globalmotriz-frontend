@@ -1071,7 +1071,7 @@ button.btn-obs:hover,
   display: inline-block;
   padding: 4px 12px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400; /* Normal, no bold */
   border-radius: 10px;
   text-transform: uppercase;
   background: transparent; /* Sin fondo */
