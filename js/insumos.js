@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filtroInsumo = document.getElementById('filtro-insumo');
   const filtroLocalidad = document.getElementById('filtro-localidad');
   const filtroRegistrado = document.getElementById('filtro-registrado');
+  const filtroEmpleado = document.getElementById('filtro-empleado'); // 👈 NUEVO: Referencia al select
   const fechaDesde = document.getElementById('fecha-desde');
   const fechaHasta = document.getElementById('fecha-hasta');
 
@@ -82,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroLocalidad.disabled = true;
       }
 
+      await cargarListaEmpleados(); // 👈 NUEVO: Cargar lista antes de la tabla
       await cargarInsumos();
 
     } catch {
@@ -91,6 +93,30 @@ document.addEventListener('DOMContentLoaded', () => {
         Swal.fire('Error', 'No se pudo verificar sesión', 'error');
         redirectLogin();
       }
+    }
+  }
+
+  // =========================
+  // NUEVO: Cargar lista de empleados
+  // =========================
+  async function cargarListaEmpleados() {
+    try {
+      const res = await apiFetch('/insumos/lista-empleados');
+      const data = await safeJson(res);
+      
+      if (data && Array.isArray(data)) {
+        // Limpiar (dejando la opción "Todos")
+        filtroEmpleado.innerHTML = '<option value="">Todos</option>';
+        
+        data.forEach(e => {
+          const option = document.createElement('option');
+          option.value = e.id;
+          option.textContent = `${e.nombre} ${e.apellido}`;
+          filtroEmpleado.appendChild(option);
+        });
+      }
+    } catch (err) {
+      console.error("No se pudo cargar la lista de empleados", err);
     }
   }
 
@@ -108,6 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (filtroOT.value.trim()) params.append('ot', filtroOT.value.trim());
     if (filtroInsumo.value.trim()) params.append('insumo', filtroInsumo.value.trim());
+    
+    // 👈 NUEVO: Filtro por empleado
+    if (filtroEmpleado && filtroEmpleado.value) {
+        params.append('empleado_id', filtroEmpleado.value);
+    }
+
     if (fechaDesde.value) params.append('desde', fechaDesde.value);
     if (fechaHasta.value) params.append('hasta', fechaHasta.value);
 
@@ -292,8 +324,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listeners
   // =========================
   [filtroOT, filtroInsumo].forEach(el => el.addEventListener('input', cargarInsumos));
-  [filtroLocalidad, filtroRegistrado, fechaDesde, fechaHasta]
-    .forEach(el => el.addEventListener('change', cargarInsumos));
+  
+  // 👈 NUEVO: Se agregó filtroEmpleado a los listeners
+  [filtroLocalidad, filtroRegistrado, fechaDesde, fechaHasta, filtroEmpleado]
+    .forEach(el => {
+       if(el) el.addEventListener('change', cargarInsumos);
+    });
 
   btnPrev.onclick = () => {
     if (paginaActual > 1) {

@@ -13,7 +13,6 @@
 
   <div class="dashboard-container">
 
-    <!-- FILTROS -->
     <div class="filtros insumos">
 
       <div class="filtro-grupo">
@@ -26,6 +25,12 @@
         <input type="text" id="filtro-insumo" placeholder="Ej: Lija 80">
       </div>
 
+      <div class="filtro-grupo">
+        <label for="filtro-empleado">Empleado:</label>
+        <select id="filtro-empleado">
+          <option value="">Todos</option>
+          </select>
+      </div>
       <div class="filtro-grupo">
         <label for="filtro-localidad">Localidad:</label>
         <select id="filtro-localidad">
@@ -56,7 +61,6 @@
 
     </div>
 
-    <!-- TABLA -->
     <table>
       <thead>
         <tr>
@@ -78,7 +82,6 @@
       <tbody id="tabla-insumos"></tbody>
     </table>
 
-    <!-- PAGINACIÓN -->
     <div class="pagination-controls">
       <button id="btn-prev">Anterior</button>
       <span id="page-info">Página 1</span>
