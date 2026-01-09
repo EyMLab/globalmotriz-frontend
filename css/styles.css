@@ -836,13 +836,13 @@ table.usuarios-table td {
 }
 
 /* ====================================================================== 
-   10) BOTONES TABLA Y USUARIOS (MEJORADOS)
+   10) BOTONES TABLA Y USUARIOS (ESTILO OUTLINE MODERNO)
 ====================================================================== */
-/* Botón Eliminar - Estilo outline rojo balanceado */
+/* Botón Eliminar - Outline rojo */
 .btn-eliminar {
   background: transparent;
   color: #ef4444;
-  border: 1.5px solid #fecaca; /* Borde rojo suave */
+  border: 1.5px solid #fecaca;
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -869,45 +869,52 @@ table.usuarios-table td {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 
-/* Botón Observación */
+/* Botón Observación/Editar - Outline azul */
 .btn-obs {
-  background-color: var(--primary);
-  border: none;
-  color: var(--white);
-  font-weight: bold;
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary-light);
+  padding: 6px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background var(--t) ease;
-  box-shadow: none;
-  transform: none !important;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-obs:hover {
-  background-color: #005fa3;
-  transform: none;
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(43, 122, 158, 0.3);
 }
 
 .btn-obs:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0,119,204,0.4);
+  box-shadow: 0 0 0 3px rgba(43, 122, 158, 0.2);
 }
 
-/* Botón Primario */
+/* Botón Primario - Outline azul (para mantener consistencia) */
 .btn-primary {
   padding: 8px 16px;
   font-weight: 600;
-  background: var(--primary);
-  border: none;
-  color: var(--white);
+  background: transparent;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
   border-radius: var(--r-input);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
+  background: var(--primary);
+  color: white;
   transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(43, 122, 158, 0.3);
 }
 
 /* ====================================================================== 
