@@ -181,10 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnExcel) {
     btnExcel.onclick = async () => {
       
-      // 1. Mostrar mensaje de "Cargando..."
+      // 1. Mostrar mensaje de "Cargando..." (CENTRADO)
       Swal.fire({
         title: 'Generando reporte',
-        text: 'Por favor espera, esto puede tardar unos segundos...',
+        text: 'Por favor espera, estamos preparando tu Excel...',
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
@@ -194,44 +194,37 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const params = construiParams();
         
-        // 2. Usamos apiFetch para pedir el archivo (igual que pedimos datos JSON)
-        // Nota: No usamos window.location.href para poder controlar la alerta
+        // 2. Petición al backend
         const res = await apiFetch(`/insumos/reporte?${params.toString()}`);
 
         if (!res || !res.ok) {
           throw new Error("Error al descargar el archivo");
         }
 
-        // 3. Convertimos la respuesta en un "Blob" (archivo binario)
+        // 3. Convertir a Blob
         const blob = await res.blob();
         
-        // 4. Creamos un enlace temporal invisible para forzar la descarga
+        // 4. Forzar descarga
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         
-        // Ponemos nombre al archivo (puedes generar uno dinámico si quieres)
         const fechaHoy = new Date().toISOString().split('T')[0];
         a.download = `Reporte_Insumos_${fechaHoy}.xlsx`;
         
         document.body.appendChild(a);
-        a.click(); // Hacemos "clic" automático
-        a.remove(); // Borramos el enlace
-        window.URL.revokeObjectURL(url); // Limpiamos memoria
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
 
-        // 5. Cerramos la alerta de carga y mostramos éxito
-        Swal.close();
-        
-        // Opcional: Mostrar notificación pequeña de éxito
-        const Toast = Swal.mixin({
-            toast: true,
-            position: "top-end",
-            showConfirmButton: false,
-            timer: 3000
-        });
-        Toast.fire({
-            icon: "success",
-            title: "Descarga iniciada"
+        // 5. ÉXITO: Mensaje CENTRADO y GRANDE
+        // Usamos fire normal (sin toast) para que salga al medio
+        Swal.fire({
+            icon: 'success',
+            title: '¡Descarga lista!',
+            text: 'El archivo se ha guardado en tu equipo.',
+            timer: 2500, // Se cierra solo a los 2.5 segundos
+            showConfirmButton: false 
         });
 
       } catch (err) {
