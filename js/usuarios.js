@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tr.innerHTML = `
         <td>${u.usuario}</td>
-        <td><span class="badge">${u.rol}</span></td>
+        <td>${u.rol.toUpperCase()}</td>
         <td>${u.localidad}</td>
         <td class="user-actions">
           <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
