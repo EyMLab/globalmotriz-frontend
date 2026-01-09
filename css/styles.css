@@ -1075,7 +1075,7 @@ button.btn-obs:hover,
   border-radius: 10px;
   text-transform: uppercase;
   background: transparent; /* Sin fondo */
-  color: var(--text); /* Texto normal */
+  color: inherit; /* Hereda el color del td */
   border: none; /* Sin borde */
 }
 
