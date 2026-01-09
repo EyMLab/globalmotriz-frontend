@@ -838,28 +838,30 @@ table.usuarios-table td {
 /* ====================================================================== 
    10) BOTONES TABLA Y USUARIOS (MEJORADOS)
 ====================================================================== */
-/* Botón Eliminar - Estilo moderno sutil */
+/* Botón Eliminar - Estilo outline rojo balanceado */
 .btn-eliminar {
   background: transparent;
-  color: #94a3b8;
-  border: 1px solid transparent;
-  padding: 8px;
+  color: #ef4444;
+  border: 1.5px solid #fecaca; /* Borde rojo suave */
+  padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
+  font-weight: 500;
   transition: all 0.2s ease-in-out;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: none;
   transform: none !important;
-  font-weight: normal;
 }
 
 .btn-eliminar:hover {
-  background-color: var(--danger-bg);
-  color: var(--danger);
-  transform: scale(1.05) !important;
+  background-color: var(--danger);
+  color: white;
+  border-color: var(--danger);
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 .btn-eliminar:focus {
@@ -1086,11 +1088,15 @@ table.usuarios-table td {
 
 .user-actions .btn-eliminar {
   background: transparent;
-  color: #94a3b8;
-  border: 1px solid transparent;
+  color: #ef4444;
+  border: 1.5px solid #fecaca;
+  padding: 6px 12px;
+  font-weight: 500;
 }
 
 .user-actions .btn-eliminar:hover {
-  background-color: var(--danger-bg);
-  color: var(--danger);
+  background-color: var(--danger);
+  color: white;
+  border-color: var(--danger);
+  transform: translateY(-1px);
 }
