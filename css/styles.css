@@ -418,18 +418,8 @@ table td {
   vertical-align: middle;
 }
 
-/* Asegurar que el badge tenga exactamente el mismo color */
-table td .badge {
-  color: var(--text-light);
-}
-
 table tr:hover td {
   background: var(--row-hover);
-  color: var(--text);
-}
-
-/* Asegurar que el badge también cambie en hover */
-table tr:hover td .badge {
   color: var(--text);
 }
 
@@ -1077,28 +1067,26 @@ button.btn-obs:hover,
   color: var(--primary);
 }
 
+/* Badges solo para estado de Empleados (Activo/Inactivo) */
 .badge {
   display: inline-block;
   padding: 4px 12px;
   font-size: 12px;
-  font-weight: 400; /* Normal, no bold */
+  font-weight: 600;
   border-radius: 10px;
   text-transform: uppercase;
-  background: transparent; /* Sin fondo */
-  color: inherit; /* Hereda el color del td */
-  border: none; /* Sin borde */
 }
 
 .badge-ok {
   background: #d1fae5;
   color: #065f46;
-  border-color: #6ee7b7;
+  border: 1px solid #6ee7b7;
 }
 
 .badge-off {
   background: #fee2e2;
   color: #991b1b;
-  border-color: #fca5a5;
+  border: 1px solid #fca5a5;
 }
 
 .user-actions {
