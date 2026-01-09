@@ -1091,7 +1091,7 @@ button.btn-obs:hover,
 
 .user-actions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start; /* Cambiado de center a flex-start */
   gap: 8px;
   flex-wrap: wrap;
 }
