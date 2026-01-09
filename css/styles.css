@@ -401,7 +401,7 @@ table th {
   color: var(--text);
   font-weight: 700;
   padding: 16px;
-  text-align: left; /* Alineado a la izquierda igual que el contenido */
+  text-align: center; /* Todo centrado */
   border-bottom: 2px solid var(--border-subtle);
   border-right: none;
   border-left: none;
@@ -412,29 +412,10 @@ table td {
   border-bottom: 1px solid var(--border-subtle);
   border-right: none;
   border-left: none;
-  text-align: left; /* Por defecto a la izquierda */
+  text-align: center; /* Todo centrado */
   color: var(--text-light);
   font-weight: 400;
   vertical-align: middle;
-}
-
-/* Centrar columnas con checkboxes, botones o imágenes */
-table td:has(input[type="checkbox"]),
-table td:has(img),
-table td:has(button:only-child) {
-  text-align: center;
-}
-
-/* Columnas específicas que deben estar centradas */
-table th:nth-last-child(1), /* Última columna (Acciones) */
-table th:nth-last-child(2), /* Penúltima columna (Registrado/Observaciones) */
-table th:has(+ th:last-child) {
-  text-align: center;
-}
-
-table td:nth-last-child(1):not(.user-actions), /* Última columna */
-table td:nth-last-child(2) { /* Penúltima columna */
-  text-align: center;
 }
 
 table tr:hover td {
@@ -1110,7 +1091,7 @@ button.btn-obs:hover,
 
 .user-actions {
   display: flex;
-  justify-content: flex-start; /* Cambiado de center a flex-start */
+  justify-content: center; /* Centrado de nuevo */
   gap: 8px;
   flex-wrap: wrap;
 }
