@@ -418,8 +418,18 @@ table td {
   vertical-align: middle;
 }
 
+/* Asegurar que el badge tenga exactamente el mismo color */
+table td .badge {
+  color: var(--text-light);
+}
+
 table tr:hover td {
   background: var(--row-hover);
+  color: var(--text);
+}
+
+/* Asegurar que el badge también cambie en hover */
+table tr:hover td .badge {
   color: var(--text);
 }
 
