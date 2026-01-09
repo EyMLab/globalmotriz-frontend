@@ -401,7 +401,7 @@ table th {
   color: var(--text);
   font-weight: 700;
   padding: 16px;
-  text-align: left;
+  text-align: left; /* Alineado a la izquierda igual que el contenido */
   border-bottom: 2px solid var(--border-subtle);
   border-right: none;
   border-left: none;
@@ -412,7 +412,7 @@ table td {
   border-bottom: 1px solid var(--border-subtle);
   border-right: none;
   border-left: none;
-  text-align: center;
+  text-align: left; /* Cambiado de center a left */
   color: var(--text-light);
   font-weight: 400;
   vertical-align: middle;
