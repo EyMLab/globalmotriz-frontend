@@ -839,7 +839,8 @@ table.usuarios-table td {
    10) BOTONES TABLA Y USUARIOS (ESTILO OUTLINE MODERNO)
 ====================================================================== */
 /* Botón Eliminar - Outline rojo */
-.btn-eliminar {
+.btn-eliminar,
+button.btn-eliminar {
   background: transparent;
   color: #ef4444;
   border: 1.5px solid #fecaca;
@@ -853,14 +854,14 @@ table.usuarios-table td {
   align-items: center;
   justify-content: center;
   box-shadow: none;
-  transform: none !important;
 }
 
-.btn-eliminar:hover {
+.btn-eliminar:hover,
+button.btn-eliminar:hover {
   background-color: var(--danger);
   color: white;
   border-color: var(--danger);
-  transform: translateY(-1px) !important;
+  transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
@@ -869,8 +870,11 @@ table.usuarios-table td {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 
-/* Botón Observación/Editar - Outline azul */
-.btn-obs {
+/* Botón Observación/Editar/Añadir - Outline azul */
+.btn-obs,
+button.btn-obs,
+#btn-nuevo-usuario,
+#btn-nuevo-empleado {
   background: transparent;
   color: var(--primary);
   border: 1.5px solid var(--primary-light);
@@ -885,7 +889,10 @@ table.usuarios-table td {
   justify-content: center;
 }
 
-.btn-obs:hover {
+.btn-obs:hover,
+button.btn-obs:hover,
+#btn-nuevo-usuario:hover,
+#btn-nuevo-empleado:hover {
   background-color: var(--primary);
   color: white;
   border-color: var(--primary);
@@ -1072,6 +1079,18 @@ table.usuarios-table td {
   border: 1px solid #dcdcdc;
 }
 
+.badge-ok {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.badge-off {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
 .user-actions {
   display: flex;
   justify-content: center;
@@ -1079,29 +1098,43 @@ table.usuarios-table td {
   flex-wrap: wrap;
 }
 
-.user-actions button {
+/* Estilos específicos para botones dentro de user-actions */
+.user-actions .btn-obs,
+td.user-actions button.btn-obs {
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary-light);
   padding: 6px 12px;
   font-size: 13px;
-  border-radius: var(--r-sm);
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
-.user-actions .btn-obs {
+.user-actions .btn-obs:hover,
+td.user-actions button.btn-obs:hover {
   background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: translateY(-1px);
 }
 
-.user-actions .btn-obs:hover {
-  background: var(--primary-dark);
-}
-
-.user-actions .btn-eliminar {
+.user-actions .btn-eliminar,
+td.user-actions button.btn-eliminar {
   background: transparent;
   color: #ef4444;
   border: 1.5px solid #fecaca;
   padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
-.user-actions .btn-eliminar:hover {
+.user-actions .btn-eliminar:hover,
+td.user-actions button.btn-eliminar:hover {
   background-color: var(--danger);
   color: white;
   border-color: var(--danger);
