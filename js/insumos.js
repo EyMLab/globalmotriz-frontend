@@ -19,9 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const filtroInsumo = document.getElementById('filtro-insumo');
   const filtroLocalidad = document.getElementById('filtro-localidad');
   const filtroRegistrado = document.getElementById('filtro-registrado');
-  const filtroEmpleado = document.getElementById('filtro-empleado'); // 👈 NUEVO: Referencia al select
+  const filtroEmpleado = document.getElementById('filtro-empleado');
   const fechaDesde = document.getElementById('fecha-desde');
   const fechaHasta = document.getElementById('fecha-hasta');
+  
+  // Botón de reporte
+  const btnExcel = document.getElementById('btn-descargar-excel');
 
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
@@ -83,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroLocalidad.disabled = true;
       }
 
-      await cargarListaEmpleados(); // 👈 NUEVO: Cargar lista antes de la tabla
+      await cargarListaEmpleados(); 
       await cargarInsumos();
 
     } catch {
@@ -97,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================
-  // NUEVO: Cargar lista de empleados
+  // Cargar lista de empleados (Solo los que tienen historial)
   // =========================
   async function cargarListaEmpleados() {
     try {
@@ -121,30 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================
-  // Cargar insumos
+  // Cargar insumos (Tabla)
   // =========================
   async function cargarInsumos() {
-    const params = new URLSearchParams();
-
-    if (rol === 'asesor') {
-      params.append('localidad', localidadUsuario);
-    } else if (filtroLocalidad.value) {
-      params.append('localidad', filtroLocalidad.value);
-    }
-
-    if (filtroOT.value.trim()) params.append('ot', filtroOT.value.trim());
-    if (filtroInsumo.value.trim()) params.append('insumo', filtroInsumo.value.trim());
-    
-    // 👈 NUEVO: Filtro por empleado
-    if (filtroEmpleado && filtroEmpleado.value) {
-        params.append('empleado_id', filtroEmpleado.value);
-    }
-
-    if (fechaDesde.value) params.append('desde', fechaDesde.value);
-    if (fechaHasta.value) params.append('hasta', fechaHasta.value);
-
-    if (filtroRegistrado.value === 'registrados') params.append('registrado', 'true');
-    if (filtroRegistrado.value === 'no-registrados') params.append('registrado', 'false');
+    const params = construiParams(); // Usamos función auxiliar para reutilizar código
 
     try {
       const res = await apiFetch(`/insumos?${params.toString()}`);
@@ -159,8 +142,48 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPagina();
 
     } catch {
-      tabla.innerHTML = `<tr><td colspan="11">Error al cargar insumos</td></tr>`;
+      tabla.innerHTML = `<tr><td colspan="12">Error al cargar insumos</td></tr>`;
     }
+  }
+
+  // =========================
+  // Helper para construir parámetros (Usado en Tabla y en Excel)
+  // =========================
+  function construiParams() {
+    const params = new URLSearchParams();
+
+    if (rol === 'asesor') {
+      params.append('localidad', localidadUsuario);
+    } else if (filtroLocalidad.value) {
+      params.append('localidad', filtroLocalidad.value);
+    }
+
+    if (filtroOT.value.trim()) params.append('ot', filtroOT.value.trim());
+    if (filtroInsumo.value.trim()) params.append('insumo', filtroInsumo.value.trim());
+    
+    // Filtro por empleado
+    if (filtroEmpleado && filtroEmpleado.value) {
+        params.append('empleado_id', filtroEmpleado.value);
+    }
+
+    if (fechaDesde.value) params.append('desde', fechaDesde.value);
+    if (fechaHasta.value) params.append('hasta', fechaHasta.value);
+
+    if (filtroRegistrado.value === 'registrados') params.append('registrado', 'true');
+    if (filtroRegistrado.value === 'no-registrados') params.append('registrado', 'false');
+
+    return params;
+  }
+
+  // =========================
+  // Descargar Excel
+  // =========================
+  if (btnExcel) {
+    btnExcel.onclick = () => {
+      const params = construiParams();
+      // Forzar descarga redirigiendo a la ruta del backend
+      window.location.href = `${API_BASE_URL}/insumos/reporte?${params.toString()}`;
+    };
   }
 
   // =========================
@@ -173,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageData = insumos.slice(inicio, inicio + FILAS_POR_PAGINA);
 
     if (!pageData.length) {
-      tabla.innerHTML = `<tr><td colspan="11">Sin resultados</td></tr>`;
+      tabla.innerHTML = `<tr><td colspan="12">Sin resultados</td></tr>`;
       actualizarPaginacion();
       return;
     }
@@ -325,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   [filtroOT, filtroInsumo].forEach(el => el.addEventListener('input', cargarInsumos));
   
-  // 👈 NUEVO: Se agregó filtroEmpleado a los listeners
   [filtroLocalidad, filtroRegistrado, fechaDesde, fechaHasta, filtroEmpleado]
     .forEach(el => {
        if(el) el.addEventListener('change', cargarInsumos);
