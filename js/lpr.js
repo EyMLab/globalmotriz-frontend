@@ -67,9 +67,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // ✅ Nueva función para formatear fechas que vienen del backend
   function formatFecha(fechaStr) {
     if (!fechaStr) return "-";
-    // El backend ya envía la fecha en hora Ecuador como string
-    // Solo necesitamos formatearla bonito
-    return fechaStr.replace('T', ' ').substring(0, 19);
+    
+    // Convertir a objeto Date
+    const fecha = new Date(fechaStr);
+    
+    // Formatear de manera amigable
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    
+    const horas = String(fecha.getHours()).padStart(2, '0');
+    const minutos = String(fecha.getMinutes()).padStart(2, '0');
+    
+    // Formato: 21/01/2026 5:01 PM
+    const ampm = fecha.getHours() >= 12 ? 'PM' : 'AM';
+    const horas12 = fecha.getHours() % 12 || 12;
+    
+    return `${dia}/${mes}/${año} ${horas12}:${minutos} ${ampm}`;
   }
 
   /* ======================================================
