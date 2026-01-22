@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================================================
-     ESTADO GLOBAL
+      ESTADO GLOBAL
   ====================================================== */
   let pausaLPR = false;
   let placaSeleccionada = null;
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let ultimoTotal = 0;
 
   /* ======================================================
-     HELPERS
+      HELPERS
   ====================================================== */
   function redirectLogin() {
     localStorage.clear();
@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatTime(seconds) {
+    if (!seconds && seconds !== 0) return "--";
     const dias = Math.floor(seconds / 86400);
     const horas = Math.floor((seconds % 86400) / 3600);
     const minutos = Math.floor((seconds % 3600) / 60);
@@ -64,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================================================
-     KANBAN PRINCIPAL
+      KANBAN PRINCIPAL
   ====================================================== */
   async function cargarLPR() {
     if (pausaLPR) return;
@@ -101,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       est.vehiculos.forEach(v => {
         const card = document.createElement("div");
         card.className = "vehicle-card";
+        // Aquí no mostramos la hora absoluta, solo la duración calculada por el backend
         card.innerHTML = `
           <div class="placa">${v.placa}</div>
           <div class="time">En estación: ${formatTime(v.segundos_estacion)}</div>
@@ -116,15 +118,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("totalEnTaller").textContent =
       `Vehículos en taller: ${data.total_en_taller}`;
 
-    document.getElementById("ultimaActualizacion").textContent =
-      `Última actualización: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
+    // La hora de actualización sí la convertimos a local
+    if (data.ultima_actualizacion) {
+      document.getElementById("ultimaActualizacion").textContent =
+        `Última actualización: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
+    }
   }
 
   setInterval(cargarLPR, 3000);
   cargarLPR();
 
   /* ======================================================
-     MODAL VEHÍCULO
+      MODAL VEHÍCULO
   ====================================================== */
   const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
@@ -155,11 +160,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await safeJson(res);
       modalHistorial.innerHTML = "";
 
+      // Aquí iteramos el historial breve
       data.historial.slice(0, 5).forEach(h => {
         const li = document.createElement("li");
-        li.textContent =
-          `${h.estacion} - ${new Date(h.inicio).toLocaleString("es-EC")}
-           (${formatTime(h.segundos_estacion)})`;
+        
+        // ✅ CORRECCIÓN CLAVE: Convertimos UTC a Hora Ecuador
+        const fechaLocal = new Date(h.inicio).toLocaleString("es-EC");
+        
+        li.textContent = `${h.estacion} - ${fechaLocal} (${formatTime(h.segundos_estacion)})`;
         modalHistorial.appendChild(li);
       });
 
@@ -175,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   /* ======================================================
-     MODAL HISTORIAL COMPLETO
+      MODAL HISTORIAL COMPLETO
   ====================================================== */
   const modalHistComp = document.getElementById("modal-historial-completo");
   const tablaHistComp = document.getElementById("tabla-historial-completo");
@@ -198,10 +206,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       data.historial.forEach(h => {
         const tr = document.createElement("tr");
+        
+        // ✅ CORRECCIÓN CLAVE: Convertimos UTC a Hora Ecuador en la tabla
+        const inicioLocal = new Date(h.inicio).toLocaleString("es-EC");
+        const finLocal = h.fin ? new Date(h.fin).toLocaleString("es-EC") : "-";
+
         tr.innerHTML = `
           <td>${h.estacion}</td>
-          <td>${new Date(h.inicio).toLocaleString("es-EC")}</td>
-          <td>${h.fin ? new Date(h.fin).toLocaleString("es-EC") : "-"}</td>
+          <td>${inicioLocal}</td>
+          <td>${finLocal}</td>
           <td>${formatTime(h.segundos_estacion)}</td>
         `;
         tablaHistComp.appendChild(tr);
@@ -215,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================================================
-     MODAL SALIDAS
+      MODAL SALIDAS
   ====================================================== */
   const modalSalidas = document.getElementById("modal-salidas");
   const tablaSalidas = document.getElementById("tabla-salidas");
@@ -291,10 +304,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     data.data.forEach(v => {
       const tr = document.createElement("tr");
+      
+      // ✅ CORRECCIÓN CLAVE: Convertimos UTC a Hora Ecuador en reporte salidas
+      const entradaLocal = new Date(v.fecha_entrada).toLocaleString("es-EC");
+      const salidaLocal = new Date(v.fecha_salida).toLocaleString("es-EC");
+
       tr.innerHTML = `
         <td class="placa-link" data-placa="${v.placa}">${v.placa}</td>
-        <td>${new Date(v.fecha_entrada).toLocaleString("es-EC")}</td>
-        <td>${new Date(v.fecha_salida).toLocaleString("es-EC")}</td>
+        <td>${entradaLocal}</td>
+        <td>${salidaLocal}</td>
         <td>${formatTime(v.segundos_total)}</td>
       `;
       tablaSalidas.appendChild(tr);
