@@ -216,27 +216,74 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
 
     try {
-      const res = await apiFetch(`/lpr/historial/${placa}`);
-      if (!res || !res.ok) return;
+      // Primero obtenemos todas las sesiones
+      const resSesiones = await apiFetch(`/lpr/sesiones/${placa}`);
+      if (!resSesiones || !resSesiones.ok) return;
 
-      const data = await safeJson(res);
+      const dataSesiones = await safeJson(resSesiones);
       tablaHistComp.innerHTML = "";
 
-      data.historial.forEach(h => {
-        const tr = document.createElement("tr");
-        
-        // ✅ Las fechas ya vienen en hora Ecuador del backend
-        const inicioLocal = formatFecha(h.inicio);
-        const finLocal = h.fin ? formatFecha(h.fin) : "-";
+      if (!dataSesiones.sesiones || dataSesiones.sesiones.length === 0) {
+        tablaHistComp.innerHTML = `<tr><td colspan="4">Sin historial</td></tr>`;
+        modalHistComp.style.display = "flex";
+        return;
+      }
 
-        tr.innerHTML = `
-          <td>${h.estacion}</td>
-          <td>${inicioLocal}</td>
-          <td>${finLocal}</td>
-          <td>${formatTime(h.segundos_estacion)}</td>
+      // Por cada sesión, mostramos un encabezado y luego sus tramos
+      for (const sesion of dataSesiones.sesiones) {
+        
+        // Fila de encabezado de sesión
+        const trSesion = document.createElement("tr");
+        trSesion.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#e3f2fd' : '#f5f5f5';
+        trSesion.style.fontWeight = 'bold';
+        
+        const estadoBadge = sesion.estado === 'ACTIVA' 
+          ? '<span style="color: green;">🟢 ACTIVA</span>' 
+          : '<span style="color: gray;">⚫ FINALIZADA</span>';
+        
+        const entrada = formatFecha(sesion.fecha_entrada);
+        const salida = sesion.fecha_salida ? formatFecha(sesion.fecha_salida) : 'En proceso';
+        const tiempoTotal = sesion.segundos_total ? formatTime(sesion.segundos_total) : '-';
+        
+        trSesion.innerHTML = `
+          <td colspan="4" style="padding: 12px 8px;">
+            ${estadoBadge} | 
+            Entrada: ${entrada} | 
+            Salida: ${salida} | 
+            Tiempo: ${tiempoTotal}
+          </td>
         `;
-        tablaHistComp.appendChild(tr);
-      });
+        tablaHistComp.appendChild(trSesion);
+
+        // Obtenemos los tramos de esta sesión
+        const resTramos = await apiFetch(`/lpr/historial/${placa}?sesion_id=${sesion.sesion_id}`);
+        if (resTramos && resTramos.ok) {
+          const dataTramos = await safeJson(resTramos);
+          
+          if (dataTramos.historial && dataTramos.historial.length > 0) {
+            dataTramos.historial.forEach(h => {
+              const tr = document.createElement("tr");
+              tr.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#f1f8ff' : '#fafafa';
+              
+              const inicioLocal = formatFecha(h.inicio);
+              const finLocal = h.fin ? formatFecha(h.fin) : "-";
+
+              tr.innerHTML = `
+                <td style="padding-left: 20px;">↳ ${h.estacion}</td>
+                <td>${inicioLocal}</td>
+                <td>${finLocal}</td>
+                <td>${formatTime(h.segundos_estacion)}</td>
+              `;
+              tablaHistComp.appendChild(tr);
+            });
+          }
+        }
+
+        // Línea separadora entre sesiones
+        const trSeparador = document.createElement("tr");
+        trSeparador.innerHTML = `<td colspan="4" style="height: 5px; background: white;"></td>`;
+        tablaHistComp.appendChild(trSeparador);
+      }
 
       modalHistComp.style.display = "flex";
 
