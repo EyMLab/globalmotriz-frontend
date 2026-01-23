@@ -477,7 +477,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Agregar Nuevo Interno
+  // ✅ CORREGIDO: Agregar Nuevo Interno (Cierra modal y centra mensaje)
   const btnAddInterno = document.getElementById('btn-agregar-interno');
   if(btnAddInterno) {
     btnAddInterno.onclick = async () => {
@@ -494,17 +494,25 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (res.ok) {
+          // 1. Limpiar campos
           inputPlacaInt.value = '';
           inputDescInt.value = '';
-          cargarInternos();
+          
+          // 2. Cerrar modal y reactivar LPR
+          modalInternos.style.display = 'none';
+          pausaLPR = false;
+
+          // 3. Mostrar alerta CENTRADA
           Swal.fire({
             icon: 'success',
-            title: 'Vehículo excluido correctamente',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000
+            title: '¡Vehículo Excluido!',
+            text: `La placa ${placa} ha sido agregada a la lista de internos.`,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#28a745'
           });
+
+          // Recargar lista
+          cargarInternos();
         } else {
           const errData = await safeJson(res);
           Swal.fire('Error', errData.error || 'No se pudo guardar', 'error');
