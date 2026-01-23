@@ -27,9 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "index.html";
   }
 
-  async function apiFetch(path) {
+  async function apiFetch(path, options = {}) {
     const res = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { Authorization: "Bearer " + TOKEN }
+      ...options,
+      headers: { 
+        Authorization: "Bearer " + TOKEN,
+        ...(options.headers || {})
+      }
     });
 
     if (res.status === 401 || res.status === 403) {
@@ -48,6 +52,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".modal-vehiculo").forEach(m => {
       m.style.display = "none";
     });
+    // Limpiar campos del modal de internos si estaba abierto
+    const inputPlaca = document.getElementById('input-placa-interna');
+    const inputDesc = document.getElementById('input-desc-interna');
+    if(inputPlaca) inputPlaca.value = '';
+    if(inputDesc) inputDesc.value = '';
   }
 
   function formatTime(seconds) {
@@ -64,14 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return out.join(" ");
   }
 
-  // ✅ Nueva función para formatear fechas que vienen del backend
+  // ✅ Formateador de fechas (Backend envía texto local, navegador muestra tal cual)
   function formatFecha(fechaStr) {
     if (!fechaStr) return "-";
     
-    // Convertir a objeto Date
+    // Al no tener "Z", el navegador asume hora local. Perfecto.
     const fecha = new Date(fechaStr);
     
-    // Formatear de manera amigable
     const dia = String(fecha.getDate()).padStart(2, '0');
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
     const año = fecha.getFullYear();
@@ -79,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const horas = String(fecha.getHours()).padStart(2, '0');
     const minutos = String(fecha.getMinutes()).padStart(2, '0');
     
-    // Formato: 21/01/2026 5:01 PM
     const ampm = fecha.getHours() >= 12 ? 'PM' : 'AM';
     const horas12 = fecha.getHours() % 12 || 12;
     
@@ -139,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("totalEnTaller").textContent =
       `Vehículos en taller: ${data.total_en_taller}`;
 
-    // Última actualización
     if (data.ultima_actualizacion) {
       document.getElementById("ultimaActualizacion").textContent =
         `Última actualización: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
@@ -181,7 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await safeJson(res);
       modalHistorial.innerHTML = "";
 
-      // ✅ Las fechas ya vienen en hora Ecuador del backend
       data.historial.slice(0, 5).forEach(h => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
@@ -201,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   /* ======================================================
-      MODAL HISTORIAL COMPLETO
+      MODAL HISTORIAL COMPLETO (DETALLADO POR SESIÓN)
   ====================================================== */
   const modalHistComp = document.getElementById("modal-historial-completo");
   const tablaHistComp = document.getElementById("tabla-historial-completo");
@@ -216,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
 
     try {
-      // Primero obtenemos todas las sesiones
+      // 1. Obtener sesiones
       const resSesiones = await apiFetch(`/lpr/sesiones/${placa}`);
       if (!resSesiones || !resSesiones.ok) return;
 
@@ -229,10 +234,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Por cada sesión, mostramos un encabezado y luego sus tramos
+      // 2. Iterar sesiones y buscar tramos
       for (const sesion of dataSesiones.sesiones) {
         
-        // Fila de encabezado de sesión
+        // Encabezado de sesión
         const trSesion = document.createElement("tr");
         trSesion.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#e3f2fd' : '#f5f5f5';
         trSesion.style.fontWeight = 'bold';
@@ -255,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         tablaHistComp.appendChild(trSesion);
 
-        // Obtenemos los tramos de esta sesión
+        // Tramos de esta sesión
         const resTramos = await apiFetch(`/lpr/historial/${placa}?sesion_id=${sesion.sesion_id}`);
         if (resTramos && resTramos.ok) {
           const dataTramos = await safeJson(resTramos);
@@ -279,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        // Línea separadora entre sesiones
+        // Separador
         const trSeparador = document.createElement("tr");
         trSeparador.innerHTML = `<td colspan="4" style="height: 5px; background: white;"></td>`;
         tablaHistComp.appendChild(trSeparador);
@@ -370,7 +375,6 @@ document.addEventListener("DOMContentLoaded", () => {
     data.data.forEach(v => {
       const tr = document.createElement("tr");
       
-      // ✅ Las fechas ya vienen en hora Ecuador del backend
       const entradaLocal = formatFecha(v.fecha_entrada);
       const salidaLocal = formatFecha(v.fecha_salida);
 
@@ -389,6 +393,157 @@ document.addEventListener("DOMContentLoaded", () => {
 
     pageInfo.textContent =
       `Página ${data.page} de ${Math.ceil(data.total / data.limit)}`;
+  }
+
+  /* ======================================================
+      🚀 GESTIÓN DE VEHÍCULOS INTERNOS (SOLO ADMIN)
+  ====================================================== */
+  verificarRolAdmin();
+
+  async function verificarRolAdmin() {
+    try {
+      const res = await apiFetch('/auth/me'); 
+      if (res && res.ok) {
+        const data = await safeJson(res);
+        // Si es admin, mostramos el botón rojo
+        if (data.rol === 'admin') {
+          const btn = document.getElementById('btn-gestionar-internos');
+          if (btn) {
+            btn.style.display = 'inline-block';
+            btn.onclick = abrirModalInternos;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error verificando rol", err);
+    }
+  }
+
+  const modalInternos = document.getElementById('modal-internos');
+  const tablaInternos = document.getElementById('tabla-internos-body');
+  const inputPlacaInt = document.getElementById('input-placa-interna');
+  const inputDescInt = document.getElementById('input-desc-interna');
+
+  // Cerrar modal internos
+  if (document.getElementById('close-internos')) {
+    document.getElementById('close-internos').onclick = () => {
+      modalInternos.style.display = 'none';
+      pausaLPR = false;
+    };
+  }
+
+  async function abrirModalInternos() {
+    cerrarTodosLosModales();
+    pausaLPR = true; // Pausamos actualización para que no moleste
+    modalInternos.style.display = 'flex';
+    cargarInternos();
+  }
+
+  async function cargarInternos() {
+    try {
+      const res = await apiFetch('/lpr/internos');
+      if (res && res.ok) {
+        const lista = await safeJson(res);
+        renderInternos(lista);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function renderInternos(lista) {
+    tablaInternos.innerHTML = '';
+    if (!lista || lista.length === 0) {
+      tablaInternos.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px;">No hay vehículos excluidos</td></tr>';
+      return;
+    }
+
+    lista.forEach(v => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid #ddd';
+      tr.innerHTML = `
+        <td style="font-weight:bold; padding:8px;">${v.placa}</td>
+        <td style="padding:8px;">${v.descripcion || '-'}</td>
+        <td style="text-align:center; padding:8px;">
+            <button class="btn-eliminar-interno" data-placa="${v.placa}" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Eliminar</button>
+        </td>
+      `;
+      tablaInternos.appendChild(tr);
+    });
+
+    // Listeners eliminar
+    document.querySelectorAll('.btn-eliminar-interno').forEach(btn => {
+      btn.onclick = () => eliminarInterno(btn.dataset.placa);
+    });
+  }
+
+  // Agregar Nuevo Interno
+  const btnAddInterno = document.getElementById('btn-agregar-interno');
+  if(btnAddInterno) {
+    btnAddInterno.onclick = async () => {
+      const placa = inputPlacaInt.value.trim().toUpperCase();
+      const descripcion = inputDescInt.value.trim();
+
+      if (!placa) return Swal.fire('Error', 'Escribe una placa', 'warning');
+
+      try {
+        const res = await apiFetch('/lpr/internos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placa, descripcion })
+        });
+
+        if (res.ok) {
+          inputPlacaInt.value = '';
+          inputDescInt.value = '';
+          cargarInternos();
+          Swal.fire({
+            icon: 'success',
+            title: 'Vehículo excluido correctamente',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+          });
+        } else {
+          const errData = await safeJson(res);
+          Swal.fire('Error', errData.error || 'No se pudo guardar', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  }
+
+  // Eliminar Interno
+  async function eliminarInterno(placa) {
+    const confirm = await Swal.fire({
+      title: `¿Eliminar ${placa}?`,
+      text: "Este vehículo volverá a ser registrado por las cámaras si ingresa nuevamente.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        const res = await apiFetch(`/lpr/internos/${placa}`, { method: 'DELETE' });
+        if (res.ok) {
+          cargarInternos();
+          Swal.fire({
+            icon: 'success', 
+            title: 'Eliminado', 
+            text: 'El vehículo ya no está excluido.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+      } catch (err) {
+        Swal.fire('Error', 'No se pudo eliminar', 'error');
+      }
+    }
   }
 
 });

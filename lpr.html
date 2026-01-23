@@ -29,6 +29,10 @@
       </div>
 
       <div class="footer-right">
+        <button id="btn-gestionar-internos" class="btn-footer" style="display: none; margin-right: 10px; background-color: #d9534f;">
+          🚫 Internos
+        </button>
+
         <button id="btn-ver-salidas" class="btn-footer">
           Vehículos que salieron
         </button>
@@ -36,10 +40,9 @@
     </div>
   </div>
 
-  <!-- ================= MODAL VEHÍCULO ================= -->
   <div id="modal-vehiculo" class="modal-vehiculo">
     <div class="modal-content">
-      <span id="modal-close">&times;</span>
+      <span id="modal-close" class="close">&times;</span>
 
       <h3 id="modal-placa"></h3>
 
@@ -56,10 +59,9 @@
     </div>
   </div>
 
-  <!-- ============ MODAL HISTORIAL COMPLETO ============ -->
   <div id="modal-historial-completo" class="modal-vehiculo">
     <div class="modal-content" style="width: 800px;">
-      <span id="modal-historial-close">&times;</span>
+      <span id="modal-historial-close" class="close">&times;</span>
 
       <h3>Historial completo del vehículo</h3>
 
@@ -77,10 +79,9 @@
     </div>
   </div>
 
-  <!-- ============ MODAL VEHÍCULOS QUE SALIERON ============ -->
   <div id="modal-salidas" class="modal-vehiculo">
     <div class="modal-content" style="width: 900px;">
-      <span id="modal-salidas-close">&times;</span>
+      <span id="modal-salidas-close" class="close">&times;</span>
 
       <h3>Vehículos que salieron</h3>
 
@@ -108,6 +109,35 @@
         <span id="salidas-page-info"></span>
         <button id="salidas-next">▶</button>
       </div>
+    </div>
+  </div>
+
+  <div id="modal-internos" class="modal-vehiculo">
+    <div class="modal-content" style="width: 600px;">
+      <span id="close-internos" class="close">&times;</span>
+
+      <h3>🚫 Vehículos Internos (Excluidos)</h3>
+      <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">
+        Estos vehículos serán ignorados por las cámaras y no generarán registros.
+      </p>
+
+      <div style="display:flex; gap:10px; margin-bottom:20px; align-items: center;">
+        <input type="text" id="input-placa-interna" placeholder="Placa (ej: PBA1234)" style="flex:1; padding: 8px; text-transform: uppercase;">
+        <input type="text" id="input-desc-interna" placeholder="Descripción (ej: Camioneta Taller)" style="flex:2; padding: 8px;">
+        <button id="btn-agregar-interno" class="btn-nav" style="background-color: #28a745; color: white; border: none;">Agregar</button>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: #f1f1f1; text-align: left;">
+            <th style="padding: 8px;">Placa</th>
+            <th style="padding: 8px;">Descripción</th>
+            <th style="padding: 8px; text-align: center;">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-internos-body">
+          </tbody>
+      </table>
     </div>
   </div>
 
