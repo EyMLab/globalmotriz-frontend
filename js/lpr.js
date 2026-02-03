@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
+  // Z-Index alto para asegurar que los popups de confirmación queden encima de todo
+  const Z_INDEX_ALERTA = 10100; 
 
   if (!TOKEN) {
     localStorage.clear();
@@ -52,7 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".modal-vehiculo").forEach(m => {
       m.style.display = "none";
     });
-    // Limpiar campos del modal de internos si estaba abierto
     const inputPlaca = document.getElementById('input-placa-interna');
     const inputDesc = document.getElementById('input-desc-interna');
     if(inputPlaca) inputPlaca.value = '';
@@ -73,7 +74,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return out.join(" ");
   }
 
-  // ✅ Formateador de fechas
   function formatFecha(fechaStr) {
     if (!fechaStr) return "-";
     const fecha = new Date(fechaStr);
@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarLPR();
 
   /* ======================================================
-      MODAL VEHÍCULO (ACTUALIZADO CON FOTOS Y EDICIÓN)
+      MODAL VEHÍCULO (CORREGIDO UI Y Z-INDEX)
   ====================================================== */
   const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
@@ -173,24 +173,28 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
     placaSeleccionada = veh.placa;
 
-    // 1. Título con botón de editar
+    // 1. Título con botón de editar (SOLO TEXTO "EDITAR PLACA")
     modalPlaca.innerHTML = `
-      ${veh.placa} 
-      <button onclick="editarPlaca('${veh.placa}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;" title="Corregir Placa">✏️</button>
+      <div style="display:flex; align-items:center; gap:15px;">
+        <span>${veh.placa}</span>
+        <button onclick="editarPlaca('${veh.placa}')" 
+                style="background:none; border:1px solid #007bff; color:#007bff; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;" 
+                title="Corregir Placa">
+          EDITAR PLACA
+        </button>
+      </div>
     `;
 
     modalEstacion.textContent = est.estacion;
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
 
-    // 2. Preparar historial
     modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
 
-    // 🔒 ZONA DE SEGURIDAD: BOTÓN FORZAR SALIDA (SOLO ADMIN)
+    // BOTÓN FORZAR SALIDA (ADMIN)
     let btnForzar = document.getElementById("btn-forzar-salida");
-    if (btnForzar) btnForzar.style.display = 'none'; // Ocultar por defecto
+    if (btnForzar) btnForzar.style.display = 'none'; 
 
-    // Verificación simple de rol en localStorage (para UI rapida)
     const esAdmin = localStorage.getItem('rol') === 'admin' || localStorage.getItem('rol') === 'ADMIN';
 
     if (esAdmin) {
@@ -200,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btnForzar.className = "btn-eliminar-interno"; // Estilo rojo
             btnForzar.style.marginTop = "15px";
             btnForzar.style.width = "100%";
-            btnForzar.innerHTML = "FORZAR SALIDA";
+            btnForzar.innerHTML = "🚨 <b>ADMIN:</b> FORZAR SALIDA";
             
             const btnHist = document.getElementById("btn-historial-completo");
             if(btnHist) btnHist.parentNode.insertBefore(btnForzar, btnHist);
@@ -212,7 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modalVehiculo.style.display = "flex";
 
-    // 3. Cargar datos del historial
+    // Cargar historial
     try {
       const res = await apiFetch(`/lpr/historial/${veh.placa}`);
       if (!res || !res.ok) {
@@ -231,17 +235,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
         
-        // Estructura del item
         li.innerHTML = `<strong>${h.estacion}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
         
-        // 🔥 Botón de Foto (si existe URL)
+        // 🔥 Botón de Foto (SOLO TEXTO "VER FOTO")
         if (h.foto_url) {
            const btnCamara = document.createElement("button");
-           btnCamara.innerHTML = "📷 Ver";
+           btnCamara.innerHTML = "VER FOTO"; // Texto simple
            btnCamara.style.marginLeft = "10px";
            btnCamara.style.cursor = "pointer";
-           btnCamara.style.border = "1px solid #ccc";
+           btnCamara.style.border = "1px solid #28a745"; // Borde verde
+           btnCamara.style.color = "#28a745"; // Texto verde
+           btnCamara.style.fontWeight = "bold";
            btnCamara.style.borderRadius = "4px";
+           btnCamara.style.padding = "2px 8px";
+           btnCamara.style.backgroundColor = "white";
+           
            btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
            li.appendChild(btnCamara);
         }
@@ -261,6 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ======================================================
       FUNCIONES AUXILIARES (FOTOS, EDICIÓN, BORRADO)
+      🔥 TODAS CON Z-INDEX CORREGIDO 🔥
   ====================================================== */
 
   // 1. Ver Foto Grande
@@ -273,20 +282,22 @@ document.addEventListener("DOMContentLoaded", () => {
         width: 800,
         padding: '1em',
         background: '#fff',
-        backdrop: `rgba(0,0,0,0.8)`
+        backdrop: `rgba(0,0,0,0.8)`,
+        zIndex: Z_INDEX_ALERTA // <--- ESTO ARREGLA LA SUPERPOSICIÓN
     });
   };
 
-  // 2. Editar Placa (Lógica Inteligente)
+  // 2. Editar Placa
   window.editarPlaca = async (placaActual) => {
     const { value: nuevaPlaca } = await Swal.fire({
         title: 'Corregir Placa',
         input: 'text',
         inputValue: placaActual,
-        text: 'Si la cámara leyó mal, escribe la placa real.',
+        text: 'Escribe la placa real:',
         showCancelButton: true,
         confirmButtonText: 'Guardar',
         cancelButtonText: 'Cancelar',
+        zIndex: Z_INDEX_ALERTA, // <--- Z-INDEX ALTO
         inputValidator: (val) => {
             if (!val) return 'Debes escribir una placa';
         }
@@ -303,18 +314,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (res.ok) {
                 const data = await safeJson(res);
+                let titulo = 'Corregido';
+                let texto = `La placa ahora es ${placaFinal}`;
+
                 if (data.status === 'FUSION_EXITOSA') {
-                    Swal.fire('¡Fusionado!', `Se han unido los datos de ${placaActual} con ${placaFinal}.`, 'success');
-                } else {
-                    Swal.fire('Corregido', `La placa ahora es ${placaFinal}`, 'success');
+                    titulo = '¡Fusionado!';
+                    texto = `Se han unido los datos de ${placaActual} con ${placaFinal}.`;
                 }
+                
+                Swal.fire({ title: titulo, text: texto, icon: 'success', zIndex: Z_INDEX_ALERTA });
                 cerrarTodosLosModales();
                 cargarLPR(); 
             } else {
-                Swal.fire('Error', 'No se pudo corregir la placa', 'error');
+                Swal.fire({ title: 'Error', text: 'No se pudo corregir la placa', icon: 'error', zIndex: Z_INDEX_ALERTA });
             }
         } catch (err) {
-            Swal.fire('Error', 'Fallo de conexión', 'error');
+            Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
         }
     }
   };
@@ -322,34 +337,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. Forzar Salida (Solo Admin)
   window.forzarSalidaManual = async (placa) => {
     const confirmacion = await Swal.fire({
-        title: '¿Sacar vehículo del tablero?',
+        title: '¿Sacar vehículo?',
         text: `El vehículo ${placa} desaparecerá de la pantalla.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         confirmButtonText: 'Sí, sacarlo',
-        cancelButtonText: 'Cancelar'
+        cancelButtonText: 'Cancelar',
+        zIndex: Z_INDEX_ALERTA // <--- Z-INDEX ALTO
     });
 
     if (confirmacion.isConfirmed) {
         try {
             const res = await apiFetch(`/lpr/eliminar/${placa}`, { method: 'DELETE' });
             if (res && res.ok) {
-                Swal.fire('Listo', 'Vehículo retirado', 'success');
+                Swal.fire({ title: 'Listo', text: 'Vehículo retirado', icon: 'success', zIndex: Z_INDEX_ALERTA });
                 cerrarTodosLosModales();
                 pausaLPR = false;
                 cargarLPR();
             } else {
-                Swal.fire('Error', 'No se pudo eliminar', 'error');
+                Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA });
             }
         } catch (err) {
-            Swal.fire('Error', 'Fallo de conexión', 'error');
+            Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
         }
     }
   };
 
   /* ======================================================
-      MODAL HISTORIAL COMPLETO (DETALLADO POR SESIÓN)
+      MODAL HISTORIAL COMPLETO
   ====================================================== */
   const modalHistComp = document.getElementById("modal-historial-completo");
   const tablaHistComp = document.getElementById("tabla-historial-completo");
@@ -392,10 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         trSesion.innerHTML = `
           <td colspan="4" style="padding: 12px 8px;">
-            ${estadoBadge} | 
-            Entrada: ${entrada} | 
-            Salida: ${salida} | 
-            Tiempo: ${tiempoTotal}
+            ${estadoBadge} | Entrada: ${entrada} | Salida: ${salida} | Tiempo: ${tiempoTotal}
           </td>
         `;
         tablaHistComp.appendChild(trSesion);
@@ -412,10 +425,10 @@ document.addEventListener("DOMContentLoaded", () => {
               const inicioLocal = formatFecha(h.inicio);
               const finLocal = h.fin ? formatFecha(h.fin) : "-";
 
-              // Agregamos enlace a foto si existe en el historial completo también
+              // Enlace a foto (SOLO TEXTO "VER FOTO")
               let fotoLink = '';
               if (h.foto_url) {
-                  fotoLink = ` <span style="cursor:pointer" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">📷</span>`;
+                  fotoLink = ` <span style="cursor:pointer; color:#28a745; font-weight:bold; font-size:0.9em;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">[VER FOTO]</span>`;
               }
 
               tr.innerHTML = `
@@ -624,7 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const placa = inputPlacaInt.value.trim().toUpperCase();
       const descripcion = inputDescInt.value.trim();
 
-      if (!placa) return Swal.fire('Error', 'Escribe una placa', 'warning');
+      if (!placa) return Swal.fire({ title: 'Error', text: 'Escribe una placa', icon: 'warning', zIndex: Z_INDEX_ALERTA });
 
       try {
         const res = await apiFetch('/lpr/internos', {
@@ -644,13 +657,14 @@ document.addEventListener("DOMContentLoaded", () => {
             title: '¡Vehículo Excluido!',
             text: `La placa ${placa} ha sido agregada a la lista de internos.`,
             confirmButtonText: 'Entendido',
-            confirmButtonColor: '#28a745'
+            confirmButtonColor: '#28a745',
+            zIndex: Z_INDEX_ALERTA
           });
 
           cargarInternos();
         } else {
           const errData = await safeJson(res);
-          Swal.fire('Error', errData.error || 'No se pudo guardar', 'error');
+          Swal.fire({ title: 'Error', text: errData.error || 'No se pudo guardar', icon: 'error', zIndex: Z_INDEX_ALERTA });
         }
       } catch (err) {
         console.error(err);
@@ -666,7 +680,8 @@ document.addEventListener("DOMContentLoaded", () => {
       showCancelButton: true,
       confirmButtonColor: '#d33',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      zIndex: Z_INDEX_ALERTA
     });
 
     if (confirm.isConfirmed) {
@@ -679,11 +694,12 @@ document.addEventListener("DOMContentLoaded", () => {
             title: 'Eliminado', 
             text: 'El vehículo ya no está excluido.',
             timer: 1500,
-            showConfirmButton: false
+            showConfirmButton: false,
+            zIndex: Z_INDEX_ALERTA
           });
         }
       } catch (err) {
-        Swal.fire('Error', 'No se pudo eliminar', 'error');
+        Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA });
       }
     }
   }
