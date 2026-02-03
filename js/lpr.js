@@ -2,8 +2,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
-  // Z-Index alto para asegurar que los popups de confirmación queden encima de todo
-  const Z_INDEX_ALERTA = 10100; 
+  
+  // 🔥 CORRECCIÓN CRÍTICA: Z-Index Nuclear para estar siempre encima
+  const Z_INDEX_ALERTA = 99999999; 
 
   if (!TOKEN) {
     localStorage.clear();
@@ -16,7 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ====================================================== */
   let pausaLPR = false;
   let placaSeleccionada = null;
-
   let paginaSalidas = 1;
   const limiteSalidas = 10;
   let ultimoTotal = 0;
@@ -96,14 +96,11 @@ document.addEventListener("DOMContentLoaded", () => {
   ====================================================== */
   async function cargarLPR() {
     if (pausaLPR) return;
-
     try {
       const res = await apiFetch("/lpr/estado");
       if (!res || !res.ok) return;
-
       const data = await safeJson(res);
       renderKanban(data);
-
     } catch (err) {
       console.error("❌ Error cargando LPR", err);
     }
@@ -154,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarLPR();
 
   /* ======================================================
-      MODAL VEHÍCULO (CORREGIDO UI Y Z-INDEX)
+      MODAL VEHÍCULO
   ====================================================== */
   const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
@@ -173,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
     placaSeleccionada = veh.placa;
 
-    // 1. Título con botón de editar (SOLO TEXTO "EDITAR PLACA")
+    // Título con botón de editar (SOLO TEXTO)
     modalPlaca.innerHTML = `
       <div style="display:flex; align-items:center; gap:15px;">
         <span>${veh.placa}</span>
@@ -188,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modalEstacion.textContent = est.estacion;
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
-
     modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
 
     // BOTÓN FORZAR SALIDA (ADMIN)
@@ -237,14 +233,14 @@ document.addEventListener("DOMContentLoaded", () => {
         
         li.innerHTML = `<strong>${h.estacion}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
         
-        // 🔥 Botón de Foto (SOLO TEXTO "VER FOTO")
+        // Botón de Foto (SOLO TEXTO)
         if (h.foto_url) {
            const btnCamara = document.createElement("button");
-           btnCamara.innerHTML = "VER FOTO"; // Texto simple
+           btnCamara.innerHTML = "VER FOTO"; 
            btnCamara.style.marginLeft = "10px";
            btnCamara.style.cursor = "pointer";
-           btnCamara.style.border = "1px solid #28a745"; // Borde verde
-           btnCamara.style.color = "#28a745"; // Texto verde
+           btnCamara.style.border = "1px solid #28a745"; 
+           btnCamara.style.color = "#28a745"; 
            btnCamara.style.fontWeight = "bold";
            btnCamara.style.borderRadius = "4px";
            btnCamara.style.padding = "2px 8px";
@@ -283,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
         padding: '1em',
         background: '#fff',
         backdrop: `rgba(0,0,0,0.8)`,
-        zIndex: Z_INDEX_ALERTA // <--- ESTO ARREGLA LA SUPERPOSICIÓN
+        zIndex: Z_INDEX_ALERTA // <--- Asegura estar encima
     });
   };
 
@@ -297,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showCancelButton: true,
         confirmButtonText: 'Guardar',
         cancelButtonText: 'Cancelar',
-        zIndex: Z_INDEX_ALERTA, // <--- Z-INDEX ALTO
+        zIndex: Z_INDEX_ALERTA, // <--- Asegura estar encima
         inputValidator: (val) => {
             if (!val) return 'Debes escribir una placa';
         }
@@ -344,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmButtonColor: '#d33',
         confirmButtonText: 'Sí, sacarlo',
         cancelButtonText: 'Cancelar',
-        zIndex: Z_INDEX_ALERTA // <--- Z-INDEX ALTO
+        zIndex: Z_INDEX_ALERTA // <--- Asegura estar encima
     });
 
     if (confirmacion.isConfirmed) {
@@ -425,7 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
               const inicioLocal = formatFecha(h.inicio);
               const finLocal = h.fin ? formatFecha(h.fin) : "-";
 
-              // Enlace a foto (SOLO TEXTO "VER FOTO")
+              // Enlace a foto (SOLO TEXTO)
               let fotoLink = '';
               if (h.foto_url) {
                   fotoLink = ` <span style="cursor:pointer; color:#28a745; font-weight:bold; font-size:0.9em;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">[VER FOTO]</span>`;
