@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Historial de Movimientos</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+      <h2 style="color:#2B7A9E; margin:0; font-size:24px;">Historial de Movimientos</h2>
+      <a href="inventario.html" class="btn-obs" style="text-decoration:none; padding:8px 16px; display:flex; align-items:center; gap:5px;">
+        <span>⬅</span> Volver al Inventario
+      </a>
+    </div>
+
+    <div class="filtros insumos">
+      <div class="filtro-grupo">
+        <label>Localidad</label>
+        <select id="h-localidad">
+          <option value="">Todas</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+      
+      <div class="filtro-grupo">
+        <label>Desde</label>
+        <input type="date" id="h-desde">
+      </div>
+      
+      <div class="filtro-grupo">
+        <label>Hasta</label>
+        <input type="date" id="h-hasta">
+      </div>
+      
+      <div class="filtro-grupo" style="display:flex; align-items:flex-end;">
+        <button id="btn-buscar" class="btn-obs" style="background:#2B7A9E; color:white; border:none; height:42px; width:100%;">
+          Filtrar Movimientos
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha / Hora</th>
+            <th>Usuario</th>
+            <th>Código</th>
+            <th>Insumo</th>
+            <th>Tipo Movimiento</th>
+            <th>Cant.</th>
+            <th>Localidad</th>
+            <th>Motivo / Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="tablaHistorial">
+          </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-controls">
+      <button id="btn-prev">Anterior</button>
+      <span id="page-info">Página 1</span>
+      <button id="btn-next">Siguiente</button>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/historial.js"></script>
+</body>
+</html>
