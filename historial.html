@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inventario de Insumos</title>
+  <title>Historial de Movimientos</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -11,83 +11,69 @@
   <div id="nav-container"></div>
 
   <div class="dashboard-container">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+      <h2 style="color:#2B7A9E; margin:0; font-size:24px;">Historial de Movimientos</h2>
+      <a href="inventario.html" class="btn-obs" style="text-decoration:none; padding:8px 16px; display:flex; align-items:center; gap:5px;">
+        <span>⬅</span> Volver al Inventario
+      </a>
+    </div>
 
-    <div class="filtros insumos" style="margin-bottom:12px;">
-
+    <div class="filtros insumos">
       <div class="filtro-grupo">
-        <label for="filtro-q">Buscar (código o nombre):</label>
-        <input type="text" id="filtro-q" placeholder="Ej: INS001 o Lija 80">
-      </div>
-
-      <div class="filtro-grupo">
-        <label for="filtro-tipo">Tipo:</label>
-        <select id="filtro-tipo">
-          <option value="">Todos</option>
-          <option value="STOCK">STOCK</option>
-          <option value="DIRECTO">DIRECTO</option>
-        </select>
-      </div>
-
-      <div class="filtro-grupo">
-        <label for="filtro-estado">Estado:</label>
-        <select id="filtro-estado">
-          <option value="">Todos</option>
-          <option value="red">Rojo</option>
-          <option value="yellow">Amarillo</option>
-          <option value="green">Verde</option>
-        </select>
-      </div>
-
-      <div class="filtro-grupo">
-        <label for="filtro-localidad">Localidad:</label>
-        <select id="filtro-localidad">
+        <label>Localidad</label>
+        <select id="h-localidad">
           <option value="">Todas</option>
           <option value="MATRIZ">MATRIZ</option>
           <option value="SUCURSAL">SUCURSAL</option>
         </select>
       </div>
-
-    </div>
-
-    <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button id="btnNuevo" type="button" class="btn-obs">Nuevo Insumo</button>
       
-      <button id="btnTraslado" type="button" class="btn-obs">Traslado</button>
-
-      <button id="btnImportar" type="button" class="btn-obs">Importar Excel</button>
-      <button id="btnPlantilla" type="button" class="btn-obs">Plantilla</button>
-
-      <button type="button" class="btn-obs" onclick="window.location.href='historial.html'">
-        Historial
-      </button>
+      <div class="filtro-grupo">
+        <label>Desde</label>
+        <input type="date" id="h-desde">
+      </div>
+      
+      <div class="filtro-grupo">
+        <label>Hasta</label>
+        <input type="date" id="h-hasta">
+      </div>
+      
+      <div class="filtro-grupo" style="display:flex; align-items:flex-end;">
+        <button id="btn-buscar" class="btn-obs" style="background:#2B7A9E; color:white; border:none; height:42px; width:100%;">
+          Filtrar Movimientos
+        </button>
+      </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Insumo</th>
-          <th>Tipo</th>
-          <th>Unidad</th>
-          <th>Localidad</th>
-          <th>Stock</th>
-          <th>Mínimo</th>
-          <th>Estado</th>
-          <th class="col-acciones">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tablaInventario"></tbody>
-    </table>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha / Hora</th>
+            <th>Usuario</th>
+            <th>Código</th>
+            <th>Insumo</th>
+            <th>Tipo Movimiento</th>
+            <th>Cant.</th>
+            <th>Localidad</th>
+            <th>Motivo / Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="tablaHistorial">
+          </tbody>
+      </table>
+    </div>
 
     <div class="pagination-controls">
-      <button id="btn-prev" type="button">Anterior</button>
+      <button id="btn-prev">Anterior</button>
       <span id="page-info">Página 1</span>
-      <button id="btn-next" type="button">Siguiente</button>
+      <button id="btn-next">Siguiente</button>
     </div>
   </div>
 
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
-  <script src="js/inventario.js"></script>
+  <script src="js/historial.js"></script>
 </body>
 </html>
