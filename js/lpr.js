@@ -73,11 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return out.join(" ");
   }
 
-  // ✅ Formateador de fechas (Backend envía texto local, navegador muestra tal cual)
+  // ✅ Formateador de fechas
   function formatFecha(fechaStr) {
     if (!fechaStr) return "-";
-    
-    // Al no tener "Z", el navegador asume hora local. Perfecto.
     const fecha = new Date(fechaStr);
     
     const dia = String(fecha.getDate()).padStart(2, '0');
@@ -156,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarLPR();
 
   /* ======================================================
-      MODAL VEHÍCULO
+      MODAL VEHÍCULO (ACTUALIZADO CON FOTOS Y EDICIÓN)
   ====================================================== */
   const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
@@ -175,34 +173,179 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
     placaSeleccionada = veh.placa;
 
-    modalPlaca.textContent = veh.placa;
+    // 1. Título con botón de editar
+    modalPlaca.innerHTML = `
+      ${veh.placa} 
+      <button onclick="editarPlaca('${veh.placa}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;" title="Corregir Placa">✏️</button>
+    `;
+
     modalEstacion.textContent = est.estacion;
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
 
+    // 2. Preparar historial
+    modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
+
+    // 🔒 ZONA DE SEGURIDAD: BOTÓN FORZAR SALIDA (SOLO ADMIN)
+    let btnForzar = document.getElementById("btn-forzar-salida");
+    if (btnForzar) btnForzar.style.display = 'none'; // Ocultar por defecto
+
+    // Verificación simple de rol en localStorage (para UI rapida)
+    const esAdmin = localStorage.getItem('rol') === 'admin' || localStorage.getItem('rol') === 'ADMIN';
+
+    if (esAdmin) {
+        if (!btnForzar) {
+            btnForzar = document.createElement("button");
+            btnForzar.id = "btn-forzar-salida";
+            btnForzar.className = "btn-eliminar-interno"; // Estilo rojo
+            btnForzar.style.marginTop = "15px";
+            btnForzar.style.width = "100%";
+            btnForzar.innerHTML = "🚨 <b>ADMIN:</b> FORZAR SALIDA";
+            
+            const btnHist = document.getElementById("btn-historial-completo");
+            if(btnHist) btnHist.parentNode.insertBefore(btnForzar, btnHist);
+            
+            btnForzar.onclick = () => forzarSalidaManual(veh.placa);
+        }
+        btnForzar.style.display = 'block';
+    }
+
+    modalVehiculo.style.display = "flex";
+
+    // 3. Cargar datos del historial
     try {
       const res = await apiFetch(`/lpr/historial/${veh.placa}`);
-      if (!res || !res.ok) return;
+      if (!res || !res.ok) {
+          modalHistorial.innerHTML = '<li style="color:red;">Error cargando historial</li>';
+          return;
+      }
 
       const data = await safeJson(res);
       modalHistorial.innerHTML = "";
 
+      if (data.historial.length === 0) {
+          modalHistorial.innerHTML = "<li>Sin movimientos recientes</li>";
+      }
+
       data.historial.slice(0, 5).forEach(h => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
-        li.textContent = `${h.estacion} - ${fechaLocal} (${formatTime(h.segundos_estacion)})`;
+        
+        // Estructura del item
+        li.innerHTML = `<strong>${h.estacion}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
+        
+        // 🔥 Botón de Foto (si existe URL)
+        if (h.foto_url) {
+           const btnCamara = document.createElement("button");
+           btnCamara.innerHTML = "📷 Ver";
+           btnCamara.style.marginLeft = "10px";
+           btnCamara.style.cursor = "pointer";
+           btnCamara.style.border = "1px solid #ccc";
+           btnCamara.style.borderRadius = "4px";
+           btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
+           li.appendChild(btnCamara);
+        }
+        
         modalHistorial.appendChild(li);
       });
 
     } catch (err) {
       console.error("❌ Error historial", err);
+      modalHistorial.innerHTML = '<li style="color:red;">Error de conexión</li>';
     }
-
-    modalVehiculo.style.display = "flex";
   }
 
   document.getElementById("btn-historial-completo").onclick = () => {
     if (placaSeleccionada) abrirModalHistorialCompleto(placaSeleccionada);
+  };
+
+  /* ======================================================
+      FUNCIONES AUXILIARES (FOTOS, EDICIÓN, BORRADO)
+  ====================================================== */
+
+  // 1. Ver Foto Grande
+  window.verFotoGrande = (url, estacion, fecha) => {
+    Swal.fire({
+        imageUrl: url,
+        imageAlt: `Foto en ${estacion}`,
+        title: `Ingreso a ${estacion}`,
+        text: fecha,
+        width: 800,
+        padding: '1em',
+        background: '#fff',
+        backdrop: `rgba(0,0,0,0.8)`
+    });
+  };
+
+  // 2. Editar Placa (Lógica Inteligente)
+  window.editarPlaca = async (placaActual) => {
+    const { value: nuevaPlaca } = await Swal.fire({
+        title: 'Corregir Placa',
+        input: 'text',
+        inputValue: placaActual,
+        text: 'Si la cámara leyó mal, escribe la placa real.',
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (val) => {
+            if (!val) return 'Debes escribir una placa';
+        }
+    });
+
+    if (nuevaPlaca && nuevaPlaca.toUpperCase() !== placaActual) {
+        const placaFinal = nuevaPlaca.toUpperCase().trim();
+        try {
+            const res = await apiFetch('/lpr/corregir', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ placaOriginal: placaActual, placaNueva: placaFinal })
+            });
+
+            if (res.ok) {
+                const data = await safeJson(res);
+                if (data.status === 'FUSION_EXITOSA') {
+                    Swal.fire('¡Fusionado!', `Se han unido los datos de ${placaActual} con ${placaFinal}.`, 'success');
+                } else {
+                    Swal.fire('Corregido', `La placa ahora es ${placaFinal}`, 'success');
+                }
+                cerrarTodosLosModales();
+                cargarLPR(); 
+            } else {
+                Swal.fire('Error', 'No se pudo corregir la placa', 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', 'Fallo de conexión', 'error');
+        }
+    }
+  };
+
+  // 3. Forzar Salida (Solo Admin)
+  window.forzarSalidaManual = async (placa) => {
+    const confirmacion = await Swal.fire({
+        title: '¿Sacar vehículo del tablero?',
+        text: `El vehículo ${placa} desaparecerá de la pantalla.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Sí, sacarlo',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (confirmacion.isConfirmed) {
+        try {
+            const res = await apiFetch(`/lpr/eliminar/${placa}`, { method: 'DELETE' });
+            if (res && res.ok) {
+                Swal.fire('Listo', 'Vehículo retirado', 'success');
+                cerrarTodosLosModales();
+                pausaLPR = false;
+                cargarLPR();
+            } else {
+                Swal.fire('Error', 'No se pudo eliminar', 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', 'Fallo de conexión', 'error');
+        }
+    }
   };
 
   /* ======================================================
@@ -221,7 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
 
     try {
-      // 1. Obtener sesiones
       const resSesiones = await apiFetch(`/lpr/sesiones/${placa}`);
       if (!resSesiones || !resSesiones.ok) return;
 
@@ -234,10 +376,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 2. Iterar sesiones y buscar tramos
       for (const sesion of dataSesiones.sesiones) {
         
-        // Encabezado de sesión
         const trSesion = document.createElement("tr");
         trSesion.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#e3f2fd' : '#f5f5f5';
         trSesion.style.fontWeight = 'bold';
@@ -260,7 +400,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         tablaHistComp.appendChild(trSesion);
 
-        // Tramos de esta sesión
         const resTramos = await apiFetch(`/lpr/historial/${placa}?sesion_id=${sesion.sesion_id}`);
         if (resTramos && resTramos.ok) {
           const dataTramos = await safeJson(resTramos);
@@ -273,8 +412,14 @@ document.addEventListener("DOMContentLoaded", () => {
               const inicioLocal = formatFecha(h.inicio);
               const finLocal = h.fin ? formatFecha(h.fin) : "-";
 
+              // Agregamos enlace a foto si existe en el historial completo también
+              let fotoLink = '';
+              if (h.foto_url) {
+                  fotoLink = ` <span style="cursor:pointer" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">📷</span>`;
+              }
+
               tr.innerHTML = `
-                <td style="padding-left: 20px;">↳ ${h.estacion}</td>
+                <td style="padding-left: 20px;">↳ ${h.estacion} ${fotoLink}</td>
                 <td>${inicioLocal}</td>
                 <td>${finLocal}</td>
                 <td>${formatTime(h.segundos_estacion)}</td>
@@ -284,7 +429,6 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        // Separador
         const trSeparador = document.createElement("tr");
         trSeparador.innerHTML = `<td colspan="4" style="height: 5px; background: white;"></td>`;
         tablaHistComp.appendChild(trSeparador);
@@ -405,7 +549,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await apiFetch('/auth/me'); 
       if (res && res.ok) {
         const data = await safeJson(res);
-        // Si es admin, mostramos el botón rojo
         if (data.rol === 'admin') {
           const btn = document.getElementById('btn-gestionar-internos');
           if (btn) {
@@ -424,7 +567,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputPlacaInt = document.getElementById('input-placa-interna');
   const inputDescInt = document.getElementById('input-desc-interna');
 
-  // Cerrar modal internos
   if (document.getElementById('close-internos')) {
     document.getElementById('close-internos').onclick = () => {
       modalInternos.style.display = 'none';
@@ -434,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function abrirModalInternos() {
     cerrarTodosLosModales();
-    pausaLPR = true; // Pausamos actualización para que no moleste
+    pausaLPR = true;
     modalInternos.style.display = 'flex';
     cargarInternos();
   }
@@ -471,13 +613,11 @@ document.addEventListener("DOMContentLoaded", () => {
       tablaInternos.appendChild(tr);
     });
 
-    // Listeners eliminar
     document.querySelectorAll('.btn-eliminar-interno').forEach(btn => {
       btn.onclick = () => eliminarInterno(btn.dataset.placa);
     });
   }
 
-  // ✅ CORREGIDO: Agregar Nuevo Interno (Cierra modal y centra mensaje)
   const btnAddInterno = document.getElementById('btn-agregar-interno');
   if(btnAddInterno) {
     btnAddInterno.onclick = async () => {
@@ -494,15 +634,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (res.ok) {
-          // 1. Limpiar campos
           inputPlacaInt.value = '';
           inputDescInt.value = '';
-          
-          // 2. Cerrar modal y reactivar LPR
           modalInternos.style.display = 'none';
           pausaLPR = false;
 
-          // 3. Mostrar alerta CENTRADA
           Swal.fire({
             icon: 'success',
             title: '¡Vehículo Excluido!',
@@ -511,7 +647,6 @@ document.addEventListener("DOMContentLoaded", () => {
             confirmButtonColor: '#28a745'
           });
 
-          // Recargar lista
           cargarInternos();
         } else {
           const errData = await safeJson(res);
@@ -523,7 +658,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Eliminar Interno
   async function eliminarInterno(placa) {
     const confirm = await Swal.fire({
       title: `¿Eliminar ${placa}?`,
