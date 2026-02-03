@@ -84,20 +84,20 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => {
       const motivo = (item.motivo || '').toUpperCase();
       let estiloTipo = 'font-weight:600; color:#555;';
-      let icono = '📝 Ajuste';
+      let icono = 'Ajuste';
 
       // Lógica de colores según el motivo
       if (motivo.includes('IMPORTACIÓN') || motivo.includes('CARGA MASIVA') || motivo.includes('ENTRADA')) {
         estiloTipo = 'color:#16a34a; font-weight:700;'; // Verde
-        icono = '📥 Entrada / Carga';
+        icono = 'Carga';
       } 
       else if (motivo.includes('SALIDA') || motivo.includes('RESTAR')) {
         estiloTipo = 'color:#dc2626; font-weight:700;'; // Rojo
-        icono = '📤 Salida';
+        icono = 'Salida';
       } 
       else if (motivo.includes('TRASLADO')) {
         estiloTipo = 'color:#2563eb; font-weight:700;'; // Azul
-        icono = '🔄 Traslado';
+        icono = 'Traslado';
       }
 
       const tr = document.createElement('tr');
