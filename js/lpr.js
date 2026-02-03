@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
   
-  // 🔥 Z-Index Nuclear para estar siempre encima
+  // 🔥 Z-Index Nuclear para estar siempre encima de los modales
   const Z_INDEX_ALERTA = 99999999; 
 
   if (!TOKEN) {
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       KANBAN PRINCIPAL
   ====================================================== */
   async function cargarLPR() {
-    if (pausaLPR) return;
+    if (pausaLPR) return; // Si está en pausa, no actualiza
     try {
       const res = await apiFetch("/lpr/estado");
       if (!res || !res.ok) return;
@@ -162,12 +162,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("modal-close").onclick = () => {
     cerrarTodosLosModales();
-    pausaLPR = false;
+    pausaLPR = false; // Reactivamos la actualización al cerrar
   };
 
   async function abrirModalVehiculo(est, veh) {
     cerrarTodosLosModales();
-    pausaLPR = true;
+    pausaLPR = true; // Pausamos para que no se cierre mientras vemos
     placaSeleccionada = veh.placa;
 
     // Título con botón de editar (SOLO TEXTO)
@@ -186,8 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
     modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
-
-    // 🔴 SE HA ELIMINADO EL BOTÓN DE FORZAR SALIDA AQUÍ
 
     modalVehiculo.style.display = "flex";
 
@@ -261,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // 2. Editar Placa
+  // 2. Editar Placa (CORREGIDO: ACTUALIZACIÓN INMEDIATA)
   window.editarPlaca = async (placaActual) => {
     const { value: nuevaPlaca } = await Swal.fire({
         title: 'Corregir Placa',
@@ -296,41 +294,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     texto = `Se han unido los datos de ${placaActual} con ${placaFinal}.`;
                 }
                 
-                Swal.fire({ title: titulo, text: texto, icon: 'success', zIndex: Z_INDEX_ALERTA });
+                await Swal.fire({ title: titulo, text: texto, icon: 'success', zIndex: Z_INDEX_ALERTA });
+                
+                // ✅ AQUÍ ESTABA EL ERROR: DEBEMOS QUITAR LA PAUSA ANTES DE RECARGAR
                 cerrarTodosLosModales();
-                cargarLPR(); 
+                pausaLPR = false; // <--- ¡ESTO REACTIVA LA ACTUALIZACIÓN!
+                cargarLPR();      // <--- ¡ESTO REFRESCA EL TABLERO AL INSTANTE!
+
             } else {
                 Swal.fire({ title: 'Error', text: 'No se pudo corregir la placa', icon: 'error', zIndex: Z_INDEX_ALERTA });
-            }
-        } catch (err) {
-            Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
-        }
-    }
-  };
-
-  // 3. (Función de forzar salida se mantiene definida pero no se usa en el botón)
-  window.forzarSalidaManual = async (placa) => {
-    const confirmacion = await Swal.fire({
-        title: '¿Sacar vehículo?',
-        text: `El vehículo ${placa} desaparecerá de la pantalla.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Sí, sacarlo',
-        cancelButtonText: 'Cancelar',
-        zIndex: Z_INDEX_ALERTA
-    });
-
-    if (confirmacion.isConfirmed) {
-        try {
-            const res = await apiFetch(`/lpr/eliminar/${placa}`, { method: 'DELETE' });
-            if (res && res.ok) {
-                Swal.fire({ title: 'Listo', text: 'Vehículo retirado', icon: 'success', zIndex: Z_INDEX_ALERTA });
-                cerrarTodosLosModales();
-                pausaLPR = false;
-                cargarLPR();
-            } else {
-                Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA });
             }
         } catch (err) {
             Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
