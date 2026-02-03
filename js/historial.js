@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (data) {
       state.total = data.total;
-      state.page = data.page; // Sincronizar página actual
+      state.page = data.page; 
       renderTabla(data.items);
       renderPaginacion();
     } else {
@@ -103,16 +103,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-size:0.9rem;">${item.fecha}</td>
-        <td><span style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:0.85rem;">${item.usuario || 'Sistema'}</span></td>
+        <td>${item.usuario || 'Sistema'}</td>
         <td style="font-weight:600;">${item.codigo}</td>
         <td style="text-align:left;">${item.insumo || '<span style="color:#999;">Desconocido</span>'}</td>
         <td style="${estiloTipo}">${icono}</td>
-        <td style="font-size:1.1rem; font-weight:bold;">${item.cantidad}</td>
+        <td style="font-weight:600;">${item.cantidad}</td>
         <td>${item.localidad}</td>
         <td style="text-align:left; font-size:0.85rem; color:#444;">${item.motivo}</td>
       `;
       tbody.appendChild(tr);
     });
+
+    // Activar pestaña de Inventario en el menú superior
+    activarTabInventario();
+  }
+
+  function activarTabInventario() {
+    setTimeout(() => {
+      const links = document.querySelectorAll('.nav-links a');
+      links.forEach(link => {
+        link.classList.remove('active');
+        if (link.textContent.trim().toLowerCase() === 'inventario') {
+          link.classList.add('active');
+        }
+      });
+    }, 150);
   }
 
   function renderPaginacion() {
