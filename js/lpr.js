@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
   
-  // 🔥 CORRECCIÓN CRÍTICA: Z-Index Nuclear para estar siempre encima
+  // 🔥 Z-Index Nuclear para estar siempre encima
   const Z_INDEX_ALERTA = 99999999; 
 
   if (!TOKEN) {
@@ -187,28 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
     modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
 
-    // BOTÓN FORZAR SALIDA (ADMIN)
-    let btnForzar = document.getElementById("btn-forzar-salida");
-    if (btnForzar) btnForzar.style.display = 'none'; 
-
-    const esAdmin = localStorage.getItem('rol') === 'admin' || localStorage.getItem('rol') === 'ADMIN';
-
-    if (esAdmin) {
-        if (!btnForzar) {
-            btnForzar = document.createElement("button");
-            btnForzar.id = "btn-forzar-salida";
-            btnForzar.className = "btn-eliminar-interno"; // Estilo rojo
-            btnForzar.style.marginTop = "15px";
-            btnForzar.style.width = "100%";
-            btnForzar.innerHTML = "FORZAR SALIDA";
-            
-            const btnHist = document.getElementById("btn-historial-completo");
-            if(btnHist) btnHist.parentNode.insertBefore(btnForzar, btnHist);
-            
-            btnForzar.onclick = () => forzarSalidaManual(veh.placa);
-        }
-        btnForzar.style.display = 'block';
-    }
+    // 🔴 SE HA ELIMINADO EL BOTÓN DE FORZAR SALIDA AQUÍ
 
     modalVehiculo.style.display = "flex";
 
@@ -265,7 +244,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ======================================================
       FUNCIONES AUXILIARES (FOTOS, EDICIÓN, BORRADO)
-      🔥 TODAS CON Z-INDEX CORREGIDO 🔥
   ====================================================== */
 
   // 1. Ver Foto Grande
@@ -279,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
         padding: '1em',
         background: '#fff',
         backdrop: `rgba(0,0,0,0.8)`,
-        zIndex: Z_INDEX_ALERTA // <--- Asegura estar encima
+        zIndex: Z_INDEX_ALERTA
     });
   };
 
@@ -293,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showCancelButton: true,
         confirmButtonText: 'Guardar',
         cancelButtonText: 'Cancelar',
-        zIndex: Z_INDEX_ALERTA, // <--- Asegura estar encima
+        zIndex: Z_INDEX_ALERTA,
         inputValidator: (val) => {
             if (!val) return 'Debes escribir una placa';
         }
@@ -330,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // 3. Forzar Salida (Solo Admin)
+  // 3. (Función de forzar salida se mantiene definida pero no se usa en el botón)
   window.forzarSalidaManual = async (placa) => {
     const confirmacion = await Swal.fire({
         title: '¿Sacar vehículo?',
@@ -340,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmButtonColor: '#d33',
         confirmButtonText: 'Sí, sacarlo',
         cancelButtonText: 'Cancelar',
-        zIndex: Z_INDEX_ALERTA // <--- Asegura estar encima
+        zIndex: Z_INDEX_ALERTA
     });
 
     if (confirmacion.isConfirmed) {
