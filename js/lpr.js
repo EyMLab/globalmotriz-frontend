@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btnForzar.className = "btn-eliminar-interno"; // Estilo rojo
             btnForzar.style.marginTop = "15px";
             btnForzar.style.width = "100%";
-            btnForzar.innerHTML = "🚨 <b>ADMIN:</b> FORZAR SALIDA";
+            btnForzar.innerHTML = "FORZAR SALIDA";
             
             const btnHist = document.getElementById("btn-historial-completo");
             if(btnHist) btnHist.parentNode.insertBefore(btnForzar, btnHist);
