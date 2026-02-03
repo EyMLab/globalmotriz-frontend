@@ -35,7 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
     else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
-    else if (window.location.pathname.includes("inventario")) pagina = "Inventario";
+    else if (window.location.pathname.includes("inventario") || window.location.pathname.includes("historial")) {
+        pagina = "Inventario";
+    }    
     else if (window.location.pathname.includes("lpr")) pagina = "Taller";   // ← IMPORTANTE
 
     // ============================================

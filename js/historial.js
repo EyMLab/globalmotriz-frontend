@@ -16,19 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
     hasta: ''
   };
 
-  // Referencias DOM
   const tbody = document.getElementById('tablaHistorial');
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
   const pageInfo = document.getElementById('page-info');
   const btnBuscar = document.getElementById('btn-buscar');
 
-  // Establecer fecha "Hasta" como hoy por defecto
   const hoy = new Date().toISOString().split('T')[0];
   const inputHasta = document.getElementById('h-hasta');
   if (inputHasta) inputHasta.value = hoy;
   
-  // --- HELPERS ---
   async function apiFetch(path) {
     try {
       const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -45,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- CARGA DE DATOS ---
   async function cargarHistorial() {
     state.localidad = document.getElementById('h-localidad').value;
     state.desde = document.getElementById('h-desde').value;
@@ -60,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Cargando historial...</td></tr>';
-
     const data = await apiFetch(`/inventario/historial?${params.toString()}`);
 
     if (data) {
@@ -73,12 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- RENDERIZADO ---
   function renderTabla(items) {
     tbody.innerHTML = '';
-    
     if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#666;">No hay movimientos registrados en este periodo.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#666;">No hay movimientos registrados.</td></tr>';
       return;
     }
 
@@ -90,12 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (motivo.includes('IMPORTACIÓN') || motivo.includes('CARGA MASIVA') || motivo.includes('ENTRADA')) {
         estiloTipo = 'color:#16a34a; font-weight:700;'; 
         icono = 'Carga';
-      } 
-      else if (motivo.includes('SALIDA') || motivo.includes('RESTAR')) {
+      } else if (motivo.includes('SALIDA') || motivo.includes('RESTAR')) {
         estiloTipo = 'color:#dc2626; font-weight:700;'; 
         icono = 'Salida';
-      } 
-      else if (motivo.includes('TRASLADO')) {
+      } else if (motivo.includes('TRASLADO')) {
         estiloTipo = 'color:#2563eb; font-weight:700;'; 
         icono = 'Traslado';
       }
@@ -113,28 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       tbody.appendChild(tr);
     });
-
-    // Ejecutar correcciones en el Navbar
-    corregirNavbar();
-  }
-
-  function corregirNavbar() {
-    setTimeout(() => {
-      // 1. Iluminar la pestaña de Inventario
-      const links = document.querySelectorAll('.nav-links a');
-      links.forEach(link => {
-        link.classList.remove('active');
-        if (link.textContent.trim().toLowerCase() === 'inventario') {
-          link.classList.add('active');
-        }
-      });
-
-      // 2. Corregir el título arriba a la izquierda (Cambiar "Facturas" por "Inventario")
-      const navTitle = document.querySelector('.nav-title');
-      if (navTitle) {
-        navTitle.textContent = 'Inventario';
-      }
-    }, 150);
   }
 
   function renderPaginacion() {
@@ -144,33 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnNext.disabled = state.page >= max;
   }
 
-  // --- EVENTOS ---
-  if (btnBuscar) {
-    btnBuscar.onclick = () => {
-      state.page = 1;
-      cargarHistorial();
-    };
-  }
+  if (btnBuscar) btnBuscar.onclick = () => { state.page = 1; cargarHistorial(); };
+  if (btnPrev) btnPrev.onclick = () => { if (state.page > 1) { state.page--; cargarHistorial(); } };
+  if (btnNext) btnNext.onclick = () => { if (state.page < Math.ceil(state.total / state.pageSize)) { state.page++; cargarHistorial(); } };
 
-  if (btnPrev) {
-    btnPrev.onclick = () => {
-      if (state.page > 1) {
-        state.page--;
-        cargarHistorial();
-      }
-    };
-  }
-
-  if (btnNext) {
-    btnNext.onclick = () => {
-      const max = Math.ceil(state.total / state.pageSize);
-      if (state.page < max) {
-        state.page++;
-        cargarHistorial();
-      }
-    };
-  }
-
-  // Carga inicial
   cargarHistorial();
 });
