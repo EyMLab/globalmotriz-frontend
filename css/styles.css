@@ -1138,3 +1138,16 @@ td.user-actions button.btn-eliminar:hover {
   border-color: var(--danger);
   transform: translateY(-1px);
 }
+
+/* ====================================================================== 
+   14) CORRECCIÓN DE Z-INDEX (NUCLEAR)
+====================================================================== */
+/* Esto fuerza a que las alertas estén SIEMPRE encima de tu modal (3000) */
+div.swal2-container {
+  z-index: 99999999 !important;
+}
+
+/* Opcional: Aseguramos que el fondo oscuro de la alerta también cubra todo */
+div.swal2-backdrop-show {
+  z-index: 99999998 !important;
+}
