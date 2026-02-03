@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Establecer fecha "Hasta" como hoy por defecto
   const hoy = new Date().toISOString().split('T')[0];
-  document.getElementById('h-hasta').value = hoy;
+  const inputHasta = document.getElementById('h-hasta');
+  if (inputHasta) inputHasta.value = hoy;
   
   // --- HELPERS ---
   async function apiFetch(path) {
@@ -86,17 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
       let estiloTipo = 'font-weight:600; color:#555;';
       let icono = 'Ajuste';
 
-      // Lógica de colores según el motivo
       if (motivo.includes('IMPORTACIÓN') || motivo.includes('CARGA MASIVA') || motivo.includes('ENTRADA')) {
-        estiloTipo = 'color:#16a34a; font-weight:700;'; // Verde
+        estiloTipo = 'color:#16a34a; font-weight:700;'; 
         icono = 'Carga';
       } 
       else if (motivo.includes('SALIDA') || motivo.includes('RESTAR')) {
-        estiloTipo = 'color:#dc2626; font-weight:700;'; // Rojo
+        estiloTipo = 'color:#dc2626; font-weight:700;'; 
         icono = 'Salida';
       } 
       else if (motivo.includes('TRASLADO')) {
-        estiloTipo = 'color:#2563eb; font-weight:700;'; // Azul
+        estiloTipo = 'color:#2563eb; font-weight:700;'; 
         icono = 'Traslado';
       }
 
@@ -114,12 +114,13 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
 
-    // Activar pestaña de Inventario en el menú superior
-    activarTabInventario();
+    // Ejecutar correcciones en el Navbar
+    corregirNavbar();
   }
 
-  function activarTabInventario() {
+  function corregirNavbar() {
     setTimeout(() => {
+      // 1. Iluminar la pestaña de Inventario
       const links = document.querySelectorAll('.nav-links a');
       links.forEach(link => {
         link.classList.remove('active');
@@ -127,6 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
           link.classList.add('active');
         }
       });
+
+      // 2. Corregir el título arriba a la izquierda (Cambiar "Facturas" por "Inventario")
+      const navTitle = document.querySelector('.nav-title');
+      if (navTitle) {
+        navTitle.textContent = 'Inventario';
+      }
     }, 150);
   }
 
@@ -138,25 +145,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- EVENTOS ---
-  btnBuscar.onclick = () => {
-    state.page = 1;
-    cargarHistorial();
-  };
-
-  btnPrev.onclick = () => {
-    if (state.page > 1) {
-      state.page--;
+  if (btnBuscar) {
+    btnBuscar.onclick = () => {
+      state.page = 1;
       cargarHistorial();
-    }
-  };
+    };
+  }
 
-  btnNext.onclick = () => {
-    const max = Math.ceil(state.total / state.pageSize);
-    if (state.page < max) {
-      state.page++;
-      cargarHistorial();
-    }
-  };
+  if (btnPrev) {
+    btnPrev.onclick = () => {
+      if (state.page > 1) {
+        state.page--;
+        cargarHistorial();
+      }
+    };
+  }
+
+  if (btnNext) {
+    btnNext.onclick = () => {
+      const max = Math.ceil(state.total / state.pageSize);
+      if (state.page < max) {
+        state.page++;
+        cargarHistorial();
+      }
+    };
+  }
 
   // Carga inicial
   cargarHistorial();
