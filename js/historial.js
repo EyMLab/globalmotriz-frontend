@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (navTitle) {
         navTitle.textContent = 'Inventario';
       }
-    }, 150);
+    }, 500);
   }
 
   function renderPaginacion() {
