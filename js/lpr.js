@@ -89,27 +89,43 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${dia}/${mes}/${año} ${horas12}:${minutos} ${ampm}`;
   }
 
-  // ✅ NUEVO: Formatea el "puesto" para mostrarlo bonito en UI.
-  // Soporta: E1_IZQUIERDA, E2_DERECHA, M1_IZQUIERDA, L2_DERECHA, IZQUIERDA/DERECHA/UNICO
+  // ✅ ACTUALIZADO: Formatea el "puesto" para mostrarlo bonito en UI.
+  // Soporta:
+  //   - E1_IZQUIERDA, E2_DERECHA (Enderezada con múltiples cámaras)
+  //   - M_IZQUIERDA, M_DERECHA (Mecánica con 1 cámara)
+  //   - L_IZQUIERDA, L_DERECHA (Lavado con 1 cámara)
+  //   - IZQUIERDA, DERECHA (legacy)
+  //   - UNICO (estaciones de un solo puesto)
   function formatPuestoUI(puestoRaw) {
     if (!puestoRaw) return "";
+    
     const p = String(puestoRaw).toUpperCase().trim();
+    
+    // Si es UNICO, no mostrar nada
     if (p === "UNICO") return "";
+    
+    // Formato legacy: solo IZQUIERDA o DERECHA
     if (p === "IZQUIERDA") return "Izq";
     if (p === "DERECHA") return "Der";
 
-    // Match tipo: E1_IZQUIERDA
-    const m = p.match(/^([EML])(\d+)_((IZQUIERDA|DERECHA))$/);
-    if (m) {
-      const pref = m[1];
-      const num = m[2];
-      const lado = m[3] === "IZQUIERDA" ? "Izq" : "Der";
-      const cam = `Cam ${num}`;
-      // pref solo por si quieres verlo: END/MEC/LAV. Por ahora lo ocultamos porque ya se ve por columna.
-      return `${cam} · ${lado}`;
+    // Formato CON número de cámara: E1_IZQUIERDA, E2_DERECHA, M1_IZQUIERDA, etc.
+    // Match: (letra)(número)_(lado)
+    const matchConNumero = p.match(/^([EML])(\d+)_(IZQUIERDA|DERECHA)$/);
+    if (matchConNumero) {
+      const numCam = matchConNumero[2];
+      const lado = matchConNumero[3] === "IZQUIERDA" ? "Izq" : "Der";
+      return `Cam ${numCam} · ${lado}`;
+    }
+    
+    // Formato SIN número de cámara: M_IZQUIERDA, L_DERECHA, E_IZQUIERDA
+    // Match: (letra)_(lado)
+    const matchSinNumero = p.match(/^([EML])_(IZQUIERDA|DERECHA)$/);
+    if (matchSinNumero) {
+      const lado = matchSinNumero[2] === "IZQUIERDA" ? "Izq" : "Der";
+      return lado;  // Solo mostrar Izq/Der ya que solo hay 1 cámara
     }
 
-    // fallback: muestra tal cual
+    // Fallback: muestra tal cual
     return p;
   }
 
@@ -156,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement("div");
         card.className = "vehicle-card";
 
-        // ✅ CAMBIO: mostrar puesto bonito (y soportar E1_IZQUIERDA etc.)
+        // ✅ Mostrar puesto bonito (soporta E1_IZQUIERDA, M_DERECHA, etc.)
         const puestoUI = (!est.estacion.toUpperCase().includes("PATIO")) ? formatPuestoUI(v.puesto) : "";
         const puestoHtml = puestoUI
           ? `<span class="puesto-tag">${puestoUI}</span>`
@@ -220,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // ✅ CAMBIO: mostrar puesto bonito en el modal también
+    // ✅ Mostrar puesto bonito en el modal
     const puestoUI = formatPuestoUI(veh.puesto);
     const infoEstacion = puestoUI ? `${est.estacion} (${puestoUI})` : est.estacion;
     modalEstacion.textContent = infoEstacion;
@@ -250,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
 
-        // ✅ CAMBIO: puesto bonito en historial
+        // ✅ Puesto bonito en historial
         const puestoHistUI = formatPuestoUI(h.puesto);
         const txtPuesto = puestoHistUI ? ` [${puestoHistUI}]` : "";
 
@@ -417,8 +433,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? ` <span style="cursor:pointer; color:#28a745;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">🖼️</span>`
                 : '';
 
-              // ✅ CAMBIO: puesto bonito en tabla completa
-              const puestoUI = formatPuestoUI(h.puesto) || "UNICO";
+              // ✅ Puesto bonito en tabla completa
+              const puestoUI = formatPuestoUI(h.puesto) || "-";
 
               tr.innerHTML = `
                 <td style="text-align:left; padding-left:20px;">↳ ${h.estacion} ${fotoLink}</td>
