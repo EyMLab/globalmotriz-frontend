@@ -92,10 +92,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================================================
-      KANBAN PRINCIPAL
+      KANBAN PRINCIPAL (LOGICA DE PUESTOS)
   ====================================================== */
   async function cargarLPR() {
-    if (pausaLPR) return; // Si está en pausa, no actualiza
+    if (pausaLPR) return; 
     try {
       const res = await apiFetch("/lpr/estado");
       if (!res || !res.ok) return;
@@ -114,22 +114,37 @@ document.addEventListener("DOMContentLoaded", () => {
       const col = document.createElement("div");
       col.className = "kanban-column";
       col.style.borderTop = `6px solid ${est.color}`;
-      col.style.background = est.color + "20";
+      
+      // Estilo visual para el PATIO
+      if (est.estacion.toUpperCase().includes("PATIO")) {
+        col.style.background = "#f1f5f9"; // Gris azulado suave
+      } else {
+        col.style.background = est.color + "15";
+      }
 
       col.innerHTML = `
         <div class="kanban-title">${est.estacion}</div>
         ${est.vehiculos.length === 0
-          ? "<p style='text-align:center;opacity:.5'>Sin vehículos</p>"
+          ? "<p style='text-align:center;opacity:.5;margin-top:20px;'>Vacío</p>"
           : ""}
       `;
 
       est.vehiculos.forEach(v => {
         const card = document.createElement("div");
         card.className = "vehicle-card";
+
+        // Etiqueta de puesto si existe y no es Patio
+        const puestoHtml = (v.puesto && v.puesto !== 'UNICO' && !est.estacion.toUpperCase().includes("PATIO")) 
+          ? `<span class="puesto-tag">${v.puesto}</span>` 
+          : "";
+
         card.innerHTML = `
-          <div class="placa">${v.placa}</div>
-          <div class="time">En estación: ${formatTime(v.segundos_estacion)}</div>
-          <div class="time">En taller: ${formatTime(v.segundos_total)}</div>
+          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:5px;">
+            <div class="placa">${v.placa}</div>
+            ${puestoHtml}
+          </div>
+          <div class="time">Total: ${formatTime(v.segundos_total)}</div>
+          <div class="time" style="font-weight:600; color:#334155;">En puesto: ${formatTime(v.segundos_estacion)}</div>
         `;
         card.onclick = () => abrirModalVehiculo(est, v);
         col.appendChild(card);
@@ -143,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (data.ultima_actualizacion) {
       document.getElementById("ultimaActualizacion").textContent =
-        `Última actualización: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
+        `Sincronizado: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
     }
   }
 
@@ -162,15 +177,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("modal-close").onclick = () => {
     cerrarTodosLosModales();
-    pausaLPR = false; // Reactivamos la actualización al cerrar
+    pausaLPR = false; 
   };
 
   async function abrirModalVehiculo(est, veh) {
     cerrarTodosLosModales();
-    pausaLPR = true; // Pausamos para que no se cierre mientras vemos
+    pausaLPR = true; 
     placaSeleccionada = veh.placa;
 
-    // Título con botón de editar (SOLO TEXTO)
     modalPlaca.innerHTML = `
       <div style="display:flex; align-items:center; gap:15px;">
         <span>${veh.placa}</span>
@@ -182,14 +196,16 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    modalEstacion.textContent = est.estacion;
+    // Si tiene puesto, lo mostramos junto a la estación
+    const infoEstacion = (veh.puesto && veh.puesto !== 'UNICO') ? `${est.estacion} (${veh.puesto})` : est.estacion;
+    modalEstacion.textContent = infoEstacion;
+    
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
     modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
 
     modalVehiculo.style.display = "flex";
 
-    // Cargar historial
     try {
       const res = await apiFetch(`/lpr/historial/${veh.placa}`);
       if (!res || !res.ok) {
@@ -207,10 +223,10 @@ document.addEventListener("DOMContentLoaded", () => {
       data.historial.slice(0, 5).forEach(h => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
+        const txtPuesto = (h.puesto && h.puesto !== 'UNICO') ? ` [${h.puesto}]` : "";
         
-        li.innerHTML = `<strong>${h.estacion}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
+        li.innerHTML = `<strong>${h.estacion}${txtPuesto}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
         
-        // Botón de Foto (SOLO TEXTO)
         if (h.foto_url) {
            const btnCamara = document.createElement("button");
            btnCamara.innerHTML = "VER FOTO"; 
@@ -226,7 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
            btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
            li.appendChild(btnCamara);
         }
-        
         modalHistorial.appendChild(li);
       });
 
@@ -241,10 +256,9 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   /* ======================================================
-      FUNCIONES AUXILIARES (FOTOS, EDICIÓN, BORRADO)
+      FUNCIONES AUXILIARES (FOTOS, EDICIÓN)
   ====================================================== */
 
-  // 1. Ver Foto Grande
   window.verFotoGrande = (url, estacion, fecha) => {
     Swal.fire({
         imageUrl: url,
@@ -259,7 +273,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // 2. Editar Placa (CORREGIDO: ACTUALIZACIÓN INMEDIATA)
   window.editarPlaca = async (placaActual) => {
     const { value: nuevaPlaca } = await Swal.fire({
         title: 'Corregir Placa',
@@ -296,10 +309,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 await Swal.fire({ title: titulo, text: texto, icon: 'success', zIndex: Z_INDEX_ALERTA });
                 
-                // ✅ AQUÍ ESTABA EL ERROR: DEBEMOS QUITAR LA PAUSA ANTES DE RECARGAR
                 cerrarTodosLosModales();
-                pausaLPR = false; // <--- ¡ESTO REACTIVA LA ACTUALIZACIÓN!
-                cargarLPR();      // <--- ¡ESTO REFRESCA EL TABLERO AL INSTANTE!
+                pausaLPR = false; 
+                cargarLPR(); 
 
             } else {
                 Swal.fire({ title: 'Error', text: 'No se pudo corregir la placa', icon: 'error', zIndex: Z_INDEX_ALERTA });
@@ -370,15 +382,15 @@ document.addEventListener("DOMContentLoaded", () => {
               
               const inicioLocal = formatFecha(h.inicio);
               const finLocal = h.fin ? formatFecha(h.fin) : "-";
+              const txtPuesto = (h.puesto && h.puesto !== 'UNICO') ? ` [${h.puesto}]` : "";
 
-              // Enlace a foto (SOLO TEXTO)
               let fotoLink = '';
               if (h.foto_url) {
                   fotoLink = ` <span style="cursor:pointer; color:#28a745; font-weight:bold; font-size:0.9em;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">[VER FOTO]</span>`;
               }
 
               tr.innerHTML = `
-                <td style="padding-left: 20px;">↳ ${h.estacion} ${fotoLink}</td>
+                <td style="padding-left: 20px;">↳ ${h.estacion}${txtPuesto} ${fotoLink}</td>
                 <td>${inicioLocal}</td>
                 <td>${finLocal}</td>
                 <td>${formatTime(h.segundos_estacion)}</td>
@@ -477,7 +489,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     data.data.forEach(v => {
       const tr = document.createElement("tr");
-      
       const entradaLocal = formatFecha(v.fecha_entrada);
       const salidaLocal = formatFecha(v.fecha_salida);
 
@@ -494,8 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
       td.onclick = () => abrirModalHistorialCompleto(td.dataset.placa);
     });
 
-    pageInfo.textContent =
-      `Página ${data.page} de ${Math.ceil(data.total / data.limit)}`;
+    pageInfo.textContent = `Página ${data.page} de ${Math.ceil(data.total / data.limit)}`;
   }
 
   /* ======================================================
@@ -547,9 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const lista = await safeJson(res);
         renderInternos(lista);
       }
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   }
 
   function renderInternos(lista) {
@@ -582,7 +590,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnAddInterno.onclick = async () => {
       const placa = inputPlacaInt.value.trim().toUpperCase();
       const descripcion = inputDescInt.value.trim();
-
       if (!placa) return Swal.fire({ title: 'Error', text: 'Escribe una placa', icon: 'warning', zIndex: Z_INDEX_ALERTA });
 
       try {
@@ -597,31 +604,20 @@ document.addEventListener("DOMContentLoaded", () => {
           inputDescInt.value = '';
           modalInternos.style.display = 'none';
           pausaLPR = false;
-
-          Swal.fire({
-            icon: 'success',
-            title: '¡Vehículo Excluido!',
-            text: `La placa ${placa} ha sido agregada a la lista de internos.`,
-            confirmButtonText: 'Entendido',
-            confirmButtonColor: '#28a745',
-            zIndex: Z_INDEX_ALERTA
-          });
-
+          Swal.fire({ icon: 'success', title: '¡Vehículo Excluido!', text: `La placa ${placa} ha sido agregada.`, zIndex: Z_INDEX_ALERTA });
           cargarInternos();
         } else {
           const errData = await safeJson(res);
           Swal.fire({ title: 'Error', text: errData.error || 'No se pudo guardar', icon: 'error', zIndex: Z_INDEX_ALERTA });
         }
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     };
   }
 
   async function eliminarInterno(placa) {
     const confirm = await Swal.fire({
       title: `¿Eliminar ${placa}?`,
-      text: "Este vehículo volverá a ser registrado por las cámaras si ingresa nuevamente.",
+      text: "Este vehículo volverá a ser registrado por las cámaras.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -635,18 +631,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await apiFetch(`/lpr/internos/${placa}`, { method: 'DELETE' });
         if (res.ok) {
           cargarInternos();
-          Swal.fire({
-            icon: 'success', 
-            title: 'Eliminado', 
-            text: 'El vehículo ya no está excluido.',
-            timer: 1500,
-            showConfirmButton: false,
-            zIndex: Z_INDEX_ALERTA
-          });
+          Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1500, showConfirmButton: false, zIndex: Z_INDEX_ALERTA });
         }
-      } catch (err) {
-        Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA });
-      }
+      } catch (err) { Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA }); }
     }
   }
 
