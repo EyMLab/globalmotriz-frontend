@@ -2,9 +2,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
   const TOKEN = localStorage.getItem("token");
-  
+
   // 🔥 Z-Index Nuclear para estar siempre encima de los modales
-  const Z_INDEX_ALERTA = 99999999; 
+  const Z_INDEX_ALERTA = 99999999;
 
   if (!TOKEN) {
     localStorage.clear();
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function apiFetch(path, options = {}) {
     const res = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
-      headers: { 
+      headers: {
         Authorization: "Bearer " + TOKEN,
         ...(options.headers || {})
       }
@@ -56,8 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     const inputPlaca = document.getElementById('input-placa-interna');
     const inputDesc = document.getElementById('input-desc-interna');
-    if(inputPlaca) inputPlaca.value = '';
-    if(inputDesc) inputDesc.value = '';
+    if (inputPlaca) inputPlaca.value = '';
+    if (inputDesc) inputDesc.value = '';
   }
 
   function formatTime(seconds) {
@@ -77,25 +77,47 @@ document.addEventListener("DOMContentLoaded", () => {
   function formatFecha(fechaStr) {
     if (!fechaStr) return "-";
     const fecha = new Date(fechaStr);
-    
+
     const dia = String(fecha.getDate()).padStart(2, '0');
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
     const año = fecha.getFullYear();
-    
-    const horas = String(fecha.getHours()).padStart(2, '0');
+
     const minutos = String(fecha.getMinutes()).padStart(2, '0');
-    
     const ampm = fecha.getHours() >= 12 ? 'PM' : 'AM';
     const horas12 = fecha.getHours() % 12 || 12;
-    
+
     return `${dia}/${mes}/${año} ${horas12}:${minutos} ${ampm}`;
+  }
+
+  // ✅ NUEVO: Formatea el "puesto" para mostrarlo bonito en UI.
+  // Soporta: E1_IZQUIERDA, E2_DERECHA, M1_IZQUIERDA, L2_DERECHA, IZQUIERDA/DERECHA/UNICO
+  function formatPuestoUI(puestoRaw) {
+    if (!puestoRaw) return "";
+    const p = String(puestoRaw).toUpperCase().trim();
+    if (p === "UNICO") return "";
+    if (p === "IZQUIERDA") return "Izq";
+    if (p === "DERECHA") return "Der";
+
+    // Match tipo: E1_IZQUIERDA
+    const m = p.match(/^([EML])(\d+)_((IZQUIERDA|DERECHA))$/);
+    if (m) {
+      const pref = m[1];
+      const num = m[2];
+      const lado = m[3] === "IZQUIERDA" ? "Izq" : "Der";
+      const cam = `Cam ${num}`;
+      // pref solo por si quieres verlo: END/MEC/LAV. Por ahora lo ocultamos porque ya se ve por columna.
+      return `${cam} · ${lado}`;
+    }
+
+    // fallback: muestra tal cual
+    return p;
   }
 
   /* ======================================================
       KANBAN PRINCIPAL (LÓGICA DE PUESTOS Y PATIO)
   ====================================================== */
   async function cargarLPR() {
-    if (pausaLPR) return; 
+    if (pausaLPR) return;
     try {
       const res = await apiFetch("/lpr/estado");
       if (!res || !res.ok) return;
@@ -114,10 +136,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const col = document.createElement("div");
       col.className = "kanban-column";
       col.style.borderTop = `6px solid ${est.color}`;
-      
+
       // Estilo visual para el PATIO / ESPERA
       if (est.estacion.toUpperCase().includes("PATIO")) {
-        col.style.background = "#f1f5f9"; 
+        col.style.background = "#f1f5f9";
         col.style.borderLeft = "1px dashed #cbd5e1";
       } else {
         col.style.background = est.color + "15";
@@ -134,9 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement("div");
         card.className = "vehicle-card";
 
-        // Etiqueta de puesto si existe y no es Patio
-        const puestoHtml = (v.puesto && v.puesto !== 'UNICO' && !est.estacion.toUpperCase().includes("PATIO")) 
-          ? `<span class="puesto-tag">${v.puesto}</span>` 
+        // ✅ CAMBIO: mostrar puesto bonito (y soportar E1_IZQUIERDA etc.)
+        const puestoUI = (!est.estacion.toUpperCase().includes("PATIO")) ? formatPuestoUI(v.puesto) : "";
+        const puestoHtml = puestoUI
+          ? `<span class="puesto-tag">${puestoUI}</span>`
           : "";
 
         card.innerHTML = `
@@ -178,28 +201,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("modal-close").onclick = () => {
     cerrarTodosLosModales();
-    pausaLPR = false; 
+    pausaLPR = false;
   };
 
   async function abrirModalVehiculo(est, veh) {
     cerrarTodosLosModales();
-    pausaLPR = true; 
+    pausaLPR = true;
     placaSeleccionada = veh.placa;
 
     modalPlaca.innerHTML = `
       <div style="display:flex; align-items:center; gap:15px;">
         <span>${veh.placa}</span>
-        <button onclick="editarPlaca('${veh.placa}')" 
-                style="background:none; border:1px solid #007bff; color:#007bff; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;" 
+        <button onclick="editarPlaca('${veh.placa}')"
+                style="background:none; border:1px solid #007bff; color:#007bff; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
                 title="Corregir Placa">
           EDITAR PLACA
         </button>
       </div>
     `;
 
-    const infoEstacion = (veh.puesto && veh.puesto !== 'UNICO') ? `${est.estacion} (${veh.puesto})` : est.estacion;
+    // ✅ CAMBIO: mostrar puesto bonito en el modal también
+    const puestoUI = formatPuestoUI(veh.puesto);
+    const infoEstacion = puestoUI ? `${est.estacion} (${puestoUI})` : est.estacion;
     modalEstacion.textContent = infoEstacion;
-    
+
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
     modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
@@ -209,38 +234,42 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await apiFetch(`/lpr/historial/${veh.placa}`);
       if (!res || !res.ok) {
-          modalHistorial.innerHTML = '<li style="color:red;">Error cargando historial</li>';
-          return;
+        modalHistorial.innerHTML = '<li style="color:red;">Error cargando historial</li>';
+        return;
       }
 
       const data = await safeJson(res);
       modalHistorial.innerHTML = "";
 
-      if (data.historial.length === 0) {
-          modalHistorial.innerHTML = "<li>Sin movimientos recientes</li>";
+      if (!data || !data.historial || data.historial.length === 0) {
+        modalHistorial.innerHTML = "<li>Sin movimientos recientes</li>";
+        return;
       }
 
       data.historial.slice(0, 5).forEach(h => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
-        const txtPuesto = (h.puesto && h.puesto !== 'UNICO') ? ` [${h.puesto}]` : "";
-        
+
+        // ✅ CAMBIO: puesto bonito en historial
+        const puestoHistUI = formatPuestoUI(h.puesto);
+        const txtPuesto = puestoHistUI ? ` [${puestoHistUI}]` : "";
+
         li.innerHTML = `<strong>${h.estacion}${txtPuesto}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
-        
+
         if (h.foto_url) {
-           const btnCamara = document.createElement("button");
-           btnCamara.innerHTML = "VER FOTO"; 
-           btnCamara.style.marginLeft = "10px";
-           btnCamara.style.cursor = "pointer";
-           btnCamara.style.border = "1px solid #28a745"; 
-           btnCamara.style.color = "#28a745"; 
-           btnCamara.style.fontWeight = "bold";
-           btnCamara.style.borderRadius = "4px";
-           btnCamara.style.padding = "2px 8px";
-           btnCamara.style.backgroundColor = "white";
-           
-           btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
-           li.appendChild(btnCamara);
+          const btnCamara = document.createElement("button");
+          btnCamara.innerHTML = "VER FOTO";
+          btnCamara.style.marginLeft = "10px";
+          btnCamara.style.cursor = "pointer";
+          btnCamara.style.border = "1px solid #28a745";
+          btnCamara.style.color = "#28a745";
+          btnCamara.style.fontWeight = "bold";
+          btnCamara.style.borderRadius = "4px";
+          btnCamara.style.padding = "2px 8px";
+          btnCamara.style.backgroundColor = "white";
+
+          btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
+          li.appendChild(btnCamara);
         }
         modalHistorial.appendChild(li);
       });
@@ -261,64 +290,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.verFotoGrande = (url, estacion, fecha) => {
     Swal.fire({
-        imageUrl: url,
-        imageAlt: `Foto en ${estacion}`,
-        title: `Ingreso a ${estacion}`,
-        text: fecha,
-        width: 800,
-        padding: '1em',
-        background: '#fff',
-        backdrop: `rgba(0,0,0,0.8)`,
-        zIndex: Z_INDEX_ALERTA
+      imageUrl: url,
+      imageAlt: `Foto en ${estacion}`,
+      title: `Ingreso a ${estacion}`,
+      text: fecha,
+      width: 800,
+      padding: '1em',
+      background: '#fff',
+      backdrop: `rgba(0,0,0,0.8)`,
+      zIndex: Z_INDEX_ALERTA
     });
   };
 
   window.editarPlaca = async (placaActual) => {
     const { value: nuevaPlaca } = await Swal.fire({
-        title: 'Corregir Placa',
-        input: 'text',
-        inputValue: placaActual,
-        text: 'Escribe la placa real:',
-        showCancelButton: true,
-        confirmButtonText: 'Guardar',
-        cancelButtonText: 'Cancelar',
-        zIndex: Z_INDEX_ALERTA,
-        inputValidator: (val) => {
-            if (!val) return 'Debes escribir una placa';
-        }
+      title: 'Corregir Placa',
+      input: 'text',
+      inputValue: placaActual,
+      text: 'Escribe la placa real:',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      zIndex: Z_INDEX_ALERTA,
+      inputValidator: (val) => {
+        if (!val) return 'Debes escribir una placa';
+      }
     });
 
     if (nuevaPlaca && nuevaPlaca.toUpperCase() !== placaActual) {
-        const placaFinal = nuevaPlaca.toUpperCase().trim();
-        try {
-            const res = await apiFetch('/lpr/corregir', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ placaOriginal: placaActual, placaNueva: placaFinal })
-            });
+      const placaFinal = nuevaPlaca.toUpperCase().trim();
+      try {
+        const res = await apiFetch('/lpr/corregir', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placaOriginal: placaActual, placaNueva: placaFinal })
+        });
 
-            if (res.ok) {
-                const data = await safeJson(res);
-                let titulo = 'Corregido';
-                let texto = `La placa ahora es ${placaFinal}`;
+        if (res && res.ok) {
+          const data = await safeJson(res);
+          let titulo = 'Corregido';
+          let texto = `La placa ahora es ${placaFinal}`;
 
-                if (data.status === 'FUSION_EXITOSA') {
-                    titulo = '¡Fusionado!';
-                    texto = `Se han unido los datos de ${placaActual} con ${placaFinal}.`;
-                }
-                
-                await Swal.fire({ title: titulo, text: texto, icon: 'success', zIndex: Z_INDEX_ALERTA });
-                
-                cerrarTodosLosModales();
-                pausaLPR = false; 
-                cargarLPR(); 
+          if (data && data.status === 'FUSION_EXITOSA') {
+            titulo = '¡Fusionado!';
+            texto = `Se han unido los datos de ${placaActual} con ${placaFinal}.`;
+          }
 
-            } else {
-                Swal.fire({ title: 'Error', text: 'No se pudo corregir la placa', icon: 'error', zIndex: Z_INDEX_ALERTA });
-            }
-        } catch (err) {
-            Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
+          await Swal.fire({ title: titulo, text: texto, icon: 'success', zIndex: Z_INDEX_ALERTA });
+
+          cerrarTodosLosModales();
+          pausaLPR = false;
+          cargarLPR();
+
+        } else {
+          Swal.fire({ title: 'Error', text: 'No se pudo corregir la placa', icon: 'error', zIndex: Z_INDEX_ALERTA });
         }
+      } catch (err) {
+        Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
+      }
     }
   };
 
@@ -344,26 +373,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const dataSesiones = await safeJson(resSesiones);
       tablaHistComp.innerHTML = "";
 
-      if (!dataSesiones.sesiones || dataSesiones.sesiones.length === 0) {
+      if (!dataSesiones || !dataSesiones.sesiones || dataSesiones.sesiones.length === 0) {
         tablaHistComp.innerHTML = `<tr><td colspan="5">Sin historial</td></tr>`;
         modalHistComp.style.display = "flex";
         return;
       }
 
       for (const sesion of dataSesiones.sesiones) {
-        
+
         const trSesion = document.createElement("tr");
         trSesion.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#e3f2fd' : '#f5f5f5';
         trSesion.style.fontWeight = 'bold';
-        
-        const estadoBadge = sesion.estado === 'ACTIVA' 
-          ? '<span style="color: green;">🟢 ACTIVA</span>' 
+
+        const estadoBadge = sesion.estado === 'ACTIVA'
+          ? '<span style="color: green;">🟢 ACTIVA</span>'
           : '<span style="color: gray;">⚫ FINALIZADA</span>';
-        
+
         const entrada = formatFecha(sesion.fecha_entrada);
         const salida = sesion.fecha_salida ? formatFecha(sesion.fecha_salida) : 'En proceso';
         const tiempoTotal = sesion.segundos_total ? formatTime(sesion.segundos_total) : '-';
-        
+
         trSesion.innerHTML = `
           <td colspan="5" style="padding: 12px 8px;">
             ${estadoBadge} | Entrada: ${entrada} | Salida: ${salida} | Tiempo: ${tiempoTotal}
@@ -374,21 +403,26 @@ document.addEventListener("DOMContentLoaded", () => {
         const resTramos = await apiFetch(`/lpr/historial/${placa}?sesion_id=${sesion.sesion_id}`);
         if (resTramos && resTramos.ok) {
           const dataTramos = await safeJson(resTramos);
-          
-          if (dataTramos.historial && dataTramos.historial.length > 0) {
+
+          if (dataTramos && dataTramos.historial && dataTramos.historial.length > 0) {
             dataTramos.historial.forEach(h => {
               const tr = document.createElement("tr");
               tr.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#f1f8ff' : '#fafafa';
-              
+
               const inicioLocal = formatFecha(h.inicio);
               const finLocal = h.fin ? formatFecha(h.fin) : "Actual";
-              
+
               // Enlace a foto
-              let fotoLink = h.foto_url ? ` <span style="cursor:pointer; color:#28a745;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">🖼️</span>` : '';
+              let fotoLink = h.foto_url
+                ? ` <span style="cursor:pointer; color:#28a745;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">🖼️</span>`
+                : '';
+
+              // ✅ CAMBIO: puesto bonito en tabla completa
+              const puestoUI = formatPuestoUI(h.puesto) || "UNICO";
 
               tr.innerHTML = `
                 <td style="text-align:left; padding-left:20px;">↳ ${h.estacion} ${fotoLink}</td>
-                <td style="text-align:center;">${h.puesto || 'UNICO'}</td>
+                <td style="text-align:center;">${puestoUI}</td>
                 <td>${inicioLocal}</td>
                 <td>${finLocal}</td>
                 <td>${formatTime(h.segundos_estacion)}</td>
@@ -479,7 +513,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tablaSalidas.innerHTML = "";
     ultimoTotal = data.total;
 
-    if (!data.data.length) {
+    if (!data || !data.data || !data.data.length) {
       tablaSalidas.innerHTML = `<tr><td colspan="4">Sin resultados</td></tr>`;
       pageInfo.textContent = "";
       return;
@@ -513,10 +547,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function verificarRolAdmin() {
     try {
-      const res = await apiFetch('/auth/me'); 
+      const res = await apiFetch('/auth/me');
       if (res && res.ok) {
         const data = await safeJson(res);
-        if (data.rol === 'admin') {
+        if (data && data.rol === 'admin') {
           const btn = document.getElementById('btn-gestionar-internos');
           if (btn) {
             btn.style.display = 'inline-block';
@@ -584,7 +618,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const btnAddInterno = document.getElementById('btn-agregar-interno');
-  if(btnAddInterno) {
+  if (btnAddInterno) {
     btnAddInterno.onclick = async () => {
       const placa = inputPlacaInt.value.trim().toUpperCase();
       const descripcion = inputDescInt.value.trim();
@@ -597,7 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ placa, descripcion })
         });
 
-        if (res.ok) {
+        if (res && res.ok) {
           inputPlacaInt.value = '';
           inputDescInt.value = '';
           modalInternos.style.display = 'none';
@@ -606,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
           cargarInternos();
         } else {
           const errData = await safeJson(res);
-          Swal.fire({ title: 'Error', text: errData.error || 'No se pudo guardar', icon: 'error', zIndex: Z_INDEX_ALERTA });
+          Swal.fire({ title: 'Error', text: (errData && errData.error) || 'No se pudo guardar', icon: 'error', zIndex: Z_INDEX_ALERTA });
         }
       } catch (err) { console.error(err); }
     };
@@ -627,11 +661,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (confirm.isConfirmed) {
       try {
         const res = await apiFetch(`/lpr/internos/${placa}`, { method: 'DELETE' });
-        if (res.ok) {
+        if (res && res.ok) {
           cargarInternos();
           Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1500, showConfirmButton: false, zIndex: Z_INDEX_ALERTA });
         }
-      } catch (err) { Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA }); }
+      } catch (err) {
+        Swal.fire({ title: 'Error', text: 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA });
+      }
     }
   }
 
