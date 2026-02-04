@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================================================
-      KANBAN PRINCIPAL (LOGICA DE PUESTOS)
+      KANBAN PRINCIPAL (LÓGICA DE PUESTOS Y PATIO)
   ====================================================== */
   async function cargarLPR() {
     if (pausaLPR) return; 
@@ -115,9 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
       col.className = "kanban-column";
       col.style.borderTop = `6px solid ${est.color}`;
       
-      // Estilo visual para el PATIO
+      // Estilo visual para el PATIO / ESPERA
       if (est.estacion.toUpperCase().includes("PATIO")) {
-        col.style.background = "#f1f5f9"; // Gris azulado suave
+        col.style.background = "#f1f5f9"; 
+        col.style.borderLeft = "1px dashed #cbd5e1";
       } else {
         col.style.background = est.color + "15";
       }
@@ -196,7 +197,6 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // Si tiene puesto, lo mostramos junto a la estación
     const infoEstacion = (veh.puesto && veh.puesto !== 'UNICO') ? `${est.estacion} (${veh.puesto})` : est.estacion;
     modalEstacion.textContent = infoEstacion;
     
@@ -323,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   /* ======================================================
-      MODAL HISTORIAL COMPLETO
+      MODAL HISTORIAL COMPLETO (SOPORTE 5 COLUMNAS)
   ====================================================== */
   const modalHistComp = document.getElementById("modal-historial-completo");
   const tablaHistComp = document.getElementById("tabla-historial-completo");
@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
       tablaHistComp.innerHTML = "";
 
       if (!dataSesiones.sesiones || dataSesiones.sesiones.length === 0) {
-        tablaHistComp.innerHTML = `<tr><td colspan="4">Sin historial</td></tr>`;
+        tablaHistComp.innerHTML = `<tr><td colspan="5">Sin historial</td></tr>`;
         modalHistComp.style.display = "flex";
         return;
       }
@@ -365,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tiempoTotal = sesion.segundos_total ? formatTime(sesion.segundos_total) : '-';
         
         trSesion.innerHTML = `
-          <td colspan="4" style="padding: 12px 8px;">
+          <td colspan="5" style="padding: 12px 8px;">
             ${estadoBadge} | Entrada: ${entrada} | Salida: ${salida} | Tiempo: ${tiempoTotal}
           </td>
         `;
@@ -381,16 +381,14 @@ document.addEventListener("DOMContentLoaded", () => {
               tr.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#f1f8ff' : '#fafafa';
               
               const inicioLocal = formatFecha(h.inicio);
-              const finLocal = h.fin ? formatFecha(h.fin) : "-";
-              const txtPuesto = (h.puesto && h.puesto !== 'UNICO') ? ` [${h.puesto}]` : "";
-
-              let fotoLink = '';
-              if (h.foto_url) {
-                  fotoLink = ` <span style="cursor:pointer; color:#28a745; font-weight:bold; font-size:0.9em;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">[VER FOTO]</span>`;
-              }
+              const finLocal = h.fin ? formatFecha(h.fin) : "Actual";
+              
+              // Enlace a foto
+              let fotoLink = h.foto_url ? ` <span style="cursor:pointer; color:#28a745;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">🖼️</span>` : '';
 
               tr.innerHTML = `
-                <td style="padding-left: 20px;">↳ ${h.estacion}${txtPuesto} ${fotoLink}</td>
+                <td style="text-align:left; padding-left:20px;">↳ ${h.estacion} ${fotoLink}</td>
+                <td style="text-align:center;">${h.puesto || 'UNICO'}</td>
                 <td>${inicioLocal}</td>
                 <td>${finLocal}</td>
                 <td>${formatTime(h.segundos_estacion)}</td>
@@ -401,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const trSeparador = document.createElement("tr");
-        trSeparador.innerHTML = `<td colspan="4" style="height: 5px; background: white;"></td>`;
+        trSeparador.innerHTML = `<td colspan="5" style="height: 5px; background: white;"></td>`;
         tablaHistComp.appendChild(trSeparador);
       }
 
