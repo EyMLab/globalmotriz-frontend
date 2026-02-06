@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Órdenes de Compra</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* Estilos específicos de Compras */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-pendiente { background: #fef3c7; color: #92400e; }
+    .badge-finalizada { background: #d1fae5; color: #065f46; }
+    .badge-anulada { background: #fee2e2; color: #991b1b; }
+
+    .btn-recibir {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .btn-recibir:hover { background: #047857; }
+
+    .btn-anular {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .btn-anular:hover { background: #b91c1c; }
+
+    .btn-ver {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .btn-ver:hover { background: #4f46e5; }
+
+    /* Tabla de recepción dentro del modal */
+    .tabla-recepcion {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .tabla-recepcion th {
+      background: #f1f5f9;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .tabla-recepcion td {
+      padding: 6px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .tabla-recepcion input[type="number"] {
+      width: 70px;
+      padding: 4px 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    /* Resumen de diferencias */
+    .diff-positive { color: #059669; font-weight: 600; }
+    .diff-negative { color: #dc2626; font-weight: 600; }
+    .diff-zero { color: #64748b; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+
+    <!-- Filtros -->
+    <div class="filtros insumos" style="margin-bottom:12px;">
+      <div class="filtro-grupo">
+        <label for="filtro-estado-oc">Estado:</label>
+        <select id="filtro-estado-oc">
+          <option value="">Todas</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Finalizada">Finalizada</option>
+          <option value="Anulada">Anulada</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Botones -->
+    <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="btnNuevaOC" type="button" class="btn-obs">Nueva Orden de Compra</button>
+      <button id="btnNuevoProveedor" type="button" class="btn-obs">Nuevo Proveedor</button>
+      <button type="button" class="btn-obs" onclick="window.location.href='inventario.html'">Volver a Inventario</button>
+    </div>
+
+    <!-- Tabla -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Proveedor</th>
+          <th>Solicitante</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaCompras"></tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="pagination-controls">
+      <button id="btn-prev-oc" type="button">Anterior</button>
+      <span id="page-info-oc">Página 1</span>
+      <button id="btn-next-oc" type="button">Siguiente</button>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/compras.js"></script>
+</body>
+</html>

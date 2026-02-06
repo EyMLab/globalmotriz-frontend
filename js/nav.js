@@ -37,8 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
     else if (window.location.pathname.includes("inventario") || window.location.pathname.includes("historial")) {
         pagina = "Inventario";
-    }    
-    else if (window.location.pathname.includes("lpr")) pagina = "Taller";   // ← IMPORTANTE
+    }
+    else if (window.location.pathname.includes("compras")) pagina = "Compras";
+    else if (window.location.pathname.includes("lpr")) pagina = "Taller";
 
     // ============================================
     // Enlaces según rol
@@ -55,7 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Inventario</a>`
       : "";
 
-    // ================ NUEVO BOTÓN TALLER (LPR) =================
+    const enlaceCompras = ['admin', 'bodega', 'asesor'].includes(rol)
+      ? `<a href="compras.html" class="${pagina === 'Compras' ? 'active' : ''}">Compras</a>`
+      : "";
+
     const enlaceLPR = ['admin', 'bodega', 'asesor'].includes(rol)
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
       : "";
@@ -75,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>
           ${enlaceInsumos}
           ${enlaceInventario}
+          ${enlaceCompras}
           ${enlaceLPR}
           ${enlaceUsuarios}
         </nav>
