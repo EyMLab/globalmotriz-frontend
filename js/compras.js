@@ -83,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Asesor: solo lectura
       if (state.esAsesor) {
         if (btnNuevaOC) btnNuevaOC.style.display = 'none';
         if (btnNuevoProv) btnNuevoProv.style.display = 'none';
@@ -165,12 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const tr = document.createElement('tr');
 
-      let acciones = `<button class="btn-ver" onclick="verOrden(${item.id})">Ver</button> `;
+      let acciones = `
+        <button class="btn-ver" onclick="verOrden(${item.id})">Ver</button>
+        <button class="btn-pdf" onclick="imprimirOC(${item.id})">PDF</button>
+      `;
 
       if (item.estado === 'Pendiente' && !state.esAsesor) {
-        acciones += `<button class="btn-recibir" onclick="modalRecepcion(${item.id})">Recibir</button> `;
+        acciones += ` <button class="btn-recibir" onclick="modalRecepcion(${item.id})">Recibir</button>`;
         if (state.esAdmin) {
-          acciones += `<button class="btn-anular" onclick="anularOrden(${item.id})">Anular</button>`;
+          acciones += ` <button class="btn-anular" onclick="anularOrden(${item.id})">Anular</button>`;
         }
       }
 
@@ -243,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
       MODAL: NUEVA ORDEN DE COMPRA
   ====================================================== */
   async function modalNuevaOC() {
-    // Cargar proveedores para el select
     const provRes = await apiFetch('/proveedores');
     let proveedores = [];
     if (provRes && provRes.ok) {
@@ -499,7 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!isConfirmed) return;
 
-    // Recoger datos de los inputs
     const detallesEnvio = detalles.map(d => {
       const inputM = document.querySelector(`.rec-matriz[data-id="${d.id}"]`);
       const inputS = document.querySelector(`.rec-sucursal[data-id="${d.id}"]`);
@@ -510,7 +510,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
 
-    // Confirmar
     const confirm2 = await Swal.fire({
       title: '¿Confirmar recepción?',
       text: 'Se sumará el stock a cada localidad y la orden pasará a "Finalizada".',
@@ -573,10 +572,335 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================================================
+      IMPRIMIR PDF - ORDEN DE COMPRA
+      Genera un documento formal con:
+      - Logo de Global Motriz
+      - Datos de la orden
+      - Tabla de insumos pedidos
+      - Observaciones
+      - Espacio para firmas (Solicitante + Autorización Gerencia)
+  ====================================================== */
+  async function imprimirOC(id) {
+    Swal.fire({ title: 'Generando PDF...', didOpen: () => Swal.showLoading() });
+
+    try {
+      const res = await apiFetch(`/compras/detalle/${id}`);
+      if (!res || !res.ok) throw new Error('No se pudo cargar la orden');
+
+      const data = await safeJson(res);
+      const { orden, detalles } = data;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4'); // Vertical, milímetros, A4
+
+      const pageW = doc.internal.pageSize.getWidth();
+      const marginL = 20;
+      const marginR = 20;
+      const contentW = pageW - marginL - marginR;
+
+      // ─── COLORES CORPORATIVOS ───
+      const primaryColor = [30, 58, 95];     // Azul oscuro
+      const accentColor = [234, 88, 12];     // Naranja
+      const grayText = [100, 116, 139];
+      const darkText = [15, 23, 42];
+
+      // ═══════════════════════════════════════════
+      // ENCABEZADO
+      // ═══════════════════════════════════════════
+
+      // Franja superior de color
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, pageW, 3, 'F');
+
+      // Intentar cargar logo (si falla, solo texto)
+      let logoLoaded = false;
+      try {
+        const logoImg = await cargarImagenBase64('img/logo.png');
+        if (logoImg) {
+          doc.addImage(logoImg, 'PNG', marginL, 8, 35, 18);
+          logoLoaded = true;
+        }
+      } catch {
+        // Sin logo, no pasa nada
+      }
+
+      const headerTextX = logoLoaded ? marginL + 40 : marginL;
+
+      // Nombre empresa
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(...primaryColor);
+      doc.text('GLOBAL MOTRIZ S.A.', headerTextX, 16);
+
+      // Subtítulo
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...grayText);
+      doc.text('Sistema de Gestión de Inventario e Insumos', headerTextX, 22);
+
+      // Número de OC (lado derecho)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(...accentColor);
+      doc.text(`OC #${orden.id}`, pageW - marginR, 18, { align: 'right' });
+
+      // Línea divisoria
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.5);
+      doc.line(marginL, 30, pageW - marginR, 30);
+
+      // ═══════════════════════════════════════════
+      // TÍTULO DEL DOCUMENTO
+      // ═══════════════════════════════════════════
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(...darkText);
+      doc.text('ORDEN DE COMPRA', pageW / 2, 40, { align: 'center' });
+
+      // ═══════════════════════════════════════════
+      // DATOS DE LA ORDEN (Recuadro)
+      // ═══════════════════════════════════════════
+      const boxY = 46;
+      doc.setFillColor(248, 250, 252); // bg gris claro
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(marginL, boxY, contentW, 30, 2, 2, 'FD');
+
+      doc.setFontSize(10);
+      const col1 = marginL + 5;
+      const col2 = marginL + contentW / 2 + 5;
+
+      // Fila 1
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...grayText);
+      doc.text('Fecha:', col1, boxY + 8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...darkText);
+      doc.text(orden.fecha || '-', col1 + 22, boxY + 8);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...grayText);
+      doc.text('Estado:', col2, boxY + 8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...darkText);
+      doc.text(orden.estado || '-', col2 + 24, boxY + 8);
+
+      // Fila 2
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...grayText);
+      doc.text('Proveedor:', col1, boxY + 17);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...darkText);
+      doc.text(orden.proveedor || '-', col1 + 32, boxY + 17);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...grayText);
+      doc.text('Solicitante:', col2, boxY + 17);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...darkText);
+      doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 17);
+
+      // Fila 3 - Observaciones (si hay)
+      if (orden.observaciones) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...grayText);
+        doc.text('Obs:', col1, boxY + 26);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(...darkText);
+        const obsText = doc.splitTextToSize(orden.observaciones, contentW - 25);
+        doc.text(obsText[0] || '', col1 + 15, boxY + 26); // Solo primera línea en el recuadro
+      }
+
+      // ═══════════════════════════════════════════
+      // TABLA DE INSUMOS
+      // ═══════════════════════════════════════════
+      const tableStartY = boxY + 36;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...primaryColor);
+      doc.text('DETALLE DE INSUMOS SOLICITADOS', marginL, tableStartY);
+
+      const tableBody = detalles.map((d, i) => [
+        (i + 1).toString(),
+        d.codigo,
+        d.insumo || '-',
+        d.cantidad_pedida.toString()
+      ]);
+
+      doc.autoTable({
+        startY: tableStartY + 3,
+        head: [['#', 'Código', 'Insumo / Descripción', 'Cantidad Pedida']],
+        body: tableBody,
+        margin: { left: marginL, right: marginR },
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.3
+        },
+        headStyles: {
+          fillColor: primaryColor,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        bodyStyles: {
+          textColor: darkText
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          1: { halign: 'center', cellWidth: 30 },
+          2: { halign: 'left' },
+          3: { halign: 'center', cellWidth: 35 }
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        }
+      });
+
+      const afterTableY = doc.lastAutoTable.finalY + 5;
+
+      // ═══════════════════════════════════════════
+      // OBSERVACIONES LARGAS (si hay y no cupieron arriba)
+      // ═══════════════════════════════════════════
+      let currentY = afterTableY;
+
+      if (orden.observaciones && orden.observaciones.length > 60) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...primaryColor);
+        doc.text('OBSERVACIONES:', marginL, currentY);
+        currentY += 5;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...darkText);
+        const obsLines = doc.splitTextToSize(orden.observaciones, contentW);
+        doc.text(obsLines, marginL, currentY);
+        currentY += obsLines.length * 4 + 5;
+      }
+
+      // ═══════════════════════════════════════════
+      // SECCIÓN DE FIRMAS
+      // ═══════════════════════════════════════════
+      // Verificar si hay espacio suficiente, si no, nueva página
+      if (currentY > 230) {
+        doc.addPage();
+        currentY = 30;
+      }
+
+      const firmaY = Math.max(currentY + 15, 220); // Posicionar firmas abajo
+      const firmaLineW = 65;
+      const firmaGap = 20;
+
+      // Línea divisoria antes de firmas
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.line(marginL, firmaY - 10, pageW - marginR, firmaY - 10);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...grayText);
+      doc.text('Este documento requiere las siguientes firmas para su validez:', marginL, firmaY - 5);
+
+      // ── FIRMA 1: Solicitante (Bodega) ──
+      const firma1X = marginL + (contentW / 2 - firmaLineW) / 2;
+
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.4);
+      doc.line(firma1X, firmaY + 25, firma1X + firmaLineW, firmaY + 25);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...darkText);
+      doc.text('Solicitado por:', firma1X + firmaLineW / 2, firmaY + 31, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...grayText);
+      doc.text('(Bodega)', firma1X + firmaLineW / 2, firmaY + 36, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.text(orden.usuario_solicita || '', firma1X + firmaLineW / 2, firmaY + 41, { align: 'center' });
+
+      // ── FIRMA 2: Autorización (Gerencia) ──
+      const firma2X = marginL + contentW / 2 + (contentW / 2 - firmaLineW) / 2;
+
+      doc.setDrawColor(...accentColor);
+      doc.setLineWidth(0.4);
+      doc.line(firma2X, firmaY + 25, firma2X + firmaLineW, firmaY + 25);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...darkText);
+      doc.text('Autorizado por:', firma2X + firmaLineW / 2, firmaY + 31, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...grayText);
+      doc.text('(Gerencia)', firma2X + firmaLineW / 2, firmaY + 36, { align: 'center' });
+
+      // ═══════════════════════════════════════════
+      // PIE DE PÁGINA
+      // ═══════════════════════════════════════════
+      const pageH = doc.internal.pageSize.getHeight();
+
+      // Franja inferior
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, pageH - 12, pageW, 12, 'F');
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text('Global Motriz S.A. — Documento generado automáticamente por el Sistema de Inventario', pageW / 2, pageH - 7, { align: 'center' });
+
+      doc.setTextColor(200, 200, 200);
+      doc.text(`Impreso: ${new Date().toLocaleString('es-EC')}`, pageW / 2, pageH - 3, { align: 'center' });
+
+      // ═══════════════════════════════════════════
+      // DESCARGAR / ABRIR PDF
+      // ═══════════════════════════════════════════
+      doc.save(`OC_${orden.id}_GlobalMotriz.pdf`);
+
+      Swal.close();
+
+    } catch (err) {
+      console.error('Error generando PDF:', err);
+      Swal.fire('Error', 'No se pudo generar el PDF', 'error');
+    }
+  }
+
+  /* ======================================================
+      HELPER: Cargar imagen como Base64
+      (Para el logo en el PDF)
+  ====================================================== */
+  function cargarImagenBase64(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  /* ======================================================
       EXPONER GLOBALES
   ====================================================== */
   window.verOrden = verOrden;
   window.modalRecepcion = modalRecepcion;
   window.anularOrden = anularOrden;
+  window.imprimirOC = imprimirOC;
 
 });

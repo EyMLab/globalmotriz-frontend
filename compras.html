@@ -6,8 +6,10 @@
   <title>Órdenes de Compra</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- jsPDF + autoTable para generación de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* Estilos específicos de Compras */
     .badge {
       display: inline-block;
       padding: 3px 10px;
@@ -21,72 +23,52 @@
     .badge-anulada { background: #fee2e2; color: #991b1b; }
 
     .btn-recibir {
-      background: #059669;
-      color: white;
-      border: none;
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
+      background: #059669; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
     }
     .btn-recibir:hover { background: #047857; }
 
     .btn-anular {
-      background: #dc2626;
-      color: white;
-      border: none;
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
+      background: #dc2626; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
     }
     .btn-anular:hover { background: #b91c1c; }
 
     .btn-ver {
-      background: #6366f1;
-      color: white;
-      border: none;
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
+      background: #6366f1; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
     }
     .btn-ver:hover { background: #4f46e5; }
 
-    /* Tabla de recepción dentro del modal */
+    .btn-pdf {
+      background: #ea580c; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-pdf:hover { background: #c2410c; }
+
     .tabla-recepcion {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin-top: 10px;
+      width: 100%; border-collapse: collapse;
+      font-size: 13px; margin-top: 10px;
     }
     .tabla-recepcion th {
-      background: #f1f5f9;
-      padding: 8px 6px;
-      text-align: center;
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #475569;
+      background: #f1f5f9; padding: 8px 6px;
+      text-align: center; font-size: 11px;
+      text-transform: uppercase; color: #475569;
       border-bottom: 2px solid #e2e8f0;
     }
     .tabla-recepcion td {
-      padding: 6px;
-      text-align: center;
+      padding: 6px; text-align: center;
       border-bottom: 1px solid #e2e8f0;
     }
     .tabla-recepcion input[type="number"] {
-      width: 70px;
-      padding: 4px 6px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      text-align: center;
-      font-size: 13px;
+      width: 70px; padding: 4px 6px;
+      border: 1px solid #cbd5e1; border-radius: 4px;
+      text-align: center; font-size: 13px;
     }
-
-    /* Resumen de diferencias */
     .diff-positive { color: #059669; font-weight: 600; }
     .diff-negative { color: #dc2626; font-weight: 600; }
     .diff-zero { color: #64748b; }
@@ -97,7 +79,6 @@
 
   <div class="dashboard-container">
 
-    <!-- Filtros -->
     <div class="filtros insumos" style="margin-bottom:12px;">
       <div class="filtro-grupo">
         <label for="filtro-estado-oc">Estado:</label>
@@ -110,14 +91,12 @@
       </div>
     </div>
 
-    <!-- Botones -->
     <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
       <button id="btnNuevaOC" type="button" class="btn-obs">Nueva Orden de Compra</button>
       <button id="btnNuevoProveedor" type="button" class="btn-obs">Nuevo Proveedor</button>
       <button type="button" class="btn-obs" onclick="window.location.href='inventario.html'">Volver a Inventario</button>
     </div>
 
-    <!-- Tabla -->
     <table>
       <thead>
         <tr>
@@ -132,7 +111,6 @@
       <tbody id="tablaCompras"></tbody>
     </table>
 
-    <!-- Paginación -->
     <div class="pagination-controls">
       <button id="btn-prev-oc" type="button">Anterior</button>
       <span id="page-info-oc">Página 1</span>
