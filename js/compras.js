@@ -24,6 +24,32 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   /* ======================================================
+      CACHE DE INSUMOS (para autocompletado)
+  ====================================================== */
+  let catalogoInsumos = []; // Se carga una vez: [{ codigo, nombre }, ...]
+
+  async function cargarCatalogoInsumos() {
+    try {
+      // Traemos todos los insumos (sin paginación limitante)
+      const res = await apiFetch('/inventario/list?pageSize=500&page=1');
+      if (!res || !res.ok) return;
+      const data = await safeJson(res);
+      if (!data || !data.items) return;
+
+      // Deduplicar por código (puede venir MATRIZ y SUCURSAL)
+      const mapa = new Map();
+      data.items.forEach(item => {
+        if (!mapa.has(item.codigo)) {
+          mapa.set(item.codigo, { codigo: item.codigo, nombre: item.nombre, unidad: item.unidad });
+        }
+      });
+      catalogoInsumos = Array.from(mapa.values());
+    } catch {
+      catalogoInsumos = [];
+    }
+  }
+
+  /* ======================================================
       REFERENCIAS DOM
   ====================================================== */
   const tbody      = document.getElementById('tablaCompras');
@@ -61,6 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
     try { return await res.json(); } catch { return null; }
   }
 
+  function debounce(fn, delay = 250) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+  }
+
   /* ======================================================
       SESIÓN
   ====================================================== */
@@ -88,6 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnNuevoProv) btnNuevoProv.style.display = 'none';
       }
 
+      // Cargar catálogo en background para autocompletado
+      cargarCatalogoInsumos();
       cargarOrdenes();
     } catch {
       if (reintentos > 0) {
@@ -242,9 +275,221 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================================================
+      AUTOCOMPLETADO DE INSUMOS
+      Busca por código o nombre en el catálogo cargado
+  ====================================================== */
+
+  // CSS inyectado una sola vez para el dropdown de autocompletado
+  const acStyleTag = document.createElement('style');
+  acStyleTag.textContent = `
+    .ac-wrapper {
+      position: relative;
+      flex: 2;
+    }
+    .ac-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      max-height: 160px;
+      overflow-y: auto;
+      z-index: 99999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      display: none;
+    }
+    .ac-dropdown.show {
+      display: block;
+    }
+    .ac-option {
+      padding: 7px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .ac-option:hover, .ac-option.ac-active {
+      background: #eff6ff;
+    }
+    .ac-option .ac-code {
+      font-weight: 700;
+      color: #1e3a5f;
+      margin-right: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .ac-option .ac-name {
+      color: #334155;
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ac-option .ac-unit {
+      color: #94a3b8;
+      font-size: 11px;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+    .ac-empty {
+      padding: 10px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  `;
+  document.head.appendChild(acStyleTag);
+
+  /**
+   * Convierte un input de código en un buscador con autocompletado.
+   * @param {HTMLInputElement} input - El input donde el usuario escribe.
+   */
+  function activarAutocompletado(input) {
+    // Envolver el input en un wrapper relativo
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ac-wrapper';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+
+    // Crear dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'ac-dropdown';
+    wrapper.appendChild(dropdown);
+
+    let activeIdx = -1;
+
+    // Buscar y mostrar resultados
+    function buscar() {
+      const q = input.value.trim().toLowerCase();
+      dropdown.innerHTML = '';
+      activeIdx = -1;
+
+      if (q.length < 1) {
+        dropdown.classList.remove('show');
+        return;
+      }
+
+      const resultados = catalogoInsumos.filter(item =>
+        item.codigo.toLowerCase().includes(q) ||
+        item.nombre.toLowerCase().includes(q)
+      ).slice(0, 15); // Máximo 15 resultados
+
+      if (resultados.length === 0) {
+        dropdown.innerHTML = '<div class="ac-empty">No se encontraron insumos</div>';
+        dropdown.classList.add('show');
+        return;
+      }
+
+      resultados.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'ac-option';
+        div.dataset.index = idx;
+        div.innerHTML = `
+          <span class="ac-code">${item.codigo}</span>
+          <span class="ac-name">${item.nombre}</span>
+          ${item.unidad ? `<span class="ac-unit">${item.unidad}</span>` : ''}
+        `;
+
+        div.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // Evitar blur
+          seleccionarInsumo(input, item, dropdown);
+        });
+
+        dropdown.appendChild(div);
+      });
+
+      dropdown.classList.add('show');
+    }
+
+    function seleccionarInsumo(input, item, dropdown) {
+      input.value = item.codigo;
+      input.dataset.selectedCodigo = item.codigo;
+      input.dataset.selectedNombre = item.nombre;
+      dropdown.classList.remove('show');
+
+      // Actualizar el label visual si existe
+      const label = input.parentNode.querySelector('.ac-selected-label');
+      if (label) label.remove();
+
+      const tag = document.createElement('div');
+      tag.className = 'ac-selected-label';
+      tag.style.cssText = 'font-size:11px; color:#059669; margin-top:2px; font-weight:500;';
+      tag.textContent = `✓ ${item.nombre}`;
+      input.parentNode.appendChild(tag);
+
+      // Mover focus a cantidad
+      const row = input.closest('.oc-row');
+      if (row) {
+        const cantInput = row.querySelector('.oc-cant');
+        if (cantInput) cantInput.focus();
+      }
+    }
+
+    // Navegación con teclado
+    input.addEventListener('keydown', (e) => {
+      const opciones = dropdown.querySelectorAll('.ac-option');
+      if (!opciones.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, opciones.length - 1);
+        actualizarActivo(opciones);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, 0);
+        actualizarActivo(opciones);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIdx >= 0 && activeIdx < opciones.length) {
+          const idx = activeIdx;
+          const q = input.value.trim().toLowerCase();
+          const resultados = catalogoInsumos.filter(item =>
+            item.codigo.toLowerCase().includes(q) ||
+            item.nombre.toLowerCase().includes(q)
+          ).slice(0, 15);
+          if (resultados[idx]) {
+            seleccionarInsumo(input, resultados[idx], dropdown);
+          }
+        }
+      } else if (e.key === 'Escape') {
+        dropdown.classList.remove('show');
+      }
+    });
+
+    function actualizarActivo(opciones) {
+      opciones.forEach((op, i) => {
+        op.classList.toggle('ac-active', i === activeIdx);
+        if (i === activeIdx) op.scrollIntoView({ block: 'nearest' });
+      });
+    }
+
+    // Eventos
+    input.addEventListener('input', debounce(buscar, 200));
+    input.addEventListener('focus', () => {
+      if (input.value.trim().length >= 1) buscar();
+    });
+    input.addEventListener('blur', () => {
+      // Delay para permitir click en opción
+      setTimeout(() => dropdown.classList.remove('show'), 150);
+    });
+  }
+
+  /* ======================================================
       MODAL: NUEVA ORDEN DE COMPRA
+      (CON AUTOCOMPLETADO DE INSUMOS)
   ====================================================== */
   async function modalNuevaOC() {
+    // Si el catálogo no se cargó aún, intentar
+    if (catalogoInsumos.length === 0) {
+      await cargarCatalogoInsumos();
+    }
+
     const provRes = await apiFetch('/proveedores');
     let proveedores = [];
     if (provRes && provRes.ok) {
@@ -273,11 +518,12 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <label style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px;">Ítems a pedir</label>
-        <div id="oc-items" style="border:1px solid #e2e8f0; border-radius:6px; padding:10px; max-height:220px; overflow-y:auto; background:#f8fafc; margin-bottom:10px;">
-          <div class="oc-row" style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" placeholder="Código (Ej: INS001)" class="swal2-input oc-codigo" style="margin:0; flex:2; height:38px; font-size:14px;">
-            <input type="number" placeholder="Cant. pedida" class="swal2-input oc-cant" style="margin:0; flex:1; height:38px; font-size:14px;" min="1">
-            <button type="button" class="btn-del-oc-row" style="background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; width:36px; height:38px; font-size:18px;">&times;</button>
+        <p style="font-size:11px; color:#94a3b8; margin:0 0 8px 0;">Escribe código o nombre para buscar insumos</p>
+        <div id="oc-items" style="border:1px solid #e2e8f0; border-radius:6px; padding:10px; max-height:260px; overflow-y:auto; background:#f8fafc; margin-bottom:10px;">
+          <div class="oc-row" style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+            <input type="text" placeholder="Buscar insumo..." class="swal2-input oc-codigo" style="margin:0; height:38px; font-size:14px;" autocomplete="off">
+            <input type="number" placeholder="Cant." class="swal2-input oc-cant" style="margin:0; flex:0 0 80px; height:38px; font-size:14px;" min="1">
+            <button type="button" class="btn-del-oc-row" style="background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; width:36px; min-height:38px; font-size:18px; flex-shrink:0;">&times;</button>
           </div>
         </div>
         <button type="button" id="btn-add-oc-row" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px;">+ Agregar ítem</button>
@@ -287,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const { value: form } = await Swal.fire({
       title: 'Nueva Orden de Compra',
       html: htmlForm,
-      width: '550px',
+      width: '580px',
       showCancelButton: true,
       confirmButtonText: 'Crear Orden',
       cancelButtonText: 'Cancelar',
@@ -296,28 +542,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = popup.querySelector('#oc-items');
         const btnAdd = popup.querySelector('#btn-add-oc-row');
 
+        // Activar autocompletado en el primer input
+        const primerInput = container.querySelector('.oc-codigo');
+        if (primerInput) activarAutocompletado(primerInput);
+
+        // Botón agregar fila
         btnAdd.addEventListener('click', () => {
           const div = document.createElement('div');
           div.className = 'oc-row';
-          div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
+          div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;';
           div.innerHTML = `
-            <input type="text" placeholder="Código" class="swal2-input oc-codigo" style="margin:0; flex:2; height:38px; font-size:14px;">
-            <input type="number" placeholder="Cant." class="swal2-input oc-cant" style="margin:0; flex:1; height:38px; font-size:14px;" min="1">
-            <button type="button" class="btn-del-oc-row" style="background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; width:36px; height:38px; font-size:18px;">&times;</button>
+            <input type="text" placeholder="Buscar insumo..." class="swal2-input oc-codigo" style="margin:0; height:38px; font-size:14px;" autocomplete="off">
+            <input type="number" placeholder="Cant." class="swal2-input oc-cant" style="margin:0; flex:0 0 80px; height:38px; font-size:14px;" min="1">
+            <button type="button" class="btn-del-oc-row" style="background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; width:36px; min-height:38px; font-size:18px; flex-shrink:0;">&times;</button>
           `;
           container.appendChild(div);
-          div.querySelector('.oc-codigo').focus();
+
+          // Activar autocompletado en el nuevo input
+          const nuevoInput = div.querySelector('.oc-codigo');
+          activarAutocompletado(nuevoInput);
+          nuevoInput.focus();
         });
 
+        // Delegación para eliminar fila
         container.addEventListener('click', (e) => {
           const btn = e.target.closest('.btn-del-oc-row');
           if (btn) {
             if (container.querySelectorAll('.oc-row').length > 1) {
-              btn.parentElement.remove();
+              btn.closest('.oc-row').remove();
             } else {
-              const row = btn.parentElement;
-              row.querySelector('.oc-codigo').value = '';
+              const row = btn.closest('.oc-row');
+              const codigoInput = row.querySelector('.oc-codigo');
+              codigoInput.value = '';
+              delete codigoInput.dataset.selectedCodigo;
+              delete codigoInput.dataset.selectedNombre;
               row.querySelector('.oc-cant').value = '';
+              const label = row.querySelector('.ac-selected-label');
+              if (label) label.remove();
             }
           }
         });
@@ -329,7 +590,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const filas = document.querySelectorAll('.oc-row');
         const items = [];
         for (const fila of filas) {
-          const codigo = fila.querySelector('.oc-codigo').value.trim().toUpperCase();
+          const codigoInput = fila.querySelector('.oc-codigo');
+          // Usar el código seleccionado del autocompletado, o lo que escribió manualmente
+          const codigo = (codigoInput.dataset.selectedCodigo || codigoInput.value).trim().toUpperCase();
           const cantidad_pedida = Number(fila.querySelector('.oc-cant').value);
           if (codigo && cantidad_pedida > 0) {
             items.push({ codigo, cantidad_pedida });
@@ -573,12 +836,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ======================================================
       IMPRIMIR PDF - ORDEN DE COMPRA
-      Genera un documento formal con:
-      - Logo de Global Motriz
-      - Datos de la orden
-      - Tabla de insumos pedidos
-      - Observaciones
-      - Espacio para firmas (Solicitante + Autorización Gerencia)
   ====================================================== */
   async function imprimirOC(id) {
     Swal.fire({ title: 'Generando PDF...', didOpen: () => Swal.showLoading() });
@@ -591,28 +848,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const { orden, detalles } = data;
 
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4'); // Vertical, milímetros, A4
+      const doc = new jsPDF('p', 'mm', 'a4');
 
       const pageW = doc.internal.pageSize.getWidth();
       const marginL = 20;
       const marginR = 20;
       const contentW = pageW - marginL - marginR;
 
-      // ─── COLORES CORPORATIVOS ───
-      const primaryColor = [30, 58, 95];     // Azul oscuro
-      const accentColor = [234, 88, 12];     // Naranja
+      const primaryColor = [30, 58, 95];
+      const accentColor = [234, 88, 12];
       const grayText = [100, 116, 139];
       const darkText = [15, 23, 42];
 
-      // ═══════════════════════════════════════════
-      // ENCABEZADO
-      // ═══════════════════════════════════════════
-
-      // Franja superior de color
+      // Franja superior
       doc.setFillColor(...primaryColor);
       doc.rect(0, 0, pageW, 3, 'F');
 
-      // Intentar cargar logo (si falla, solo texto)
+      // Logo
       let logoLoaded = false;
       try {
         const logoImg = await cargarImagenBase64('img/logo.png');
@@ -620,48 +872,38 @@ document.addEventListener('DOMContentLoaded', () => {
           doc.addImage(logoImg, 'PNG', marginL, 8, 35, 18);
           logoLoaded = true;
         }
-      } catch {
-        // Sin logo, no pasa nada
-      }
+      } catch { }
 
       const headerTextX = logoLoaded ? marginL + 40 : marginL;
 
-      // Nombre empresa
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
       doc.setTextColor(...primaryColor);
       doc.text('GLOBAL MOTRIZ S.A.', headerTextX, 16);
 
-      // Subtítulo
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(...grayText);
       doc.text('Sistema de Gestión de Inventario e Insumos', headerTextX, 22);
 
-      // Número de OC (lado derecho)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(22);
       doc.setTextColor(...accentColor);
       doc.text(`OC #${orden.id}`, pageW - marginR, 18, { align: 'right' });
 
-      // Línea divisoria
       doc.setDrawColor(...primaryColor);
       doc.setLineWidth(0.5);
       doc.line(marginL, 30, pageW - marginR, 30);
 
-      // ═══════════════════════════════════════════
-      // TÍTULO DEL DOCUMENTO
-      // ═══════════════════════════════════════════
+      // Título
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.setTextColor(...darkText);
       doc.text('ORDEN DE COMPRA', pageW / 2, 40, { align: 'center' });
 
-      // ═══════════════════════════════════════════
-      // DATOS DE LA ORDEN (Recuadro)
-      // ═══════════════════════════════════════════
+      // Datos
       const boxY = 46;
-      doc.setFillColor(248, 250, 252); // bg gris claro
+      doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
       doc.roundedRect(marginL, boxY, contentW, 30, 2, 2, 'FD');
 
@@ -669,52 +911,36 @@ document.addEventListener('DOMContentLoaded', () => {
       const col1 = marginL + 5;
       const col2 = marginL + contentW / 2 + 5;
 
-      // Fila 1
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
       doc.text('Fecha:', col1, boxY + 8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...darkText);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
       doc.text(orden.fecha || '-', col1 + 22, boxY + 8);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
       doc.text('Estado:', col2, boxY + 8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...darkText);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
       doc.text(orden.estado || '-', col2 + 24, boxY + 8);
 
-      // Fila 2
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
       doc.text('Proveedor:', col1, boxY + 17);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...darkText);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
       doc.text(orden.proveedor || '-', col1 + 32, boxY + 17);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
       doc.text('Solicitante:', col2, boxY + 17);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...darkText);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
       doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 17);
 
-      // Fila 3 - Observaciones (si hay)
       if (orden.observaciones) {
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...grayText);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
         doc.text('Obs:', col1, boxY + 26);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(...darkText);
+        doc.setFont('helvetica', 'italic'); doc.setTextColor(...darkText);
         const obsText = doc.splitTextToSize(orden.observaciones, contentW - 25);
-        doc.text(obsText[0] || '', col1 + 15, boxY + 26); // Solo primera línea en el recuadro
+        doc.text(obsText[0] || '', col1 + 15, boxY + 26);
       }
 
-      // ═══════════════════════════════════════════
-      // TABLA DE INSUMOS
-      // ═══════════════════════════════════════════
+      // Tabla
       const tableStartY = boxY + 36;
-
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...primaryColor);
@@ -732,136 +958,70 @@ document.addEventListener('DOMContentLoaded', () => {
         head: [['#', 'Código', 'Insumo / Descripción', 'Cantidad Pedida']],
         body: tableBody,
         margin: { left: marginL, right: marginR },
-        styles: {
-          fontSize: 10,
-          cellPadding: 4,
-          lineColor: [226, 232, 240],
-          lineWidth: 0.3
-        },
-        headStyles: {
-          fillColor: primaryColor,
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        bodyStyles: {
-          textColor: darkText
-        },
+        styles: { fontSize: 10, cellPadding: 4, lineColor: [226, 232, 240], lineWidth: 0.3 },
+        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        bodyStyles: { textColor: darkText },
         columnStyles: {
           0: { halign: 'center', cellWidth: 12 },
           1: { halign: 'center', cellWidth: 30 },
           2: { halign: 'left' },
           3: { halign: 'center', cellWidth: 35 }
         },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252]
-        }
+        alternateRowStyles: { fillColor: [248, 250, 252] }
       });
 
-      const afterTableY = doc.lastAutoTable.finalY + 5;
-
-      // ═══════════════════════════════════════════
-      // OBSERVACIONES LARGAS (si hay y no cupieron arriba)
-      // ═══════════════════════════════════════════
-      let currentY = afterTableY;
+      let currentY = doc.lastAutoTable.finalY + 5;
 
       if (orden.observaciones && orden.observaciones.length > 60) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(...primaryColor);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...primaryColor);
         doc.text('OBSERVACIONES:', marginL, currentY);
         currentY += 5;
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(...darkText);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
         const obsLines = doc.splitTextToSize(orden.observaciones, contentW);
         doc.text(obsLines, marginL, currentY);
         currentY += obsLines.length * 4 + 5;
       }
 
-      // ═══════════════════════════════════════════
-      // SECCIÓN DE FIRMAS
-      // ═══════════════════════════════════════════
-      // Verificar si hay espacio suficiente, si no, nueva página
-      if (currentY > 230) {
-        doc.addPage();
-        currentY = 30;
-      }
+      // Firmas
+      if (currentY > 230) { doc.addPage(); currentY = 30; }
 
-      const firmaY = Math.max(currentY + 15, 220); // Posicionar firmas abajo
+      const firmaY = Math.max(currentY + 15, 220);
       const firmaLineW = 65;
-      const firmaGap = 20;
 
-      // Línea divisoria antes de firmas
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.3);
+      doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.3);
       doc.line(marginL, firmaY - 10, pageW - marginR, firmaY - 10);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...grayText);
       doc.text('Este documento requiere las siguientes firmas para su validez:', marginL, firmaY - 5);
 
-      // ── FIRMA 1: Solicitante (Bodega) ──
       const firma1X = marginL + (contentW / 2 - firmaLineW) / 2;
-
-      doc.setDrawColor(...primaryColor);
-      doc.setLineWidth(0.4);
+      doc.setDrawColor(...primaryColor); doc.setLineWidth(0.4);
       doc.line(firma1X, firmaY + 25, firma1X + firmaLineW, firmaY + 25);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...darkText);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...darkText);
       doc.text('Solicitado por:', firma1X + firmaLineW / 2, firmaY + 31, { align: 'center' });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grayText);
       doc.text('(Bodega)', firma1X + firmaLineW / 2, firmaY + 36, { align: 'center' });
-
       doc.setFontSize(8);
       doc.text(orden.usuario_solicita || '', firma1X + firmaLineW / 2, firmaY + 41, { align: 'center' });
 
-      // ── FIRMA 2: Autorización (Gerencia) ──
       const firma2X = marginL + contentW / 2 + (contentW / 2 - firmaLineW) / 2;
-
-      doc.setDrawColor(...accentColor);
-      doc.setLineWidth(0.4);
+      doc.setDrawColor(...accentColor); doc.setLineWidth(0.4);
       doc.line(firma2X, firmaY + 25, firma2X + firmaLineW, firmaY + 25);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...darkText);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...darkText);
       doc.text('Autorizado por:', firma2X + firmaLineW / 2, firmaY + 31, { align: 'center' });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...grayText);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grayText);
       doc.text('(Gerencia)', firma2X + firmaLineW / 2, firmaY + 36, { align: 'center' });
 
-      // ═══════════════════════════════════════════
-      // PIE DE PÁGINA
-      // ═══════════════════════════════════════════
+      // Pie de página
       const pageH = doc.internal.pageSize.getHeight();
-
-      // Franja inferior
       doc.setFillColor(...primaryColor);
       doc.rect(0, pageH - 12, pageW, 12, 'F');
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
       doc.text('Global Motriz S.A. — Documento generado automáticamente por el Sistema de Inventario', pageW / 2, pageH - 7, { align: 'center' });
-
       doc.setTextColor(200, 200, 200);
       doc.text(`Impreso: ${new Date().toLocaleString('es-EC')}`, pageW / 2, pageH - 3, { align: 'center' });
 
-      // ═══════════════════════════════════════════
-      // DESCARGAR / ABRIR PDF
-      // ═══════════════════════════════════════════
       doc.save(`OC_${orden.id}_GlobalMotriz.pdf`);
-
       Swal.close();
 
     } catch (err) {
@@ -870,10 +1030,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /* ======================================================
-      HELPER: Cargar imagen como Base64
-      (Para el logo en el PDF)
-  ====================================================== */
   function cargarImagenBase64(url) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -886,9 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
           resolve(canvas.toDataURL('image/png'));
-        } catch {
-          resolve(null);
-        }
+        } catch { resolve(null); }
       };
       img.onerror = () => resolve(null);
       img.src = url;
