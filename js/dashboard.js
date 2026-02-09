@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
   const FILAS_POR_PAGINA = 10;
 
   // =========================
@@ -20,9 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnNext = document.getElementById('btn-next');
   const pageInfo = document.getElementById('page-info');
 
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
@@ -45,45 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!loader) return;
     const p = loader.querySelector('p');
     if (p) p.textContent = text;
-  }
-
-  function redirectToLogin(clear = true) {
-    if (clear) localStorage.clear();
-    window.location.href = 'index.html';
-  }
-
-  // =========================
-  // HTTP helpers
-  // =========================
-  async function apiFetch(pathOrUrl, options = {}) {
-    const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${API_BASE_URL}${pathOrUrl}`;
-
-    const headers = new Headers(options.headers || {});
-    headers.set('Authorization', `Bearer ${token}`);
-
-    // Si el body es JSON y no viene Content-Type, lo seteamos
-    if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-
-    const res = await fetch(url, { ...options, headers });
-
-    // Manejo estándar de sesión
-    if (res.status === 401 || res.status === 403) {
-      redirectToLogin(true);
-      return null;
-    }
-
-    return res;
-  }
-
-  async function safeJson(res) {
-    if (!res) return null;
-    try {
-      return await res.json();
-    } catch {
-      return null;
-    }
   }
 
   // =========================

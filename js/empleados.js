@@ -1,31 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-  const token = localStorage.getItem('token');
-
   const tablaEmpleados = document.getElementById('tabla-empleados');
   const btnNuevoEmpleado = document.getElementById('btn-nuevo-empleado');
 
   let empleados = [];
 
-  if (!token) {
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
   // ===============================
   // Verificar que sea admin
   // ===============================
-  fetch(`${API_BASE_URL}/auth/me`, {
-    headers: { Authorization: 'Bearer ' + token }
-  })
+  apiFetch('/auth/me')
     .then(async res => {
-      if (!res.ok) {
-        localStorage.clear();
-        return window.location.href = 'index.html';
+      if (!res || !res.ok) {
+        redirectLogin();
+        return;
       }
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (data.rol !== 'admin') {
         Swal.fire('Acceso denegado', 'Solo admin puede gestionar empleados', 'error');
         return window.location.href = 'dashboard.html';
@@ -40,9 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function cargarEmpleados() {
     tablaEmpleados.innerHTML = `<tr><td colspan="6">Cargando...</td></tr>`;
 
-    fetch(`${API_BASE_URL}/empleados`, {
-      headers: { Authorization: 'Bearer ' + token }
-    })
+    apiFetch('/empleados')
       .then(res => res.json())
       .then(data => {
         empleados = data;
@@ -120,12 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/empleados`, {
+      apiFetch('/empleados', {
         method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r.value)
       })
         .then(res => {
@@ -167,12 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/empleados/${id}`, {
+      apiFetch(`/empleados/${id}`, {
         method: 'PATCH',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r.value)
       })
         .then(() => {
@@ -189,12 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Activar / Desactivar
   // ===============================
   window.toggleEmpleado = function (id, activo) {
-    fetch(`${API_BASE_URL}/empleados/${id}`, {
+    apiFetch(`/empleados/${id}`, {
       method: 'PATCH',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activo: !activo })
     })
       .then(() => cargarEmpleados())
@@ -216,9 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/empleados/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+      apiFetch(`/empleados/${id}`, {
+        method: 'DELETE'
       })
         .then(() => {
           Swal.fire('✅ Empleado eliminado', '', 'success');

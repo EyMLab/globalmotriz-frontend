@@ -1,14 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  const API_BASE_URL = "https://globalmotriz-backend.onrender.com";
-  const TOKEN = localStorage.getItem("token");
-
-  // 🔥 Z-Index Nuclear para estar siempre encima de los modales
   const Z_INDEX_ALERTA = 99999999;
 
-  if (!TOKEN) {
-    localStorage.clear();
-    window.location.href = "index.html";
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
@@ -24,32 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ======================================================
       HELPERS
   ====================================================== */
-  function redirectLogin() {
-    localStorage.clear();
-    window.location.href = "index.html";
-  }
-
-  async function apiFetch(path, options = {}) {
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        Authorization: "Bearer " + TOKEN,
-        ...(options.headers || {})
-      }
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      redirectLogin();
-      return null;
-    }
-
-    return res;
-  }
-
-  async function safeJson(res) {
-    try { return await res.json(); } catch { return null; }
-  }
-
   function cerrarTodosLosModales() {
     document.querySelectorAll(".modal-vehiculo").forEach(m => {
       m.style.display = "none";

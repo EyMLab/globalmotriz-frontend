@@ -3,7 +3,6 @@
 let inactivityTimer;
 
 // ---- CONFIG ----
-const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
 const MAX_INACTIVITY_MINUTES = 10;
 const MAX_INACTIVITY_MS = MAX_INACTIVITY_MINUTES * 60 * 1000;
 
@@ -30,28 +29,22 @@ function resetInactivityTimer() {
 
 // ---- Función principal de verificación ----
 async function verificarSesion() {
-  const token = localStorage.getItem('token');
   const usuarioSpan = document.getElementById('nombre-usuario');
 
-  if (!token) {
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    const res = await apiFetch('/auth/me');
 
-    if (res.status === 401 || res.status === 403) {
-      localStorage.clear();
-      window.location.href = 'index.html';
+    if (!res || !res.ok) {
+      redirectLogin();
       return;
     }
 
-    if (!res.ok) return;
-
-    const data = await res.json();
+    const data = await safeJson(res);
 
     // ✅ Refresca storage en caso de cambios
     localStorage.setItem('usuario', data.usuario);
@@ -64,9 +57,8 @@ async function verificarSesion() {
     resetInactivityTimer();
 
   } catch (err) {
-    console.error('❌ Error de conexión en /auth/me:', err);
-    localStorage.clear();
-    window.location.href = 'index.html';
+    console.error('Error de conexión en /auth/me:', err);
+    redirectLogin();
   }
 }
 

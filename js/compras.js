@@ -1,11 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-  const token = localStorage.getItem('token');
-
-  if (!token) {
-    localStorage.clear();
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
@@ -59,38 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const selEstado  = document.getElementById('filtro-estado-oc');
   const btnNuevaOC = document.getElementById('btnNuevaOC');
   const btnNuevoProv = document.getElementById('btnNuevoProveedor');
-
-  /* ======================================================
-      HELPERS
-  ====================================================== */
-  function redirectLogin() {
-    localStorage.clear();
-    window.location.href = 'index.html';
-  }
-
-  async function apiFetch(path, options = {}) {
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(options.headers || {})
-      }
-    });
-    if (res.status === 401 || res.status === 403) {
-      redirectLogin();
-      return null;
-    }
-    return res;
-  }
-
-  async function safeJson(res) {
-    try { return await res.json(); } catch { return null; }
-  }
-
-  function debounce(fn, delay = 250) {
-    let t;
-    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
-  }
 
   /* ======================================================
       SESIÓN

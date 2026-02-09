@@ -1,31 +1,20 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-
-  const token = localStorage.getItem('token');
   const navContainer = document.getElementById('nav-container');
 
-  if (!token) {
-    window.location.href = "index.html";
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    const res = await apiFetch('/auth/me');
 
-    if (res.status === 401) {
-      localStorage.clear();
-      window.location.href = "index.html";
+    if (!res || !res.ok) {
+      redirectLogin();
       return;
     }
 
-    if (res.status === 403) {
-      Swal.fire("Acceso denegado", "Tu rol no tiene permisos para esta vista", "error");
-      return;
-    }
-
-    const data = await res.json();
+    const data = await safeJson(res);
     const rol = data.rol;
 
     // ============================================
@@ -106,10 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 🔐 Modal para cambiar contraseña
 // ===================================================
 async function abrirModalCambioClave() {
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-  const token = localStorage.getItem('token');
-
-  if (!token) {
+  if (!getToken()) {
     Swal.fire('Error', 'Debes iniciar sesión para cambiar la contraseña.', 'error');
     return;
   }
@@ -137,24 +123,20 @@ async function abrirModalCambioClave() {
   if (!formValues) return;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/cambiar-password`, {
+    const res = await apiFetch('/cambiar-password', {
       method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formValues)
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Error al cambiar contraseña');
+    const data = await safeJson(res);
+    if (!res.ok) throw new Error(data?.error || 'Error al cambiar contraseña');
 
-    await Swal.fire('✅ Éxito', 'Contraseña actualizada correctamente. Vuelve a iniciar sesión.', 'success');
-    localStorage.clear();
-    window.location.href = 'index.html';
+    await Swal.fire('Contraseña actualizada', 'Vuelve a iniciar sesión.', 'success');
+    redirectLogin();
 
   } catch (err) {
-    Swal.fire('❌ Error', err.message || 'No se pudo cambiar la contraseña.', 'error');
+    Swal.fire('Error', err.message || 'No se pudo cambiar la contraseña.', 'error');
   }
 }
 
@@ -183,13 +165,10 @@ function cerrarSesion() {
 // 🟢 Mantener backend activo
 // ===================================================
 (function () {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+  if (!getToken()) return;
 
   function keepBackendAwake() {
-    fetch("https://globalmotriz-backend.onrender.com/health", {
-      headers: { Authorization: "Bearer " + token }
-    }).catch(() => {});
+    apiFetch('/health').catch(() => {});
   }
 
   keepBackendAwake();

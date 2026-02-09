@@ -1,12 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-  const token = localStorage.getItem('token');
   const FILAS_POR_PAGINA = 15;
 
-  if (!token) {
-    localStorage.clear();
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
@@ -37,35 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let paginaActual = 1;
   let rol = null;
   let localidadUsuario = null;
-
-  // =========================
-  // Helpers
-  // =========================
-  function redirectLogin() {
-    localStorage.clear();
-    window.location.href = 'index.html';
-  }
-
-  async function apiFetch(path, options = {}) {
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(options.headers || {})
-      }
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      redirectLogin();
-      return null;
-    }
-
-    return res;
-  }
-
-  async function safeJson(res) {
-    try { return await res.json(); } catch { return null; }
-  }
 
   // =========================
   // Verificar sesión

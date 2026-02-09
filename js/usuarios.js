@@ -1,30 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-  const token = localStorage.getItem('token');
   const tablaUsuarios = document.getElementById('tabla-usuarios');
   const btnNuevoUsuario = document.getElementById('btn-nuevo-usuario');
 
   let usuarios = [];
 
-  if (!token) {
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
   // ===============================
   // Verificar admin
   // ===============================
-  fetch(`${API_BASE_URL}/auth/me`, {
-    headers: { Authorization: 'Bearer ' + token }
-  })
+  apiFetch('/auth/me')
     .then(async res => {
-      if (res.status === 401) {
-        localStorage.clear();
-        return window.location.href = 'index.html';
+      if (!res || !res.ok) {
+        redirectLogin();
+        return;
       }
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (data.rol !== 'admin') {
         Swal.fire('Acceso denegado', 'Solo admin puede acceder a Usuarios', 'error');
         return window.location.href = 'dashboard.html';
@@ -39,9 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function cargarUsuarios() {
     tablaUsuarios.innerHTML = `<tr><td colspan="4">Cargando...</td></tr>`;
 
-    fetch(`${API_BASE_URL}/usuarios`, {
-      headers: { Authorization: 'Bearer ' + token }
-    })
+    apiFetch('/usuarios')
       .then(res => res.json())
       .then(data => {
         usuarios = data;
@@ -136,12 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/usuarios`, {
+      apiFetch('/usuarios', {
         method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r.value)
       })
         .then(() => {
@@ -205,12 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/usuarios/${id}`, {
+      apiFetch(`/usuarios/${id}`, {
         method: 'PATCH',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r.value)
       })
         .then(() => {
@@ -251,12 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/usuarios/${id}/password`, {
+      apiFetch(`/usuarios/${id}/password`, {
         method: 'PATCH',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nueva: r.value })
       })
         .then(() => {
@@ -283,9 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (!r.isConfirmed) return;
 
-      fetch(`${API_BASE_URL}/usuarios/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+      apiFetch(`/usuarios/${id}`, {
+        method: 'DELETE'
       })
         .then(() => {
           Swal.fire('✅ Usuario eliminado', '', 'success');

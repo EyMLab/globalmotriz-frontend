@@ -1,9 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
-  const token = localStorage.getItem('token');
-
-  if (!token) {
-    window.location.href = 'index.html';
+  if (!getToken()) {
+    redirectLogin();
     return;
   }
 
@@ -26,16 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputHasta = document.getElementById('h-hasta');
   if (inputHasta) inputHasta.value = hoy;
   
-  async function apiFetch(path) {
+  async function apiFetchJson(path) {
     try {
-      const res = await fetch(`${API_BASE_URL}${path}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        window.location.href = 'index.html';
-        return null;
-      }
-      return await res.json();
+      const res = await apiFetch(path);
+      if (!res) return null;
+      return await safeJson(res);
     } catch (e) {
       console.error(e);
       return null;
@@ -56,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Cargando historial...</td></tr>';
-    const data = await apiFetch(`/inventario/historial?${params.toString()}`);
+    const data = await apiFetchJson(`/inventario/historial?${params.toString()}`);
 
     if (data) {
       state.total = data.total;
