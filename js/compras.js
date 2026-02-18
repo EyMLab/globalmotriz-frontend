@@ -1041,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
           head: [['#', 'Codigo', 'Insumo / Descripcion', 'Cantidad Pedida']],
           body: tableBody,
           margin: { left: marginL, right: marginR },
-          styles: { fontSize: 10, cellPadding: 4, lineColor: [226, 232, 240], lineWidth: 0.3 },
+          styles: { fontSize: 10, cellPadding: 6, lineColor: [226, 232, 240], lineWidth: 0.3 },
           headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
           bodyStyles: { textColor: darkText },
           columnStyles: {
@@ -1056,48 +1056,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let currentY = doc.lastAutoTable.finalY + 6;
 
-      // Observaciones — dos columnas lado a lado (izq: orden, der: recepción)
-      if (tieneObs || tieneObsRec) {
-        const colW = (contentW - 6) / 2;  // ancho de cada columna con gap de 6mm
-        const obsL = marginL;              // columna izquierda
-        const obsR = marginL + colW + 6;  // columna derecha
+      // Observaciones post-tabla
+      if (esFinalizada) {
+        // Finalizada: dos columnas lado a lado (orden | recepción)
+        if (tieneObs || tieneObsRec) {
+          const colW = (contentW - 6) / 2;
+          const obsL = marginL;
+          const obsR = marginL + colW + 6;
 
-        // Calcular líneas de cada bloque para saber la altura del recuadro
+          doc.setFontSize(9);
+          const obsLLines = tieneObs    ? doc.splitTextToSize(orden.observaciones,           colW - 4) : [];
+          const obsRLines = tieneObsRec ? doc.splitTextToSize(orden.observaciones_recepcion, colW - 4) : [];
+          const maxLines  = Math.max(obsLLines.length, obsRLines.length, 1);
+          const blockH    = 8 + maxLines * 4 + 4;
+
+          // Recuadro izquierdo — Observaciones de la orden
+          doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
+          doc.roundedRect(obsL, currentY, colW, blockH, 2, 2, 'FD');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...primaryColor);
+          doc.text('OBSERVACIONES DE LA ORDEN', obsL + 3, currentY + 6);
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          if (tieneObs) {
+            doc.setTextColor(...darkText);
+            doc.text(obsLLines, obsL + 3, currentY + 12);
+          } else {
+            doc.setTextColor(...grayText);
+            doc.text('Sin observaciones', obsL + 3, currentY + 12);
+          }
+
+          // Recuadro derecho — Observaciones de recepción
+          doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
+          doc.roundedRect(obsR, currentY, colW, blockH, 2, 2, 'FD');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...primaryColor);
+          doc.text('OBSERVACIONES DE RECEPCION', obsR + 3, currentY + 6);
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          if (tieneObsRec) {
+            doc.setTextColor(...darkText);
+            doc.text(obsRLines, obsR + 3, currentY + 12);
+          } else {
+            doc.setTextColor(...grayText);
+            doc.text('Sin observaciones', obsR + 3, currentY + 12);
+          }
+
+          currentY += blockH + 6;
+        }
+      } else if (tieneObs) {
+        // Pendiente/Anulada: solo observaciones de la orden, a ancho completo
         doc.setFontSize(9);
-        const obsLLines  = tieneObs    ? doc.splitTextToSize(orden.observaciones,              colW - 4) : [];
-        const obsRLines  = tieneObsRec ? doc.splitTextToSize(orden.observaciones_recepcion,    colW - 4) : [];
-        const maxLines   = Math.max(obsLLines.length, obsRLines.length, 1);
-        const blockH     = 8 + maxLines * 4 + 4; // título(8) + líneas + padding
+        const obsLines = doc.splitTextToSize(orden.observaciones, contentW - 4);
+        const blockH   = 8 + obsLines.length * 4 + 4;
 
-        // Recuadro izquierdo — Observaciones de la orden
-        doc.setFillColor(248, 250, 252);
-        doc.setDrawColor(226, 232, 240);
-        doc.roundedRect(obsL, currentY, colW, blockH, 2, 2, 'FD');
-
+        doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(marginL, currentY, contentW, blockH, 2, 2, 'FD');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...primaryColor);
-        doc.text('OBSERVACIONES DE LA ORDEN', obsL + 3, currentY + 6);
+        doc.text('OBSERVACIONES', marginL + 3, currentY + 6);
         doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
-        if (tieneObs) {
-          doc.text(obsLLines, obsL + 3, currentY + 12);
-        } else {
-          doc.setTextColor(...grayText);
-          doc.text('Sin observaciones', obsL + 3, currentY + 12);
-        }
-
-        // Recuadro derecho — Observaciones de recepción
-        doc.setFillColor(248, 250, 252);
-        doc.setDrawColor(226, 232, 240);
-        doc.roundedRect(obsR, currentY, colW, blockH, 2, 2, 'FD');
-
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...primaryColor);
-        doc.text('OBSERVACIONES DE RECEPCION', obsR + 3, currentY + 6);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
-        if (tieneObsRec) {
-          doc.text(obsRLines, obsR + 3, currentY + 12);
-        } else {
-          doc.setTextColor(...grayText);
-          doc.text('Sin observaciones', obsR + 3, currentY + 12);
-        }
+        doc.text(obsLines, marginL + 3, currentY + 12);
 
         currentY += blockH + 6;
       }
