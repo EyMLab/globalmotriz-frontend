@@ -627,14 +627,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const diff = totalRec - Number(d.cantidad_pedida);
       const diffClass = diff > 0 ? 'diff-positive' : diff < 0 ? 'diff-negative' : 'diff-zero';
 
+      const diffLabel = diff > 0 ? `+${diff} (excedente)` : diff < 0 ? `${diff} (faltante)` : '✓ Completo';
       tablaHtml += `
         <tr>
           <td>${d.codigo}</td>
           <td style="text-align:left;">${d.insumo || '-'}</td>
           <td>${d.cantidad_pedida}</td>
-          <td>${d.cantidad_recibida_matriz}</td>
-          <td>${d.cantidad_recibida_sucursal}</td>
-          <td class="${diffClass}">${diff >= 0 ? '+' : ''}${diff}</td>
+          <td>${d.cantidad_recibida_matriz ?? '-'}</td>
+          <td>${d.cantidad_recibida_sucursal ?? '-'}</td>
+          <td class="${diffClass}">${diffLabel}</td>
         </tr>
       `;
     });
@@ -654,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p><strong>Fecha:</strong> ${orden.fecha}</p>
           <p><strong>Estado:</strong> <span class="badge ${badgeClass}">${orden.estado}</span></p>
           ${orden.observaciones ? `<p><strong>Observaciones:</strong> ${orden.observaciones}</p>` : ''}
+          ${orden.observaciones_recepcion ? `<p><strong>Obs. Recepción:</strong> ${orden.observaciones_recepcion}</p>` : ''}
           <hr style="margin:10px 0;">
           ${tablaHtml}
         </div>
@@ -687,6 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td><strong>${d.cantidad_pedida}</strong></td>
           <td><input type="number" class="rec-matriz" data-id="${d.id}" value="0" min="0" style="width:70px; padding:4px; border:1px solid #cbd5e1; border-radius:4px; text-align:center;"></td>
           <td><input type="number" class="rec-sucursal" data-id="${d.id}" value="0" min="0" style="width:70px; padding:4px; border:1px solid #cbd5e1; border-radius:4px; text-align:center;"></td>
+          <td class="rec-total" data-id="${d.id}" data-pedido="${d.cantidad_pedida}" style="font-weight:600; min-width:80px;">0 / ${d.cantidad_pedida}</td>
         </tr>
       `;
     });
@@ -697,35 +700,66 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="text-align:left; font-size:14px;">
           <p style="margin-bottom:5px;"><strong>Proveedor:</strong> ${orden.proveedor || '-'}</p>
           ${orden.observaciones ? `<p style="margin-bottom:10px; color:#64748b;"><em>${orden.observaciones}</em></p>` : ''}
-          
+
           <p style="font-size:12px; color:#64748b; margin-bottom:8px;">
             Ingresa las cantidades que realmente llegaron para cada localidad:
           </p>
 
-          <div style="max-height:300px; overflow-y:auto;">
+          <div style="max-height:260px; overflow-y:auto;">
             <table class="tabla-recepcion">
               <thead>
                 <tr>
                   <th>Código</th>
                   <th>Insumo</th>
                   <th>Pedido</th>
-                  <th>Recibido Matriz</th>
-                  <th>Recibido Sucursal</th>
+                  <th>Rec. Matriz</th>
+                  <th>Rec. Sucursal</th>
+                  <th>Total / Pedido</th>
                 </tr>
               </thead>
-              <tbody>${filasHtml}</tbody>
+              <tbody id="rec-tbody">${filasHtml}</tbody>
             </table>
+          </div>
+
+          <div style="margin-top:12px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Observaciones de recepción (opcional):</label>
+            <textarea id="rec-obs" rows="2" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; font-size:13px; resize:vertical; box-sizing:border-box;"></textarea>
           </div>
         </div>
       `,
-      width: '700px',
+      width: '780px',
       showCancelButton: true,
       confirmButtonText: 'Finalizar Orden',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#059669'
+      confirmButtonColor: '#059669',
+      didOpen: () => {
+        const tbody = document.getElementById('rec-tbody');
+        tbody.addEventListener('input', (e) => {
+          if (!e.target.classList.contains('rec-matriz') && !e.target.classList.contains('rec-sucursal')) return;
+          const detId = e.target.dataset.id;
+          const inputM = tbody.querySelector(`.rec-matriz[data-id="${detId}"]`);
+          const inputS = tbody.querySelector(`.rec-sucursal[data-id="${detId}"]`);
+          const tdTotal = tbody.querySelector(`.rec-total[data-id="${detId}"]`);
+          const pedido = Number(tdTotal.dataset.pedido);
+          const total = (Number(inputM?.value) || 0) + (Number(inputS?.value) || 0);
+          tdTotal.textContent = `${total} / ${pedido}`;
+          tdTotal.className = 'rec-total';
+          tdTotal.dataset.id = detId;
+          tdTotal.dataset.pedido = pedido;
+          if (total === pedido) {
+            tdTotal.classList.add('diff-zero');
+          } else if (total > pedido) {
+            tdTotal.classList.add('diff-positive');
+          } else {
+            tdTotal.classList.add('diff-negative');
+          }
+        });
+      }
     });
 
     if (!isConfirmed) return;
+
+    const obsRecepcion = document.getElementById('rec-obs')?.value?.trim() || '';
 
     const detallesEnvio = detalles.map(d => {
       const inputM = document.querySelector(`.rec-matriz[data-id="${d.id}"]`);
@@ -736,6 +770,25 @@ document.addEventListener('DOMContentLoaded', () => {
         cantidad_recibida_sucursal: Number(inputS?.value) || 0
       };
     });
+
+    // Advertencia naranja si algún ítem tiene excedente
+    const hayExcedentes = detallesEnvio.some((d, i) => {
+      const pedido = Number(detalles[i].cantidad_pedida);
+      return (d.cantidad_recibida_matriz + d.cantidad_recibida_sucursal) > pedido;
+    });
+
+    if (hayExcedentes) {
+      const warnResult = await Swal.fire({
+        title: 'Hay ítems con excedente',
+        text: 'Algunos ítems recibidos superan la cantidad pedida. ¿Deseas continuar de todas formas?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, continuar',
+        cancelButtonText: 'Revisar',
+        confirmButtonColor: '#d97706'
+      });
+      if (!warnResult.isConfirmed) return;
+    }
 
     const confirm2 = await Swal.fire({
       title: '¿Confirmar recepción?',
@@ -754,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeRes = await apiFetch('/compras/close', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orden_id: id, detalles: detallesEnvio })
+      body: JSON.stringify({ orden_id: id, observaciones_recepcion: obsRecepcion, detalles: detallesEnvio })
     });
 
     if (closeRes && closeRes.ok) {
