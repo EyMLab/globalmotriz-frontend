@@ -964,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Tabla — condicional por estado
-      const tableStartY = boxY + boxH + 3;
+      const tableStartY = boxY + boxH + 8;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...primaryColor);
