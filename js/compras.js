@@ -936,7 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tieneFechaRec = esFinalizada && !!orden.fecha_recepcion;
       const boxH = tieneFechaRec ? 31 : 22;
 
-      const boxY = 44;
+      const boxY = 46;
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
       doc.roundedRect(marginL, boxY, contentW, boxH, 2, 2, 'FD');
