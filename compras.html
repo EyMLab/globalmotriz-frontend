@@ -79,8 +79,8 @@
 
   <div class="dashboard-container">
 
-    <div class="filtros insumos" style="margin-bottom:12px;">
-      <div class="filtro-grupo">
+    <div class="filtros insumos" style="margin-bottom:12px; flex-wrap:wrap;">
+      <div class="filtro-grupo" style="flex:0 0 140px;">
         <label for="filtro-estado-oc">Estado:</label>
         <select id="filtro-estado-oc">
           <option value="">Todas</option>
@@ -89,19 +89,19 @@
           <option value="Anulada">Anulada</option>
         </select>
       </div>
-      <div class="filtro-grupo">
+      <div class="filtro-grupo" style="flex:0 0 110px;">
         <label for="filtro-oc-id">N° Orden:</label>
-        <input type="number" id="filtro-oc-id" placeholder="Ej: 12" min="1" style="width:90px;">
+        <input type="number" id="filtro-oc-id" placeholder="Ej: 12" min="1">
       </div>
-      <div class="filtro-grupo">
+      <div class="filtro-grupo" style="flex:1 1 180px;">
         <label for="filtro-proveedor-oc">Proveedor:</label>
         <input type="text" id="filtro-proveedor-oc" placeholder="Nombre del proveedor">
       </div>
-      <div class="filtro-grupo">
+      <div class="filtro-grupo" style="flex:0 0 150px;">
         <label for="filtro-oc-desde">Desde:</label>
         <input type="date" id="filtro-oc-desde">
       </div>
-      <div class="filtro-grupo">
+      <div class="filtro-grupo" style="flex:0 0 150px;">
         <label for="filtro-oc-hasta">Hasta:</label>
         <input type="date" id="filtro-oc-hasta">
       </div>

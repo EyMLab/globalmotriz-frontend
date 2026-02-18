@@ -929,12 +929,10 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(...darkText);
       doc.text(tituloPDF, pageW / 2, 40, { align: 'center' });
 
-      // Datos — la caja crece si hay obs. recepción
+      // Datos — caja fija, sin observaciones (van abajo de la tabla)
       const tieneObsRec = esFinalizada && !!orden.observaciones_recepcion;
       const tieneObs = !!orden.observaciones;
-      let boxH = 30;
-      if (tieneObs) boxH = 35;
-      if (tieneObsRec) boxH = tieneObs ? 44 : 35;
+      const boxH = 26;
 
       const boxY = 46;
       doc.setFillColor(248, 250, 252);
@@ -956,31 +954,14 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.text(orden.estado || '-', col2 + 24, boxY + 8);
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Proveedor:', col1, boxY + 17);
+      doc.text('Proveedor:', col1, boxY + 18);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.proveedor || '-', col1 + 32, boxY + 17);
+      doc.text(orden.proveedor || '-', col1 + 32, boxY + 18);
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Solicitante:', col2, boxY + 17);
+      doc.text('Solicitante:', col2, boxY + 18);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 17);
-
-      if (tieneObs) {
-        doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-        doc.text('Obs:', col1, boxY + 26);
-        doc.setFont('helvetica', 'italic'); doc.setTextColor(...darkText);
-        const obsText = doc.splitTextToSize(orden.observaciones, contentW - 25);
-        doc.text(obsText[0] || '', col1 + 15, boxY + 26);
-      }
-
-      if (tieneObsRec) {
-        const obsRecY = boxY + 26 + (tieneObs ? 9 : 0);
-        doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-        doc.text('Obs.Rec:', col1, obsRecY);
-        doc.setFont('helvetica', 'italic'); doc.setTextColor(...darkText);
-        const obsRecText = doc.splitTextToSize(orden.observaciones_recepcion, contentW - 30);
-        doc.text(obsRecText[0] || '', col1 + 26, obsRecY);
-      }
+      doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 18);
 
       // Tabla — condicional por estado
       const tableStartY = boxY + boxH + 6;
@@ -1073,28 +1054,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      let currentY = doc.lastAutoTable.finalY + 5;
+      let currentY = doc.lastAutoTable.finalY + 6;
 
-      // Observaciones de la orden (si son largas)
-      if (tieneObs && orden.observaciones.length > 60) {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...primaryColor);
-        doc.text('OBSERVACIONES:', marginL, currentY);
-        currentY += 5;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
-        const obsLines = doc.splitTextToSize(orden.observaciones, contentW);
-        doc.text(obsLines, marginL, currentY);
-        currentY += obsLines.length * 4 + 5;
-      }
+      // Observaciones — dos columnas lado a lado (izq: orden, der: recepción)
+      if (tieneObs || tieneObsRec) {
+        const colW = (contentW - 6) / 2;  // ancho de cada columna con gap de 6mm
+        const obsL = marginL;              // columna izquierda
+        const obsR = marginL + colW + 6;  // columna derecha
 
-      // Observaciones de recepción (solo si Finalizada)
-      if (tieneObsRec) {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...primaryColor);
-        doc.text('OBSERVACIONES DE RECEPCION:', marginL, currentY);
-        currentY += 5;
+        // Calcular líneas de cada bloque para saber la altura del recuadro
+        doc.setFontSize(9);
+        const obsLLines  = tieneObs    ? doc.splitTextToSize(orden.observaciones,              colW - 4) : [];
+        const obsRLines  = tieneObsRec ? doc.splitTextToSize(orden.observaciones_recepcion,    colW - 4) : [];
+        const maxLines   = Math.max(obsLLines.length, obsRLines.length, 1);
+        const blockH     = 8 + maxLines * 4 + 4; // título(8) + líneas + padding
+
+        // Recuadro izquierdo — Observaciones de la orden
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(obsL, currentY, colW, blockH, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...primaryColor);
+        doc.text('OBSERVACIONES DE LA ORDEN', obsL + 3, currentY + 6);
         doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
-        const obsRecLines = doc.splitTextToSize(orden.observaciones_recepcion, contentW);
-        doc.text(obsRecLines, marginL, currentY);
-        currentY += obsRecLines.length * 4 + 5;
+        if (tieneObs) {
+          doc.text(obsLLines, obsL + 3, currentY + 12);
+        } else {
+          doc.setTextColor(...grayText);
+          doc.text('Sin observaciones', obsL + 3, currentY + 12);
+        }
+
+        // Recuadro derecho — Observaciones de recepción
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(obsR, currentY, colW, blockH, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...primaryColor);
+        doc.text('OBSERVACIONES DE RECEPCION', obsR + 3, currentY + 6);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
+        if (tieneObsRec) {
+          doc.text(obsRLines, obsR + 3, currentY + 12);
+        } else {
+          doc.setTextColor(...grayText);
+          doc.text('Sin observaciones', obsR + 3, currentY + 12);
+        }
+
+        currentY += blockH + 6;
       }
 
       // Firmas — condicionales por estado
