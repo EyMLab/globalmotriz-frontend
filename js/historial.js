@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     items.forEach(item => {
       const motivo = (item.motivo || '').toUpperCase();
-      const cantidad = Number(item.cantidad);
       let estiloTipo = 'font-weight:600; color:#555;';
       let icono = 'Ajuste';
 
@@ -83,14 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (motivo.includes('TRASLADO')) {
         estiloTipo = 'color:#2563eb; font-weight:700;';
         icono = 'Traslado';
-      } else if (cantidad > 0) {
-        // Ajuste positivo (suma) → verde
-        estiloTipo = 'color:#16a34a; font-weight:700;';
-        icono = 'Entrada';
-      } else if (cantidad < 0) {
-        // Ajuste negativo (resta) → rojo
-        estiloTipo = 'color:#dc2626; font-weight:700;';
-        icono = 'Salida';
       }
 
       const tr = document.createElement('tr');
