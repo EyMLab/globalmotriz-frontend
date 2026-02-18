@@ -942,26 +942,21 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFontSize(10);
       const col1 = marginL + 5;
       const col2 = marginL + contentW / 2 + 5;
+      const gap  = 2; // espacio entre label y valor (mm)
 
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Fecha:', col1, boxY + 7);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.fecha || '-', col1 + 22, boxY + 7);
+      // Función helper: escribe label en bold + valor en normal, pegados
+      const field = (label, valor, x, y) => {
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
+        doc.text(label, x, y);
+        const labelW = doc.getTextWidth(label);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
+        doc.text(String(valor || '-'), x + labelW + gap, y);
+      };
 
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Estado:', col2, boxY + 7);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.estado || '-', col2 + 24, boxY + 7);
-
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Proveedor:', col1, boxY + 16);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.proveedor || '-', col1 + 32, boxY + 16);
-
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Solicitante:', col2, boxY + 16);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 16);
+      field('Fecha:',      orden.fecha,           col1, boxY + 7);
+      field('Estado:',     orden.estado,           col2, boxY + 7);
+      field('Proveedor:',  orden.proveedor,        col1, boxY + 16);
+      field('Solicitante:', orden.usuario_solicita, col2, boxY + 16);
 
       // Tabla — condicional por estado
       const tableStartY = boxY + boxH + 3;
