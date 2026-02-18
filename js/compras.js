@@ -661,7 +661,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="text-align:left; font-size:14px;">
           <p><strong>Proveedor:</strong> ${orden.proveedor || '-'}</p>
           <p><strong>Solicitante:</strong> ${orden.usuario_solicita}</p>
-          <p><strong>Fecha:</strong> ${orden.fecha}</p>
+          <p><strong>Fecha creación:</strong> ${orden.fecha}</p>
+          ${orden.fecha_recepcion ? `<p><strong>Fecha recepción:</strong> ${orden.fecha_recepcion}</p>` : ''}
           <p><strong>Estado:</strong> <span class="badge ${badgeClass}">${orden.estado}</span></p>
           ${orden.observaciones ? `<p><strong>Observaciones:</strong> ${orden.observaciones}</p>` : ''}
           ${orden.observaciones_recepcion ? `<p><strong>Obs. Recepción:</strong> ${orden.observaciones_recepcion}</p>` : ''}
@@ -929,10 +930,11 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(...darkText);
       doc.text(tituloPDF, pageW / 2, 40, { align: 'center' });
 
-      // Datos — caja fija, sin observaciones (van abajo de la tabla)
+      // Datos — caja crece si hay fecha de recepción (Finalizada)
       const tieneObsRec = esFinalizada && !!orden.observaciones_recepcion;
       const tieneObs = !!orden.observaciones;
-      const boxH = 22;
+      const tieneFechaRec = esFinalizada && !!orden.fecha_recepcion;
+      const boxH = tieneFechaRec ? 31 : 22;
 
       const boxY = 44;
       doc.setFillColor(248, 250, 252);
@@ -953,10 +955,13 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text(String(valor || '-'), x + labelW + gap, y);
       };
 
-      field('Fecha:',      orden.fecha,           col1, boxY + 7);
-      field('Estado:',     orden.estado,           col2, boxY + 7);
-      field('Proveedor:',  orden.proveedor,        col1, boxY + 16);
-      field('Solicitante:', orden.usuario_solicita, col2, boxY + 16);
+      field('Fecha creacion:', orden.fecha,           col1, boxY + 7);
+      field('Estado:',         orden.estado,           col2, boxY + 7);
+      field('Proveedor:',      orden.proveedor,        col1, boxY + 16);
+      field('Solicitante:',    orden.usuario_solicita, col2, boxY + 16);
+      if (tieneFechaRec) {
+        field('Fecha recepcion:', orden.fecha_recepcion, col1, boxY + 25);
+      }
 
       // Tabla — condicional por estado
       const tableStartY = boxY + boxH + 3;
