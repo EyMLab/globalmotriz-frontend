@@ -912,17 +912,25 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setLineWidth(0.5);
       doc.line(marginL, 30, pageW - marginR, 30);
 
-      // Título
+      // Título — condicional por estado
+      const esFinalizada = orden.estado === 'Finalizada';
+      const tituloPDF = esFinalizada ? 'COMPROBANTE DE RECEPCION' : 'ORDEN DE COMPRA';
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.setTextColor(...darkText);
-      doc.text('ORDEN DE COMPRA', pageW / 2, 40, { align: 'center' });
+      doc.text(tituloPDF, pageW / 2, 40, { align: 'center' });
 
-      // Datos
+      // Datos — la caja crece si hay obs. recepción
+      const tieneObsRec = esFinalizada && !!orden.observaciones_recepcion;
+      const tieneObs = !!orden.observaciones;
+      let boxH = 30;
+      if (tieneObs) boxH = 35;
+      if (tieneObsRec) boxH = tieneObs ? 44 : 35;
+
       const boxY = 46;
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(marginL, boxY, contentW, 30, 2, 2, 'FD');
+      doc.roundedRect(marginL, boxY, contentW, boxH, 2, 2, 'FD');
 
       doc.setFontSize(10);
       const col1 = marginL + 5;
@@ -948,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
       doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 17);
 
-      if (orden.observaciones) {
+      if (tieneObs) {
         doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
         doc.text('Obs:', col1, boxY + 26);
         doc.setFont('helvetica', 'italic'); doc.setTextColor(...darkText);
@@ -956,40 +964,110 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text(obsText[0] || '', col1 + 15, boxY + 26);
       }
 
-      // Tabla
-      const tableStartY = boxY + 36;
+      if (tieneObsRec) {
+        const obsRecY = boxY + 26 + (tieneObs ? 9 : 0);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
+        doc.text('Obs.Rec:', col1, obsRecY);
+        doc.setFont('helvetica', 'italic'); doc.setTextColor(...darkText);
+        const obsRecText = doc.splitTextToSize(orden.observaciones_recepcion, contentW - 30);
+        doc.text(obsRecText[0] || '', col1 + 26, obsRecY);
+      }
+
+      // Tabla — condicional por estado
+      const tableStartY = boxY + boxH + 6;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...primaryColor);
-      doc.text('DETALLE DE INSUMOS SOLICITADOS', marginL, tableStartY);
 
-      const tableBody = detalles.map((d, i) => [
-        (i + 1).toString(),
-        d.codigo,
-        d.insumo || '-',
-        d.cantidad_pedida.toString()
-      ]);
+      if (esFinalizada) {
+        doc.text('DETALLE DE RECEPCION', marginL, tableStartY);
 
-      doc.autoTable({
-        startY: tableStartY + 3,
-        head: [['#', 'Código', 'Insumo / Descripción', 'Cantidad Pedida']],
-        body: tableBody,
-        margin: { left: marginL, right: marginR },
-        styles: { fontSize: 10, cellPadding: 4, lineColor: [226, 232, 240], lineWidth: 0.3 },
-        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
-        bodyStyles: { textColor: darkText },
-        columnStyles: {
-          0: { halign: 'center', cellWidth: 12 },
-          1: { halign: 'center', cellWidth: 30 },
-          2: { halign: 'left' },
-          3: { halign: 'center', cellWidth: 35 }
-        },
-        alternateRowStyles: { fillColor: [248, 250, 252] }
-      });
+        const tableBody = detalles.map((d, i) => {
+          const recM = Number(d.cantidad_recibida_matriz) || 0;
+          const recS = Number(d.cantidad_recibida_sucursal) || 0;
+          const totalRec = recM + recS;
+          const diff = totalRec - Number(d.cantidad_pedida);
+          const diffLabel = diff > 0 ? `+${diff} (excedente)` : diff < 0 ? `${diff} (faltante)` : 'Completo';
+          return [
+            (i + 1).toString(),
+            d.codigo,
+            d.insumo || '-',
+            d.cantidad_pedida.toString(),
+            recM.toString(),
+            recS.toString(),
+            totalRec.toString(),
+            diffLabel
+          ];
+        });
+
+        doc.autoTable({
+          startY: tableStartY + 3,
+          head: [['#', 'Codigo', 'Insumo', 'Pedido', 'Rec. Matriz', 'Rec. Sucursal', 'Total', 'Diferencia']],
+          body: tableBody,
+          margin: { left: marginL, right: marginR },
+          styles: { fontSize: 8.5, cellPadding: 3, lineColor: [226, 232, 240], lineWidth: 0.3 },
+          headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+          bodyStyles: { textColor: darkText },
+          columnStyles: {
+            0: { halign: 'center', cellWidth: 8 },
+            1: { halign: 'center', cellWidth: 22 },
+            2: { halign: 'left' },
+            3: { halign: 'center', cellWidth: 18 },
+            4: { halign: 'center', cellWidth: 22 },
+            5: { halign: 'center', cellWidth: 24 },
+            6: { halign: 'center', cellWidth: 14 },
+            7: { halign: 'center', cellWidth: 28 }
+          },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 7) {
+              const val = data.cell.raw || '';
+              if (val === 'Completo') {
+                data.cell.styles.textColor = [5, 150, 105];   // verde
+                data.cell.styles.fontStyle = 'bold';
+              } else if (val.includes('excedente')) {
+                data.cell.styles.textColor = [217, 119, 6];   // naranja
+                data.cell.styles.fontStyle = 'bold';
+              } else if (val.includes('faltante')) {
+                data.cell.styles.textColor = [220, 38, 38];   // rojo
+                data.cell.styles.fontStyle = 'bold';
+              }
+            }
+          }
+        });
+
+      } else {
+        doc.text('DETALLE DE INSUMOS SOLICITADOS', marginL, tableStartY);
+
+        const tableBody = detalles.map((d, i) => [
+          (i + 1).toString(),
+          d.codigo,
+          d.insumo || '-',
+          d.cantidad_pedida.toString()
+        ]);
+
+        doc.autoTable({
+          startY: tableStartY + 3,
+          head: [['#', 'Codigo', 'Insumo / Descripcion', 'Cantidad Pedida']],
+          body: tableBody,
+          margin: { left: marginL, right: marginR },
+          styles: { fontSize: 10, cellPadding: 4, lineColor: [226, 232, 240], lineWidth: 0.3 },
+          headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+          bodyStyles: { textColor: darkText },
+          columnStyles: {
+            0: { halign: 'center', cellWidth: 12 },
+            1: { halign: 'center', cellWidth: 30 },
+            2: { halign: 'left' },
+            3: { halign: 'center', cellWidth: 35 }
+          },
+          alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+      }
 
       let currentY = doc.lastAutoTable.finalY + 5;
 
-      if (orden.observaciones && orden.observaciones.length > 60) {
+      // Observaciones de la orden (si son largas)
+      if (tieneObs && orden.observaciones.length > 60) {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...primaryColor);
         doc.text('OBSERVACIONES:', marginL, currentY);
         currentY += 5;
@@ -999,7 +1077,18 @@ document.addEventListener('DOMContentLoaded', () => {
         currentY += obsLines.length * 4 + 5;
       }
 
-      // Firmas
+      // Observaciones de recepción (solo si Finalizada)
+      if (tieneObsRec) {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...primaryColor);
+        doc.text('OBSERVACIONES DE RECEPCION:', marginL, currentY);
+        currentY += 5;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...darkText);
+        const obsRecLines = doc.splitTextToSize(orden.observaciones_recepcion, contentW);
+        doc.text(obsRecLines, marginL, currentY);
+        currentY += obsRecLines.length * 4 + 5;
+      }
+
+      // Firmas — condicionales por estado
       if (currentY > 230) { doc.addPage(); currentY = 30; }
 
       const firmaY = Math.max(currentY + 15, 220);
@@ -1015,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setDrawColor(...primaryColor); doc.setLineWidth(0.4);
       doc.line(firma1X, firmaY + 25, firma1X + firmaLineW, firmaY + 25);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...darkText);
-      doc.text('Solicitado por:', firma1X + firmaLineW / 2, firmaY + 31, { align: 'center' });
+      doc.text(esFinalizada ? 'Recibido por:' : 'Solicitado por:', firma1X + firmaLineW / 2, firmaY + 31, { align: 'center' });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grayText);
       doc.text('(Bodega)', firma1X + firmaLineW / 2, firmaY + 36, { align: 'center' });
       doc.setFontSize(8);
@@ -1025,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setDrawColor(...accentColor); doc.setLineWidth(0.4);
       doc.line(firma2X, firmaY + 25, firma2X + firmaLineW, firmaY + 25);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...darkText);
-      doc.text('Autorizado por:', firma2X + firmaLineW / 2, firmaY + 31, { align: 'center' });
+      doc.text(esFinalizada ? 'Conforme:' : 'Autorizado por:', firma2X + firmaLineW / 2, firmaY + 31, { align: 'center' });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grayText);
       doc.text('(Gerencia)', firma2X + firmaLineW / 2, firmaY + 36, { align: 'center' });
 
@@ -1034,11 +1123,13 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFillColor(...primaryColor);
       doc.rect(0, pageH - 12, pageW, 12, 'F');
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
-      doc.text('Global Motriz S.A. — Documento generado automáticamente por el Sistema de Inventario', pageW / 2, pageH - 7, { align: 'center' });
+      doc.text('Global Motriz S.A. — Documento generado automaticamente por el Sistema de Inventario', pageW / 2, pageH - 7, { align: 'center' });
       doc.setTextColor(200, 200, 200);
       doc.text(`Impreso: ${new Date().toLocaleString('es-EC')}`, pageW / 2, pageH - 3, { align: 'center' });
 
-      doc.save(`OC_${orden.id}_GlobalMotriz.pdf`);
+      // Nombre de archivo condicional
+      const prefijoPDF = esFinalizada ? 'RECEPCION' : 'OC';
+      doc.save(`${prefijoPDF}_${orden.id}_GlobalMotriz.pdf`);
       Swal.close();
 
     } catch (err) {
