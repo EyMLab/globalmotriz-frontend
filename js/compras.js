@@ -48,12 +48,16 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ======================================================
       REFERENCIAS DOM
   ====================================================== */
-  const tbody      = document.getElementById('tablaCompras');
-  const btnPrev    = document.getElementById('btn-prev-oc');
-  const btnNext    = document.getElementById('btn-next-oc');
-  const pageInfo   = document.getElementById('page-info-oc');
-  const selEstado  = document.getElementById('filtro-estado-oc');
-  const btnNuevaOC = document.getElementById('btnNuevaOC');
+  const tbody        = document.getElementById('tablaCompras');
+  const btnPrev      = document.getElementById('btn-prev-oc');
+  const btnNext      = document.getElementById('btn-next-oc');
+  const pageInfo     = document.getElementById('page-info-oc');
+  const selEstado    = document.getElementById('filtro-estado-oc');
+  const inputOcId    = document.getElementById('filtro-oc-id');
+  const inputProv    = document.getElementById('filtro-proveedor-oc');
+  const inputDesde   = document.getElementById('filtro-oc-desde');
+  const inputHasta   = document.getElementById('filtro-oc-hasta');
+  const btnNuevaOC   = document.getElementById('btnNuevaOC');
   const btnNuevoProv = document.getElementById('btnNuevoProveedor');
 
   /* ======================================================
@@ -99,13 +103,14 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ======================================================
       EVENTOS
   ====================================================== */
-  if (selEstado) {
-    selEstado.addEventListener('change', () => {
-      state.estado = selEstado.value;
-      state.page = 1;
-      cargarOrdenes();
-    });
-  }
+  // Filtros — todos resetean a página 1 y recargan
+  const resetPage = () => { state.page = 1; cargarOrdenes(); };
+
+  if (selEstado)  selEstado.addEventListener('change', resetPage);
+  if (inputDesde) inputDesde.addEventListener('change', resetPage);
+  if (inputHasta) inputHasta.addEventListener('change', resetPage);
+  if (inputOcId)  inputOcId.addEventListener('input',  debounce(resetPage, 400));
+  if (inputProv)  inputProv.addEventListener('input',  debounce(resetPage, 400));
 
   if (btnPrev) {
     btnPrev.onclick = () => {
@@ -128,7 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
   async function cargarOrdenes() {
     try {
       const params = new URLSearchParams({ page: state.page, pageSize: state.pageSize });
-      if (state.estado) params.append('estado', state.estado);
+      if (selEstado?.value)          params.append('estado',    selEstado.value);
+      if (inputOcId?.value.trim())   params.append('orden_id',  inputOcId.value.trim());
+      if (inputProv?.value.trim())   params.append('proveedor', inputProv.value.trim());
+      if (inputDesde?.value)         params.append('desde',     inputDesde.value);
+      if (inputHasta?.value)         params.append('hasta',     inputHasta.value);
 
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando...</td></tr>';
 
