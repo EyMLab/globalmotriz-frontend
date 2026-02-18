@@ -1041,14 +1041,14 @@ document.addEventListener('DOMContentLoaded', () => {
           head: [['#', 'Codigo', 'Insumo / Descripcion', 'Cantidad Pedida']],
           body: tableBody,
           margin: { left: marginL, right: marginR },
-          styles: { fontSize: 10, cellPadding: 6, lineColor: [226, 232, 240], lineWidth: 0.3 },
-          headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
-          bodyStyles: { textColor: darkText },
+          styles: { fontSize: 10, cellPadding: { top: 5, bottom: 5, left: 5, right: 5 }, lineColor: [226, 232, 240], lineWidth: 0.3, valign: 'middle' },
+          headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', valign: 'middle' },
+          bodyStyles: { textColor: darkText, valign: 'middle' },
           columnStyles: {
-            0: { halign: 'center', cellWidth: 12 },
-            1: { halign: 'center', cellWidth: 30 },
-            2: { halign: 'left' },
-            3: { halign: 'center', cellWidth: 35 }
+            0: { halign: 'center', cellWidth: 14 },
+            1: { halign: 'center', cellWidth: 34 },
+            2: { halign: 'left',   cellWidth: 90 },
+            3: { halign: 'center', cellWidth: 32 }
           },
           alternateRowStyles: { fillColor: [248, 250, 252] }
         });
