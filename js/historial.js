@@ -69,18 +69,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     items.forEach(item => {
       const motivo = (item.motivo || '').toUpperCase();
+      const cantidad = Number(item.cantidad);
       let estiloTipo = 'font-weight:600; color:#555;';
       let icono = 'Ajuste';
 
-      if (motivo.includes('IMPORTACIÓN') || motivo.includes('CARGA MASIVA') || motivo.includes('ENTRADA')) {
-        estiloTipo = 'color:#16a34a; font-weight:700;'; 
+      if (motivo.includes('IMPORTACIÓN') || motivo.includes('CARGA MASIVA') || motivo.includes('ENTRADA') ||
+          motivo.includes('RECEPCIÓN') || motivo.includes('RECEPCION') || motivo.includes('OC #')) {
+        estiloTipo = 'color:#16a34a; font-weight:700;';
         icono = 'Carga';
       } else if (motivo.includes('SALIDA') || motivo.includes('RESTAR')) {
-        estiloTipo = 'color:#dc2626; font-weight:700;'; 
+        estiloTipo = 'color:#dc2626; font-weight:700;';
         icono = 'Salida';
       } else if (motivo.includes('TRASLADO')) {
-        estiloTipo = 'color:#2563eb; font-weight:700;'; 
+        estiloTipo = 'color:#2563eb; font-weight:700;';
         icono = 'Traslado';
+      } else if (cantidad > 0) {
+        // Ajuste positivo (suma) → verde
+        estiloTipo = 'color:#16a34a; font-weight:700;';
+        icono = 'Entrada';
+      } else if (cantidad < 0) {
+        // Ajuste negativo (resta) → rojo
+        estiloTipo = 'color:#dc2626; font-weight:700;';
+        icono = 'Salida';
       }
 
       const tr = document.createElement('tr');
