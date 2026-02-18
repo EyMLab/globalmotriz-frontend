@@ -932,9 +932,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Datos — caja fija, sin observaciones (van abajo de la tabla)
       const tieneObsRec = esFinalizada && !!orden.observaciones_recepcion;
       const tieneObs = !!orden.observaciones;
-      const boxH = 26;
+      const boxH = 22;
 
-      const boxY = 46;
+      const boxY = 44;
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
       doc.roundedRect(marginL, boxY, contentW, boxH, 2, 2, 'FD');
@@ -944,27 +944,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const col2 = marginL + contentW / 2 + 5;
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Fecha:', col1, boxY + 8);
+      doc.text('Fecha:', col1, boxY + 7);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.fecha || '-', col1 + 22, boxY + 8);
+      doc.text(orden.fecha || '-', col1 + 22, boxY + 7);
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Estado:', col2, boxY + 8);
+      doc.text('Estado:', col2, boxY + 7);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.estado || '-', col2 + 24, boxY + 8);
+      doc.text(orden.estado || '-', col2 + 24, boxY + 7);
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Proveedor:', col1, boxY + 18);
+      doc.text('Proveedor:', col1, boxY + 16);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.proveedor || '-', col1 + 32, boxY + 18);
+      doc.text(orden.proveedor || '-', col1 + 32, boxY + 16);
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...grayText);
-      doc.text('Solicitante:', col2, boxY + 18);
+      doc.text('Solicitante:', col2, boxY + 16);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...darkText);
-      doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 18);
+      doc.text(orden.usuario_solicita || '-', col2 + 32, boxY + 16);
 
       // Tabla — condicional por estado
-      const tableStartY = boxY + boxH + 6;
+      const tableStartY = boxY + boxH + 3;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...primaryColor);
