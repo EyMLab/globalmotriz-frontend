@@ -92,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       rol = data.rol;
 
+      // Solo admin puede ver Facturas
+      if (rol !== 'admin') {
+        window.location.href = 'inventario.html';
+        return false;
+      }
+
       // (El navbar real muestra #usuario-info; este span quedó de legado)
       const spanUsuario = document.getElementById('nombre-usuario');
       if (spanUsuario) spanUsuario.textContent = `${data.usuario} (${rol})`;

@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
       : "";
 
+    const enlaceFacturas = rol === 'admin'
+      ? `<a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>`
+      : "";
+
     // ============================================
     // Renderizado del navbar
     // ============================================
@@ -65,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
 
         <nav class="nav-center nav-links">
-          <a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>
+          ${enlaceFacturas}
           ${enlaceInsumos}
           ${enlaceInventario}
           ${enlaceCompras}
