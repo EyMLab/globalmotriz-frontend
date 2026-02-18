@@ -665,13 +665,19 @@ table.usuarios-table td {
   padding: 24px 28px 22px !important;
 }
 
-.swal2-popup:not(:has(.form-group)):not(:has(.form-row)) {
+/* El ancho lo controla cada Swal.fire() individualmente via width: */
+.swal2-popup:not(:has(.form-group)):not(:has(.form-row)):not(:has(.tabla-recepcion)) {
   width: 380px !important;
 }
 
 .swal2-popup:has(.form-group),
 .swal2-popup:has(.form-row) {
   width: 480px !important;
+}
+
+/* Los modales con tabla no tienen ancho forzado — usan el width del JS */
+.swal2-popup:has(.tabla-recepcion) {
+  width: auto !important;
 }
 
 .swal2-icon {
@@ -728,7 +734,8 @@ table.usuarios-table td {
 }
 
 .swal2-html-container:has(.form-group),
-.swal2-html-container:has(.form-row) {
+.swal2-html-container:has(.form-row),
+.swal2-html-container:has(.tabla-recepcion) {
   text-align: left !important;
   margin: 0 !important;
 }
