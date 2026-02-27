@@ -231,49 +231,59 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Agrupar tramos consecutivos de la misma estación+puesto
-      // y mostrar los 5 más recientes (de más nuevo a más viejo)
-      const agrupados = [];
-      let actual = null;
+      // Agrupar TODAS las visitas a la misma estación (sin importar el orden)
+      // Acumular tiempo total por estación y guardar la visita más reciente
+      const mapaEstaciones = new Map();
       for (const t of data.historial) {
-        if (actual && actual.estacion === t.estacion && actual.puesto === t.puesto) {
-          actual.segundos_estacion = Number(actual.segundos_estacion || 0) + Number(t.segundos_estacion || 0);
-          actual.fin = t.fin;
-          if (!actual.foto_url && t.foto_url) actual.foto_url = t.foto_url;
+        const key = t.estacion;
+        const seg = Number(t.segundos_estacion || 0);
+        if (mapaEstaciones.has(key)) {
+          const e = mapaEstaciones.get(key);
+          e.total_segundos += seg;
+          e.ultima_inicio = t.inicio; // historial viene ordenado asc, el último es el más reciente
+          e.puesto = t.puesto;
+          if (!e.foto_url && t.foto_url) e.foto_url = t.foto_url;
         } else {
-          if (actual) agrupados.push(actual);
-          actual = { ...t, segundos_estacion: Number(t.segundos_estacion || 0) };
+          mapaEstaciones.set(key, {
+            estacion: t.estacion,
+            total_segundos: seg,
+            ultima_inicio: t.inicio,
+            foto_url: t.foto_url,
+            puesto: t.puesto
+          });
         }
       }
-      if (actual) agrupados.push(actual);
 
-      // Últimos 5 en orden más reciente primero
-      agrupados.slice(-5).reverse().forEach(h => {
-        const li = document.createElement("li");
-        const fechaLocal = formatFecha(h.inicio);
+      // Ordenar por última visita (más reciente primero) y mostrar las 5 estaciones únicas
+      Array.from(mapaEstaciones.values())
+        .sort((a, b) => new Date(b.ultima_inicio) - new Date(a.ultima_inicio))
+        .slice(0, 5)
+        .forEach(h => {
+          const li = document.createElement("li");
+          const fechaLocal = formatFecha(h.ultima_inicio);
 
-        const puestoHistUI = formatPuestoUI(h.puesto);
-        const txtPuesto = puestoHistUI ? ` [${puestoHistUI}]` : "";
+          const puestoHistUI = formatPuestoUI(h.puesto);
+          const txtPuesto = puestoHistUI ? ` [${puestoHistUI}]` : "";
 
-        li.innerHTML = `<strong>${h.estacion}${txtPuesto}</strong> - ${fechaLocal} <br><small>(${formatTime(h.segundos_estacion)})</small>`;
+          li.innerHTML = `<strong>${h.estacion}${txtPuesto}</strong> - ${fechaLocal} <br><small>(${formatTime(h.total_segundos)})</small>`;
 
-        if (h.foto_url) {
-          const btnCamara = document.createElement("button");
-          btnCamara.innerHTML = "VER FOTO";
-          btnCamara.style.marginLeft = "10px";
-          btnCamara.style.cursor = "pointer";
-          btnCamara.style.border = "1px solid #28a745";
-          btnCamara.style.color = "#28a745";
-          btnCamara.style.fontWeight = "bold";
-          btnCamara.style.borderRadius = "4px";
-          btnCamara.style.padding = "2px 8px";
-          btnCamara.style.backgroundColor = "white";
+          if (h.foto_url) {
+            const btnCamara = document.createElement("button");
+            btnCamara.innerHTML = "VER FOTO";
+            btnCamara.style.marginLeft = "10px";
+            btnCamara.style.cursor = "pointer";
+            btnCamara.style.border = "1px solid #28a745";
+            btnCamara.style.color = "#28a745";
+            btnCamara.style.fontWeight = "bold";
+            btnCamara.style.borderRadius = "4px";
+            btnCamara.style.padding = "2px 8px";
+            btnCamara.style.backgroundColor = "white";
 
-          btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
-          li.appendChild(btnCamara);
-        }
-        modalHistorial.appendChild(li);
-      });
+            btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
+            li.appendChild(btnCamara);
+          }
+          modalHistorial.appendChild(li);
+        });
 
     } catch (err) {
       console.error("❌ Error historial", err);
