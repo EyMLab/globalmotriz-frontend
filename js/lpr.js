@@ -231,11 +231,27 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      data.historial.slice(0, 5).forEach(h => {
+      // Agrupar tramos consecutivos de la misma estación+puesto
+      // y mostrar los 5 más recientes (de más nuevo a más viejo)
+      const agrupados = [];
+      let actual = null;
+      for (const t of data.historial) {
+        if (actual && actual.estacion === t.estacion && actual.puesto === t.puesto) {
+          actual.segundos_estacion = Number(actual.segundos_estacion || 0) + Number(t.segundos_estacion || 0);
+          actual.fin = t.fin;
+          if (!actual.foto_url && t.foto_url) actual.foto_url = t.foto_url;
+        } else {
+          if (actual) agrupados.push(actual);
+          actual = { ...t, segundos_estacion: Number(t.segundos_estacion || 0) };
+        }
+      }
+      if (actual) agrupados.push(actual);
+
+      // Últimos 5 en orden más reciente primero
+      agrupados.slice(-5).reverse().forEach(h => {
         const li = document.createElement("li");
         const fechaLocal = formatFecha(h.inicio);
 
-        // ✅ Puesto bonito en historial
         const puestoHistUI = formatPuestoUI(h.puesto);
         const txtPuesto = puestoHistUI ? ` [${puestoHistUI}]` : "";
 
