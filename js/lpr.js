@@ -58,43 +58,25 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${dia}/${mes}/${año} ${horas12}:${minutos} ${ampm}`;
   }
 
-  // ✅ ACTUALIZADO: Formatea el "puesto" para mostrarlo bonito en UI.
-  // Soporta:
-  //   - E1_IZQUIERDA, E2_DERECHA (Enderezada con múltiples cámaras)
-  //   - M_IZQUIERDA, M_DERECHA (Mecánica con 1 cámara)
-  //   - L_IZQUIERDA, L_DERECHA (Lavado con 1 cámara)
-  //   - IZQUIERDA, DERECHA (legacy)
-  //   - UNICO (estaciones de un solo puesto)
   function formatPuestoUI(puestoRaw) {
     if (!puestoRaw) return "";
-    
+
     const p = String(puestoRaw).toUpperCase().trim();
-    
-    // Si es UNICO, no mostrar nada
+
     if (p === "UNICO") return "";
-    
-    // Formato legacy: solo IZQUIERDA o DERECHA
+
+    // Formato con prefijo de cámara: E1_PUESTO_1, E2_PUESTO_2, etc.
+    const matchConPrefijo = p.match(/^([A-Z]+\d*)_PUESTO_(\d+)$/);
+    if (matchConPrefijo) return `${matchConPrefijo[1]} · P${matchConPrefijo[2]}`;
+
+    // Formato simple: PUESTO_1, PUESTO_2
+    const matchSimple = p.match(/^PUESTO_(\d+)$/);
+    if (matchSimple) return `Puesto ${matchSimple[1]}`;
+
+    // Formatos legacy
     if (p === "IZQUIERDA") return "Izq";
     if (p === "DERECHA") return "Der";
 
-    // Formato CON número de cámara: E1_IZQUIERDA, E2_DERECHA, M1_IZQUIERDA, etc.
-    // Match: (letra)(número)_(lado)
-    const matchConNumero = p.match(/^([EML])(\d+)_(IZQUIERDA|DERECHA)$/);
-    if (matchConNumero) {
-      const numCam = matchConNumero[2];
-      const lado = matchConNumero[3] === "IZQUIERDA" ? "Izq" : "Der";
-      return `Cam ${numCam} · ${lado}`;
-    }
-    
-    // Formato SIN número de cámara: M_IZQUIERDA, L_DERECHA, E_IZQUIERDA
-    // Match: (letra)_(lado)
-    const matchSinNumero = p.match(/^([EML])_(IZQUIERDA|DERECHA)$/);
-    if (matchSinNumero) {
-      const lado = matchSinNumero[2] === "IZQUIERDA" ? "Izq" : "Der";
-      return lado;  // Solo mostrar Izq/Der ya que solo hay 1 cámara
-    }
-
-    // Fallback: muestra tal cual
     return p;
   }
 
