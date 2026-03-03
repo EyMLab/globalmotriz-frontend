@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let paginaSalidas = 1;
   const limiteSalidas = 10;
   let ultimoTotal = 0;
+  let terminoBusqueda = "";
 
   /* ======================================================
       HELPERS
@@ -151,7 +152,50 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("ultimaActualizacion").textContent =
         `Sincronizado: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
     }
+
+    // Reaplicar filtro de búsqueda tras cada actualización del kanban
+    filtrarKanban(terminoBusqueda);
   }
+
+  function filtrarKanban(texto) {
+    terminoBusqueda = texto.toUpperCase().trim();
+    const cards = document.querySelectorAll(".vehicle-card");
+    let encontrados = 0;
+
+    cards.forEach(card => {
+      const placa = card.querySelector(".placa")?.textContent?.toUpperCase() || "";
+      if (!terminoBusqueda || placa.includes(terminoBusqueda)) {
+        card.style.opacity = "1";
+        card.style.outline = terminoBusqueda ? "2px solid #3b82f6" : "";
+        card.style.boxShadow = terminoBusqueda ? "0 0 0 3px #bfdbfe" : "";
+        encontrados++;
+      } else {
+        card.style.opacity = "0.15";
+        card.style.outline = "";
+        card.style.boxShadow = "";
+      }
+    });
+
+    const btnLimpiar = document.getElementById("btn-limpiar-busqueda");
+    const inputBuscar = document.getElementById("buscar-placa");
+    if (btnLimpiar) btnLimpiar.style.display = terminoBusqueda ? "inline" : "none";
+    if (inputBuscar) {
+      inputBuscar.style.borderColor = terminoBusqueda
+        ? (encontrados > 0 ? "#3b82f6" : "#ef4444")
+        : "#cbd5e1";
+    }
+  }
+
+  document.getElementById("buscar-placa").addEventListener("input", e => {
+    filtrarKanban(e.target.value);
+  });
+
+  document.getElementById("btn-limpiar-busqueda").addEventListener("click", () => {
+    const input = document.getElementById("buscar-placa");
+    input.value = "";
+    filtrarKanban("");
+    input.focus();
+  });
 
   setInterval(cargarLPR, 3000);
   cargarLPR();
