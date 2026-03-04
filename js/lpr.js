@@ -139,14 +139,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function crearColumna(est) {
     const col = document.createElement("div");
     col.className = "kanban-column";
-    col.style.borderTop = `6px solid ${est.color}`;
-    col.style.background = est.color + "15";
+    col.style.borderTop = `5px solid ${est.color}`;
+    col.style.background = est.color + "10";
 
     const count = est.vehiculos.length;
     col.innerHTML = `
       <div class="kanban-title">${est.estacion}<span class="kanban-count">${count}</span></div>
       ${count === 0
-        ? "<p style='text-align:center;opacity:.5;margin-top:16px;font-size:13px;'>Vacío</p>"
+        ? "<p style='text-align:center;opacity:.5;margin-top:8px;font-size:12px;'>Vacío</p>"
         : ""}
     `;
 
@@ -160,12 +160,11 @@ document.addEventListener("DOMContentLoaded", () => {
         : "";
 
       card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:3px;">
-          <div class="placa">${v.placa}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="placa">${v.placa}</span>
           ${puestoHtml}
+          <span class="time">${formatTime(v.segundos_total)}</span>
         </div>
-        <div class="time">Total: ${formatTime(v.segundos_total)}</div>
-        <div class="time" style="font-weight:600; color:#334155;">En puesto: ${formatTime(v.segundos_estacion)}</div>
       `;
       card.onclick = () => abrirModalVehiculo(est, v);
       col.appendChild(card);
@@ -199,11 +198,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     grid.appendChild(colLeft);
 
-    // Columna central: PATIO
+    // Columna central: PATIO (pills compactos)
     const colCenter = document.createElement("div");
     colCenter.className = "col-center";
     const patio = findEst("PATIO / ESPERA");
-    if (patio) colCenter.appendChild(crearColumna(patio));
+    if (patio) colCenter.appendChild(crearStripSection(patio));
     grid.appendChild(colCenter);
 
     // Columna derecha: LAVADO + ARMADO + MECÁNICA

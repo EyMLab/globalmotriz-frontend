@@ -977,41 +977,40 @@ button.btn-obs:hover,
 .kanban-layout {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 /* Grid principal: 3 columnas (izq | centro | der) */
 .taller-grid {
   display: grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
-  gap: 14px;
-  min-height: calc(100vh - 320px);
+  grid-template-columns: 1fr 1.6fr 1fr;
+  gap: 10px;
 }
 
 .col-left,
 .col-right {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
-.col-left .kanban-column,
-.col-right .kanban-column {
+.col-center .strip-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-center .strip-cards {
   flex: 1;
   overflow-y: auto;
-  min-height: 0;
+  align-content: start;
 }
 
-.col-center .kanban-column {
-  height: 100%;
-  overflow-y: auto;
-}
-
-/* --- Franja FUERA DEL TALLER (pills compactos) --- */
+/* --- Pills compactos (PATIO y FUERA DEL TALLER) --- */
 .strip-section {
   background: var(--white);
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 10px;
+  padding: 10px 12px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
@@ -1019,23 +1018,22 @@ button.btn-obs:hover,
 .strip-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .strip-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--primary-dark);
-  letter-spacing: 0.3px;
 }
 
 .strip-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 5px;
 }
 
 .strip-card {
@@ -1044,37 +1042,35 @@ button.btn-obs:hover,
   justify-content: space-between;
   background: linear-gradient(135deg, #f8fbff 0%, #eef4fc 100%);
   border: 1px solid #dce6f2;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 5px 9px;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  transition: transform .15s ease, box-shadow .15s ease;
 }
 
 .strip-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(0,80,180,0.12);
-  border-color: var(--primary-light);
+  box-shadow: 0 2px 8px rgba(0,80,180,0.12);
 }
 
 .strip-card .placa {
   font-weight: 700;
   color: #003f80;
-  font-size: 13px;
-  letter-spacing: 0.5px;
+  font-size: 12px;
 }
 
 .strip-card .time {
   color: #64748b;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
   background: rgba(0,0,0,0.04);
-  padding: 2px 7px;
-  border-radius: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 .strip-empty {
-  font-size: 13px;
+  font-size: 12px;
   color: #999;
   padding: 2px 0;
 }
@@ -1089,39 +1085,39 @@ button.btn-obs:hover,
 
 .kanban-column {
   background: var(--white);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
   border: 1px solid #d4d4d4;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
 .kanban-title {
   text-align: center;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: bold;
   color: var(--primary-dark);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .kanban-count {
   display: inline-block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   background: rgba(0,0,0,0.08);
   color: #555;
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
 }
 
 .vehicle-card {
   background: #f1f7ff;
-  padding: 8px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  border-left: 4px solid var(--primary);
-  transition: transform .15s ease;
+  padding: 5px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  border-left: 3px solid var(--primary);
   cursor: pointer;
+  transition: transform .15s ease;
 }
 
 .vehicle-card:hover {
@@ -1129,25 +1125,28 @@ button.btn-obs:hover,
 }
 
 .vehicle-card .placa {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 700;
   color: #003f80;
 }
 
 .vehicle-card .time {
-  font-size: 12px;
-  color: #444;
-  margin-top: 3px;
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  background: rgba(0,0,0,0.04);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
-
 .puesto-tag {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   background: #e0edff;
   color: #1e5570;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
   white-space: nowrap;
 }
 
