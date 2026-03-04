@@ -99,12 +99,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Estaciones temporalmente ocultas en el dashboard (quitar de aquí para reactivar)
   const ESTACIONES_OCULTAS = ["PREPARACIÓN"];
 
-  // Estaciones que van en la franja compacta superior (pills)
-  const ESTACIONES_STRIP = ["PATIO / ESPERA", "FUERA DEL TALLER"];
-
-  function esStrip(nombre) {
-    return ESTACIONES_STRIP.some(s => nombre.toUpperCase() === s.toUpperCase());
-  }
+  // Distribución fija del taller (según plano físico)
+  const LAYOUT_TOP = ["ENDEREZADA", "PINTURA"];
+  const LAYOUT_BOTTOM = ["MECÁNICA", "ARMADO", "LAVADO"];
 
   function crearStripSection(est) {
     const section = document.createElement("div");
@@ -185,26 +182,41 @@ document.addEventListener("DOMContentLoaded", () => {
       !ESTACIONES_OCULTAS.includes(est.estacion.toUpperCase())
     );
 
-    const stripEstaciones = visibles.filter(est => esStrip(est.estacion));
-    const gridEstaciones = visibles.filter(est => !esStrip(est.estacion));
-
-    // Franja compacta superior (PATIO / FUERA DEL TALLER)
-    if (stripEstaciones.length > 0) {
-      const strip = document.createElement("div");
-      strip.className = "patio-strip";
-      stripEstaciones.forEach(est => {
-        strip.appendChild(crearStripSection(est));
-      });
-      cont.appendChild(strip);
+    function findEst(name) {
+      return visibles.find(e => e.estacion.toUpperCase() === name.toUpperCase());
     }
 
-    // Grid uniforme (estaciones de servicio)
-    const grid = document.createElement("div");
-    grid.className = "estaciones-grid";
-    gridEstaciones.forEach(est => {
-      grid.appendChild(crearColumna(est));
+    // Sidebar izquierdo: FUERA DEL TALLER
+    const fuera = findEst("FUERA DEL TALLER");
+    if (fuera) {
+      const col = crearColumna(fuera);
+      col.classList.add("area-fuera");
+      cont.appendChild(col);
+    }
+
+    // Fila superior: ENDEREZADA | PINTURA
+    const rowTop = document.createElement("div");
+    rowTop.className = "grid-row grid-row-top";
+    LAYOUT_TOP.forEach(name => {
+      const est = findEst(name);
+      if (est) rowTop.appendChild(crearColumna(est));
     });
-    cont.appendChild(grid);
+    cont.appendChild(rowTop);
+
+    // Centro: PATIO (pills compactos)
+    const patio = findEst("PATIO / ESPERA");
+    if (patio) {
+      cont.appendChild(crearStripSection(patio));
+    }
+
+    // Fila inferior: MECÁNICA | ARMADO | LAVADO
+    const rowBottom = document.createElement("div");
+    rowBottom.className = "grid-row grid-row-bottom";
+    LAYOUT_BOTTOM.forEach(name => {
+      const est = findEst(name);
+      if (est) rowBottom.appendChild(crearColumna(est));
+    });
+    cont.appendChild(rowBottom);
 
     document.getElementById("totalEnTaller").textContent =
       `Vehículos en taller: ${data.total_en_taller}`;

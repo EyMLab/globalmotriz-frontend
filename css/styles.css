@@ -973,20 +973,36 @@ button.btn-obs:hover,
   color: var(--primary);
 }
 
-/* --- Layout: strip PATIO arriba + grid estaciones abajo --- */
+/* --- Layout: grid fijo según distribución del taller --- */
 .kanban-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 14px;
 }
 
-/* --- Franja compacta superior (PATIO / FUERA DEL TALLER) --- */
-.patio-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* Sidebar FUERA DEL TALLER: abarca las 3 filas */
+.area-fuera {
+  grid-row: 1 / 4;
+  min-height: 0;
+  overflow-y: auto;
 }
 
+/* Filas de estaciones */
+.grid-row {
+  display: grid;
+  gap: 14px;
+}
+
+.grid-row-top {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-row-bottom {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* --- Franja PATIO (pills compactos) --- */
 .strip-section {
   background: var(--white);
   border-radius: 12px;
@@ -1013,7 +1029,7 @@ button.btn-obs:hover,
 
 .strip-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 8px;
 }
 
@@ -1058,17 +1074,20 @@ button.btn-obs:hover,
   padding: 2px 0;
 }
 
-/* --- Grid uniforme de estaciones de servicio --- */
-.estaciones-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  align-content: start;
-}
-
-.estaciones-grid .kanban-column {
-  max-height: calc(100vh - 340px);
-  overflow-y: auto;
+/* Responsive: se apila todo en móvil */
+@media (max-width: 768px) {
+  .kanban-layout {
+    grid-template-columns: 1fr;
+  }
+  .area-fuera {
+    grid-row: auto;
+  }
+  .grid-row-top {
+    grid-template-columns: 1fr;
+  }
+  .grid-row-bottom {
+    grid-template-columns: 1fr;
+  }
 }
 
 .kanban-column {
@@ -1133,13 +1152,6 @@ button.btn-obs:hover,
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
-}
-
-/* Responsive: strip + grid se adaptan */
-@media (max-width: 768px) {
-  .estaciones-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .kanban-footer {
