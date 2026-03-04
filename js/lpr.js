@@ -99,54 +99,83 @@ document.addEventListener("DOMContentLoaded", () => {
   // Estaciones temporalmente ocultas en el dashboard (quitar de aquí para reactivar)
   const ESTACIONES_OCULTAS = ["PREPARACIÓN"];
 
+  // Estaciones que van en el sidebar izquierdo (scroll independiente)
+  const ESTACIONES_SIDEBAR = ["PATIO / ESPERA", "FUERA DEL TALLER"];
+
+  function esSidebar(nombre) {
+    return ESTACIONES_SIDEBAR.some(s => nombre.toUpperCase() === s.toUpperCase());
+  }
+
+  function crearColumna(est, compact) {
+    const col = document.createElement("div");
+    col.className = "kanban-column";
+    col.style.borderTop = `6px solid ${est.color}`;
+
+    if (esSidebar(est.estacion)) {
+      col.style.background = "#f1f5f9";
+      col.style.borderLeft = "1px dashed #cbd5e1";
+    } else {
+      col.style.background = est.color + "15";
+    }
+
+    const count = est.vehiculos.length;
+    col.innerHTML = `
+      <div class="kanban-title">${est.estacion}<span class="kanban-count">${count}</span></div>
+      ${count === 0
+        ? "<p style='text-align:center;opacity:.5;margin-top:16px;font-size:13px;'>Vacío</p>"
+        : ""}
+    `;
+
+    est.vehiculos.forEach(v => {
+      const card = document.createElement("div");
+      card.className = compact ? "vehicle-card compact" : "vehicle-card";
+
+      const puestoUI = !esSidebar(est.estacion) ? formatPuestoUI(v.puesto) : "";
+      const puestoHtml = puestoUI
+        ? `<span class="puesto-tag">${puestoUI}</span>`
+        : "";
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:3px;">
+          <div class="placa">${v.placa}</div>
+          ${puestoHtml}
+        </div>
+        <div class="time">Total: ${formatTime(v.segundos_total)}</div>
+        <div class="time" style="font-weight:600; color:#334155;">En puesto: ${formatTime(v.segundos_estacion)}</div>
+      `;
+      card.onclick = () => abrirModalVehiculo(est, v);
+      col.appendChild(card);
+    });
+
+    return col;
+  }
+
   function renderKanban(data) {
     const cont = document.getElementById("kanban-container");
     cont.innerHTML = "";
 
-    data.estaciones.filter(est => !ESTACIONES_OCULTAS.includes(est.estacion.toUpperCase())).forEach(est => {
-      const col = document.createElement("div");
-      col.className = "kanban-column";
-      col.style.borderTop = `6px solid ${est.color}`;
+    const visibles = data.estaciones.filter(est =>
+      !ESTACIONES_OCULTAS.includes(est.estacion.toUpperCase())
+    );
 
-      // Estilo visual para el PATIO / ESPERA
-      if (est.estacion.toUpperCase().includes("PATIO")) {
-        col.style.background = "#f1f5f9";
-        col.style.borderLeft = "1px dashed #cbd5e1";
-      } else {
-        col.style.background = est.color + "15";
-      }
+    const sidebarEstaciones = visibles.filter(est => esSidebar(est.estacion));
+    const gridEstaciones = visibles.filter(est => !esSidebar(est.estacion));
 
-      col.innerHTML = `
-        <div class="kanban-title">${est.estacion}</div>
-        ${est.vehiculos.length === 0
-          ? "<p style='text-align:center;opacity:.5;margin-top:20px;'>Vacío</p>"
-          : ""}
-      `;
-
-      est.vehiculos.forEach(v => {
-        const card = document.createElement("div");
-        card.className = "vehicle-card";
-
-        // ✅ Mostrar puesto bonito (soporta E1_IZQUIERDA, M_DERECHA, etc.)
-        const puestoUI = (!est.estacion.toUpperCase().includes("PATIO")) ? formatPuestoUI(v.puesto) : "";
-        const puestoHtml = puestoUI
-          ? `<span class="puesto-tag">${puestoUI}</span>`
-          : "";
-
-        card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:5px;">
-            <div class="placa">${v.placa}</div>
-            ${puestoHtml}
-          </div>
-          <div class="time">Total: ${formatTime(v.segundos_total)}</div>
-          <div class="time" style="font-weight:600; color:#334155;">En puesto: ${formatTime(v.segundos_estacion)}</div>
-        `;
-        card.onclick = () => abrirModalVehiculo(est, v);
-        col.appendChild(card);
-      });
-
-      cont.appendChild(col);
+    // Sidebar izquierdo (PATIO / FUERA DEL TALLER)
+    const sidebar = document.createElement("div");
+    sidebar.className = "patio-sidebar";
+    sidebarEstaciones.forEach(est => {
+      sidebar.appendChild(crearColumna(est, true));
     });
+    cont.appendChild(sidebar);
+
+    // Grid derecho (estaciones de servicio)
+    const grid = document.createElement("div");
+    grid.className = "estaciones-grid";
+    gridEstaciones.forEach(est => {
+      grid.appendChild(crearColumna(est, false));
+    });
+    cont.appendChild(grid);
 
     document.getElementById("totalEnTaller").textContent =
       `Vehículos en taller: ${data.total_en_taller}`;

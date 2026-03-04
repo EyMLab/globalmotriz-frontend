@@ -973,10 +973,40 @@ button.btn-obs:hover,
   color: var(--primary);
 }
 
-.kanban-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+/* --- Layout: sidebar PATIO + grid estaciones --- */
+.kanban-layout {
+  display: flex;
   gap: 20px;
+  height: calc(100vh - 260px);
+  min-height: 400px;
+}
+
+.patio-sidebar {
+  width: 260px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.patio-sidebar .kanban-column {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.estaciones-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.estaciones-grid .kanban-column {
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
 }
 
 .kanban-column {
@@ -989,10 +1019,21 @@ button.btn-obs:hover,
 
 .kanban-title {
   text-align: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: var(--primary-dark);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+}
+
+.kanban-count {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(0,0,0,0.08);
+  color: #555;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
 }
 
 .vehicle-card {
@@ -1002,6 +1043,7 @@ button.btn-obs:hover,
   margin-bottom: 8px;
   border-left: 4px solid var(--primary);
   transition: transform .15s ease;
+  cursor: pointer;
 }
 
 .vehicle-card:hover {
@@ -1009,15 +1051,45 @@ button.btn-obs:hover,
 }
 
 .vehicle-card .placa {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #003f80;
 }
 
 .vehicle-card .time {
-  font-size: 13px;
+  font-size: 12px;
   color: #444;
-  margin-top: 4px;
+  margin-top: 3px;
+}
+
+/* Card compacta para sidebar PATIO */
+.vehicle-card.compact .placa { font-size: 14px; }
+.vehicle-card.compact .time { font-size: 11px; }
+.vehicle-card.compact { padding: 6px 8px; margin-bottom: 5px; }
+
+.puesto-tag {
+  font-size: 11px;
+  font-weight: 600;
+  background: #e0edff;
+  color: #1e5570;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Responsive: sidebar se apila arriba en móvil */
+@media (max-width: 768px) {
+  .kanban-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .patio-sidebar {
+    width: 100%;
+    min-width: unset;
+  }
+  .patio-sidebar .kanban-column {
+    max-height: 200px;
+  }
 }
 
 .kanban-footer {
