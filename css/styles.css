@@ -1049,7 +1049,7 @@ button.btn-obs:hover,
   background: linear-gradient(135deg, #f8fbff 0%, #eef4fc 100%);
   border: 1px solid #dce6f2;
   border-radius: 6px;
-  padding: 5px 9px;
+  padding: 6px 10px;
   cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease;
 }
@@ -1062,16 +1062,16 @@ button.btn-obs:hover,
 .strip-card .placa {
   font-weight: 700;
   color: #003f80;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .strip-card .time {
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   background: rgba(0,0,0,0.04);
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 3px;
 }
 
@@ -1099,7 +1099,7 @@ button.btn-obs:hover,
 
 .kanban-title {
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: bold;
   color: var(--primary-dark);
   margin-bottom: 6px;
@@ -1118,9 +1118,9 @@ button.btn-obs:hover,
 
 .vehicle-card {
   background: #f1f7ff;
-  padding: 5px 8px;
+  padding: 6px 10px;
   border-radius: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   border-left: 3px solid var(--primary);
   cursor: pointer;
   transition: transform .15s ease;
@@ -1131,27 +1131,27 @@ button.btn-obs:hover,
 }
 
 .vehicle-card .placa {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #003f80;
 }
 
 .vehicle-card .time {
-  font-size: 10px;
+  font-size: 12px;
   color: #64748b;
   font-weight: 500;
   white-space: nowrap;
   background: rgba(0,0,0,0.04);
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 3px;
 }
 
 .puesto-tag {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   background: #e0edff;
   color: #1e5570;
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 3px;
   white-space: nowrap;
 }
