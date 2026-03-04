@@ -100,8 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const ESTACIONES_OCULTAS = ["PREPARACIÓN"];
 
   // Distribución fija del taller (según plano físico)
-  const LAYOUT_TOP = ["ENDEREZADA", "PINTURA"];
-  const LAYOUT_BOTTOM = ["MECÁNICA", "ARMADO", "LAVADO"];
+  const COL_LEFT = ["PINTURA", "ENDEREZADA"];
+  const COL_RIGHT = ["LAVADO", "ARMADO", "MECÁNICA"];
 
   function crearStripSection(est) {
     const section = document.createElement("div");
@@ -186,37 +186,42 @@ document.addEventListener("DOMContentLoaded", () => {
       return visibles.find(e => e.estacion.toUpperCase() === name.toUpperCase());
     }
 
-    // Sidebar izquierdo: FUERA DEL TALLER
+    // Grid principal: 3 columnas
+    const grid = document.createElement("div");
+    grid.className = "taller-grid";
+
+    // Columna izquierda: PINTURA + ENDEREZADA
+    const colLeft = document.createElement("div");
+    colLeft.className = "col-left";
+    COL_LEFT.forEach(name => {
+      const est = findEst(name);
+      if (est) colLeft.appendChild(crearColumna(est));
+    });
+    grid.appendChild(colLeft);
+
+    // Columna central: PATIO
+    const colCenter = document.createElement("div");
+    colCenter.className = "col-center";
+    const patio = findEst("PATIO / ESPERA");
+    if (patio) colCenter.appendChild(crearColumna(patio));
+    grid.appendChild(colCenter);
+
+    // Columna derecha: LAVADO + ARMADO + MECÁNICA
+    const colRight = document.createElement("div");
+    colRight.className = "col-right";
+    COL_RIGHT.forEach(name => {
+      const est = findEst(name);
+      if (est) colRight.appendChild(crearColumna(est));
+    });
+    grid.appendChild(colRight);
+
+    cont.appendChild(grid);
+
+    // Abajo: FUERA DEL TALLER (strip pills)
     const fuera = findEst("FUERA DEL TALLER");
     if (fuera) {
-      const col = crearColumna(fuera);
-      col.classList.add("area-fuera");
-      cont.appendChild(col);
+      cont.appendChild(crearStripSection(fuera));
     }
-
-    // Fila superior: ENDEREZADA | PINTURA
-    const rowTop = document.createElement("div");
-    rowTop.className = "grid-row grid-row-top";
-    LAYOUT_TOP.forEach(name => {
-      const est = findEst(name);
-      if (est) rowTop.appendChild(crearColumna(est));
-    });
-    cont.appendChild(rowTop);
-
-    // Centro: PATIO (pills compactos)
-    const patio = findEst("PATIO / ESPERA");
-    if (patio) {
-      cont.appendChild(crearStripSection(patio));
-    }
-
-    // Fila inferior: MECÁNICA | ARMADO | LAVADO
-    const rowBottom = document.createElement("div");
-    rowBottom.className = "grid-row grid-row-bottom";
-    LAYOUT_BOTTOM.forEach(name => {
-      const est = findEst(name);
-      if (est) rowBottom.appendChild(crearColumna(est));
-    });
-    cont.appendChild(rowBottom);
 
     document.getElementById("totalEnTaller").textContent =
       `Vehículos en taller: ${data.total_en_taller}`;
