@@ -99,24 +99,51 @@ document.addEventListener("DOMContentLoaded", () => {
   // Estaciones temporalmente ocultas en el dashboard (quitar de aquí para reactivar)
   const ESTACIONES_OCULTAS = ["PREPARACIÓN"];
 
-  // Estaciones que van en el sidebar izquierdo (scroll independiente)
-  const ESTACIONES_SIDEBAR = ["PATIO / ESPERA", "FUERA DEL TALLER"];
+  // Estaciones que van en la franja compacta superior (pills)
+  const ESTACIONES_STRIP = ["PATIO / ESPERA", "FUERA DEL TALLER"];
 
-  function esSidebar(nombre) {
-    return ESTACIONES_SIDEBAR.some(s => nombre.toUpperCase() === s.toUpperCase());
+  function esStrip(nombre) {
+    return ESTACIONES_STRIP.some(s => nombre.toUpperCase() === s.toUpperCase());
   }
 
-  function crearColumna(est, compact) {
+  function crearStripSection(est) {
+    const section = document.createElement("div");
+    section.className = "strip-section";
+    section.style.borderLeft = `5px solid ${est.color}`;
+
+    const count = est.vehiculos.length;
+    const header = document.createElement("div");
+    header.className = "strip-header";
+    header.innerHTML = `<span class="strip-title">${est.estacion}</span><span class="kanban-count">${count}</span>`;
+    section.appendChild(header);
+
+    const cards = document.createElement("div");
+    cards.className = "strip-cards";
+
+    if (count === 0) {
+      cards.innerHTML = `<span class="strip-empty">Vacío</span>`;
+    } else {
+      est.vehiculos.forEach(v => {
+        const pill = document.createElement("div");
+        pill.className = "strip-card";
+        pill.innerHTML = `
+          <span class="placa">${v.placa}</span>
+          <span class="time">${formatTime(v.segundos_total)}</span>
+        `;
+        pill.onclick = () => abrirModalVehiculo(est, v);
+        cards.appendChild(pill);
+      });
+    }
+
+    section.appendChild(cards);
+    return section;
+  }
+
+  function crearColumna(est) {
     const col = document.createElement("div");
     col.className = "kanban-column";
     col.style.borderTop = `6px solid ${est.color}`;
-
-    if (esSidebar(est.estacion)) {
-      col.style.background = "#f1f5f9";
-      col.style.borderLeft = "1px dashed #cbd5e1";
-    } else {
-      col.style.background = est.color + "15";
-    }
+    col.style.background = est.color + "15";
 
     const count = est.vehiculos.length;
     col.innerHTML = `
@@ -128,9 +155,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     est.vehiculos.forEach(v => {
       const card = document.createElement("div");
-      card.className = compact ? "vehicle-card compact" : "vehicle-card";
+      card.className = "vehicle-card";
 
-      const puestoUI = !esSidebar(est.estacion) ? formatPuestoUI(v.puesto) : "";
+      const puestoUI = formatPuestoUI(v.puesto);
       const puestoHtml = puestoUI
         ? `<span class="puesto-tag">${puestoUI}</span>`
         : "";
@@ -158,22 +185,24 @@ document.addEventListener("DOMContentLoaded", () => {
       !ESTACIONES_OCULTAS.includes(est.estacion.toUpperCase())
     );
 
-    const sidebarEstaciones = visibles.filter(est => esSidebar(est.estacion));
-    const gridEstaciones = visibles.filter(est => !esSidebar(est.estacion));
+    const stripEstaciones = visibles.filter(est => esStrip(est.estacion));
+    const gridEstaciones = visibles.filter(est => !esStrip(est.estacion));
 
-    // Sidebar izquierdo (PATIO / FUERA DEL TALLER)
-    const sidebar = document.createElement("div");
-    sidebar.className = "patio-sidebar";
-    sidebarEstaciones.forEach(est => {
-      sidebar.appendChild(crearColumna(est, true));
-    });
-    cont.appendChild(sidebar);
+    // Franja compacta superior (PATIO / FUERA DEL TALLER)
+    if (stripEstaciones.length > 0) {
+      const strip = document.createElement("div");
+      strip.className = "patio-strip";
+      stripEstaciones.forEach(est => {
+        strip.appendChild(crearStripSection(est));
+      });
+      cont.appendChild(strip);
+    }
 
-    // Grid derecho (estaciones de servicio)
+    // Grid uniforme (estaciones de servicio)
     const grid = document.createElement("div");
     grid.className = "estaciones-grid";
     gridEstaciones.forEach(est => {
-      grid.appendChild(crearColumna(est, false));
+      grid.appendChild(crearColumna(est));
     });
     cont.appendChild(grid);
 
@@ -191,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function filtrarKanban(texto) {
     terminoBusqueda = texto.toUpperCase().trim();
-    const cards = document.querySelectorAll(".vehicle-card");
+    const cards = document.querySelectorAll(".vehicle-card, .strip-card");
     let encontrados = 0;
 
     cards.forEach(card => {

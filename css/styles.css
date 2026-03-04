@@ -973,39 +973,94 @@ button.btn-obs:hover,
   color: var(--primary);
 }
 
-/* --- Layout: sidebar PATIO + grid estaciones --- */
+/* --- Layout: strip PATIO arriba + grid estaciones abajo --- */
 .kanban-layout {
   display: flex;
-  gap: 20px;
-  height: calc(100vh - 260px);
-  min-height: 400px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.patio-sidebar {
-  width: 260px;
-  min-width: 260px;
+/* --- Franja compacta superior (PATIO / FUERA DEL TALLER) --- */
+.patio-strip {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-.patio-sidebar .kanban-column {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
+.strip-section {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 10px 14px;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
+.strip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.strip-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.strip-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.strip-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f7ff;
+  border: 1px solid #d0e3ff;
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+  font-size: 13px;
+}
+
+.strip-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.strip-card .placa {
+  font-weight: 700;
+  color: #003f80;
+  font-size: 13px;
+}
+
+.strip-card .time {
+  color: #555;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.strip-empty {
+  font-size: 13px;
+  color: #999;
+  padding: 2px 0;
+}
+
+/* --- Grid uniforme de estaciones de servicio --- */
 .estaciones-grid {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   align-content: start;
-  overflow-y: auto;
 }
 
 .estaciones-grid .kanban-column {
-  max-height: calc(100vh - 280px);
+  max-height: calc(100vh - 340px);
   overflow-y: auto;
 }
 
@@ -1062,10 +1117,6 @@ button.btn-obs:hover,
   margin-top: 3px;
 }
 
-/* Card compacta para sidebar PATIO */
-.vehicle-card.compact .placa { font-size: 14px; }
-.vehicle-card.compact .time { font-size: 11px; }
-.vehicle-card.compact { padding: 6px 8px; margin-bottom: 5px; }
 
 .puesto-tag {
   font-size: 11px;
@@ -1077,18 +1128,10 @@ button.btn-obs:hover,
   white-space: nowrap;
 }
 
-/* Responsive: sidebar se apila arriba en móvil */
+/* Responsive: strip + grid se adaptan */
 @media (max-width: 768px) {
-  .kanban-layout {
-    flex-direction: column;
-    height: auto;
-  }
-  .patio-sidebar {
-    width: 100%;
-    min-width: unset;
-  }
-  .patio-sidebar .kanban-column {
-    max-height: 200px;
+  .estaciones-grid {
+    grid-template-columns: 1fr;
   }
 }
 
