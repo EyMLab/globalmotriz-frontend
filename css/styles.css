@@ -984,65 +984,72 @@ button.btn-obs:hover,
 .patio-strip {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .strip-section {
   background: var(--white);
-  border-radius: 10px;
-  padding: 10px 14px;
-  border: 1px solid #d4d4d4;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 14px 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .strip-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .strip-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--primary-dark);
+  letter-spacing: 0.3px;
 }
 
 .strip-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
 }
 
 .strip-card {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  background: #f1f7ff;
-  border: 1px solid #d0e3ff;
-  border-left: 4px solid var(--primary);
-  border-radius: 6px;
-  padding: 5px 10px;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef4fc 100%);
+  border: 1px solid #dce6f2;
+  border-radius: 8px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease;
-  font-size: 13px;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
 
 .strip-card:hover {
-  transform: scale(1.03);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,80,180,0.12);
+  border-color: var(--primary-light);
 }
 
 .strip-card .placa {
   font-weight: 700;
   color: #003f80;
   font-size: 13px;
+  letter-spacing: 0.5px;
 }
 
 .strip-card .time {
-  color: #555;
+  color: #64748b;
   font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
+  background: rgba(0,0,0,0.04);
+  padding: 2px 7px;
+  border-radius: 4px;
 }
 
 .strip-empty {
