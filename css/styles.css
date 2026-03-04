@@ -994,6 +994,11 @@ button.btn-obs:hover,
   gap: 10px;
 }
 
+.col-left .kanban-column,
+.col-right .kanban-column {
+  flex: 1;
+}
+
 .col-center .strip-section {
   height: 100%;
   display: flex;
@@ -1018,6 +1023,7 @@ button.btn-obs:hover,
 .strip-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 6px;
   padding-bottom: 6px;
