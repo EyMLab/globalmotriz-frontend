@@ -96,11 +96,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Estaciones temporalmente ocultas en el dashboard (quitar de aquí para reactivar)
+  const ESTACIONES_OCULTAS = ["PREPARACIÓN"];
+
   function renderKanban(data) {
     const cont = document.getElementById("kanban-container");
     cont.innerHTML = "";
 
-    data.estaciones.forEach(est => {
+    data.estaciones.filter(est => !ESTACIONES_OCULTAS.includes(est.estacion.toUpperCase())).forEach(est => {
       const col = document.createElement("div");
       col.className = "kanban-column";
       col.style.borderTop = `6px solid ${est.color}`;
