@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (window.location.pathname.includes("compras")) pagina = "Compras";
     else if (window.location.pathname.includes("lpr")) pagina = "Taller";
 
+    // Seguro solo puede ver Taller
+    if (rol === 'seguro' && pagina !== 'Taller') {
+      window.location.href = 'lpr.html';
+      return;
+    }
+
     // ============================================
     // Enlaces según rol
     // ============================================
@@ -49,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="compras.html" class="${pagina === 'Compras' ? 'active' : ''}">Compras</a>`
       : "";
 
-    const enlaceLPR = rol === 'admin'
+    const enlaceLPR = ['admin', 'seguro'].includes(rol)
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
       : "";
 

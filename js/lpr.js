@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const limiteSalidas = 10;
   let ultimoTotal = 0;
   let terminoBusqueda = "";
+  let rolUsuario = "";
 
   /* ======================================================
       HELPERS
@@ -297,14 +298,18 @@ document.addEventListener("DOMContentLoaded", () => {
     pausaLPR = true;
     placaSeleccionada = veh.placa;
 
-    modalPlaca.innerHTML = `
-      <div style="display:flex; align-items:center; gap:15px;">
-        <span>${veh.placa}</span>
-        <button onclick="editarPlaca('${veh.placa}')"
+    const btnEditar = rolUsuario === 'admin'
+      ? `<button onclick="editarPlaca('${veh.placa}')"
                 style="background:none; border:1px solid #007bff; color:#007bff; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
                 title="Corregir Placa">
           EDITAR PLACA
-        </button>
+        </button>`
+      : "";
+
+    modalPlaca.innerHTML = `
+      <div style="display:flex; align-items:center; gap:15px;">
+        <span>${veh.placa}</span>
+        ${btnEditar}
       </div>
     `;
 
@@ -657,19 +662,29 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ======================================================
       🚀 GESTIÓN DE VEHÍCULOS INTERNOS (SOLO ADMIN)
   ====================================================== */
-  verificarRolAdmin();
+  configurarPermisos();
 
-  async function verificarRolAdmin() {
+  async function configurarPermisos() {
     try {
       const res = await apiFetch('/auth/me');
       if (res && res.ok) {
         const data = await safeJson(res);
-        if (data && data.rol === 'admin') {
+        rolUsuario = data?.rol || '';
+
+        if (rolUsuario === 'admin') {
           const btn = document.getElementById('btn-gestionar-internos');
           if (btn) {
             btn.style.display = 'inline-block';
             btn.onclick = abrirModalInternos;
           }
+        }
+
+        if (rolUsuario === 'seguro') {
+          // Ocultar botones de acción
+          const btnInternos = document.getElementById('btn-gestionar-internos');
+          const btnSalidas = document.getElementById('btn-ver-salidas');
+          if (btnInternos) btnInternos.style.display = 'none';
+          if (btnSalidas) btnSalidas.style.display = 'none';
         }
       }
     } catch (err) {
