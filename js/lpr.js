@@ -413,11 +413,12 @@ document.addEventListener("DOMContentLoaded", () => {
       imageAlt: `Foto en ${estacion}`,
       title: `Ingreso a ${estacion}`,
       text: fecha,
-      width: 800,
+      width: '90vw',
       padding: '1em',
       background: '#fff',
-      backdrop: `rgba(0,0,0,0.8)`,
-      zIndex: Z_INDEX_ALERTA
+      backdrop: `rgba(0,0,0,0.85)`,
+      zIndex: Z_INDEX_ALERTA,
+      customClass: { image: 'swal-foto-grande' }
     });
   };
 

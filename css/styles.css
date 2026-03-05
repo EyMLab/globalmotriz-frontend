@@ -600,6 +600,13 @@ table.usuarios-table td {
   text-align: center;
 }
 
+.swal-foto-grande {
+  max-height: 75vh !important;
+  object-fit: contain !important;
+  width: auto !important;
+  max-width: 100% !important;
+}
+
 #btn-historial-completo {
   margin-top: 15px;
   width: 100%;
