@@ -28,7 +28,7 @@ document.getElementById('login-form').addEventListener('submit', function (e) {
       localStorage.setItem('usuario', data.usuario);
       localStorage.setItem('rol', data.rol);
 
-      window.location.href = 'dashboard.html';
+      window.location.href = data.rol === 'seguro' ? 'lpr.html' : 'dashboard.html';
     })
     .catch(error => {
       console.error('❌ Error en login:', error);
