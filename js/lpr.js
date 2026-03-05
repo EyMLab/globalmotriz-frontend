@@ -408,19 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ====================================================== */
 
   window.verFotoGrande = (url, estacion, fecha) => {
-    Swal.fire({
-      title: `Ingreso a ${estacion}`,
-      text: fecha,
-      html: `
-        <p style="margin:0 0 8px; opacity:.6">${fecha}</p>
-        <img src="${url}" alt="Foto en ${estacion}"
-             style="width:100%; max-height:75vh; object-fit:contain; border-radius:8px;">
-      `,
-      confirmButtonText: 'Cerrar',
-      backdrop: 'rgba(0,0,0,0.8)',
-      zIndex: Z_INDEX_ALERTA,
-      customClass: { popup: 'swal-foto-popup' }
-    });
+    window.open(url, '_blank');
   };
 
   window.editarPlaca = async (placaActual) => {

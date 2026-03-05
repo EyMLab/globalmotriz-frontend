@@ -600,11 +600,6 @@ table.usuarios-table td {
   text-align: center;
 }
 
-.swal-foto-popup {
-  width: 90vw !important;
-  max-width: 90vw !important;
-}
-
 #btn-historial-completo {
   margin-top: 15px;
   width: 100%;
