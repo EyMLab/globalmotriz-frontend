@@ -409,20 +409,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.verFotoGrande = (url, estacion, fecha) => {
     Swal.fire({
+      title: `Ingreso a ${estacion}`,
+      text: fecha,
       html: `
-        <h3 style="margin:0 0 6px">Ingreso a ${estacion}</h3>
-        <p style="margin:0 0 10px; opacity:.7">${fecha}</p>
+        <p style="margin:0 0 8px; opacity:.6">${fecha}</p>
         <img src="${url}" alt="Foto en ${estacion}"
-             style="width:100%; max-height:78vh; object-fit:contain; border-radius:8px;">
+             style="width:100%; max-height:75vh; object-fit:contain; border-radius:8px;">
       `,
-      width: '92vw',
-      padding: '10px',
-      background: '#111',
-      color: '#fff',
-      showConfirmButton: true,
       confirmButtonText: 'Cerrar',
-      backdrop: 'rgba(0,0,0,0.9)',
-      zIndex: Z_INDEX_ALERTA
+      backdrop: 'rgba(0,0,0,0.8)',
+      zIndex: Z_INDEX_ALERTA,
+      customClass: { popup: 'swal-foto-popup' }
     });
   };
 
