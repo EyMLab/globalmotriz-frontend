@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="margin:10px 0 4px;font-weight:500;font-size:0.88rem;color:#334155;">Formas de pago</div>
         <div class="form-row">
           <div class="form-group">
-            <label>Ahorros</label>
+            <label>Corriente</label>
             <input id="cc-ahorros" type="number" min="0" step="0.01" class="swal2-input" placeholder="0.00" value="0">
           </div>
           <div class="form-group">
@@ -610,23 +610,59 @@ document.addEventListener('DOMContentLoaded', () => {
         `Desde: ${fechaDesde}  |  Emitido: ${hoyStr}`
       );
 
-      // Info box: saldo
+      // Info box con semáforo
       const pct = Math.min(100, Math.max(0, (data.saldo / data.limite) * 100));
+      const fillColor = pct > 50 ? [34, 197, 94] : pct > 20 ? [245, 158, 11] : [239, 68, 68];
+      const inactiveLight = [213, 220, 228];
+      const boxW = pageW - marginL - marginR;
+
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(marginL, startY, pageW - marginL - marginR, 14, 2, 2, 'FD');
+      doc.roundedRect(marginL, startY, boxW, 26, 2, 2, 'FD');
 
+      // Textos
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
-      doc.text('Saldo actual:', marginL + 4, startY + 6);
+      doc.text('Saldo:', marginL + 4, startY + 6);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
-      doc.text(`$${data.saldo.toFixed(2)} / $${data.limite.toFixed(2)} (${pct.toFixed(1)}%)`,
-        marginL + 32, startY + 6);
+      doc.text(`$${data.saldo.toFixed(2)} de $${data.limite.toFixed(2)}`, marginL + 18, startY + 6);
 
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
-      doc.text('Período:', marginL + 4, startY + 11);
+      doc.text('Período:', marginL + 4, startY + 12);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
-      doc.text(`${fechaDesde} → ${hoyStr}`, marginL + 22, startY + 11);
+      doc.text(`${fechaDesde} → ${hoyStr}`, marginL + 22, startY + 12);
+
+      // Semáforo (3 círculos, top-right del box)
+      const r = 3.2;
+      const cY = startY + 9;
+      const cRed    = pageW - marginR - 5;
+      const cYellow = cRed - 9;
+      const cGreen  = cYellow - 9;
+
+      doc.setFillColor(...(pct <= 20 ? [239, 68, 68] : inactiveLight));
+      doc.circle(cRed, cY, r, 'F');
+      doc.setFillColor(...(pct > 20 && pct <= 50 ? [245, 158, 11] : inactiveLight));
+      doc.circle(cYellow, cY, r, 'F');
+      doc.setFillColor(...(pct > 50 ? [34, 197, 94] : inactiveLight));
+      doc.circle(cGreen, cY, r, 'F');
+
+      // Porcentaje bajo el semáforo
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...fillColor);
+      doc.text(`${pct.toFixed(0)}%`, (cGreen + cRed) / 2, cY + r + 3.5, { align: 'center' });
+
+      // Barra de progreso
+      const barX = marginL + 4;
+      const barY = startY + 19;
+      const barW = boxW - 8;
+      const barH = 4;
+
+      doc.setFillColor(226, 232, 240);
+      doc.roundedRect(barX, barY, barW, barH, 1, 1, 'F');
+      const fillW = Math.max(barH, (pct / 100) * barW);
+      doc.setFillColor(...fillColor);
+      doc.roundedRect(barX, barY, fillW, barH, 1, 1, 'F');
 
       // Tabla
       const tableBody = data.registros.map(r => {
@@ -656,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .reduce((s, r) => s + parseFloat(r.total), 0);
 
       doc.autoTable({
-        startY: startY + 18,
+        startY: startY + 30,
         head: [['Fecha', 'Tipo Doc', 'N° Doc', 'Proveedor', 'Concepto', 'IVA%', 'Base', 'IVA $', 'Total']],
         body: tableBody,
         foot: [[
@@ -752,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
       field('Total cobrado:', `$${t.total.toFixed(2)}`, col1, startY + 6);
       field('Cobros:', `${data.cobros.length} registros`, col2, startY + 6);
       field('Transferencias:', `$${t.pago_transferencia.toFixed(2)}`, col3, startY + 6);
-      field('Ahorros:', `$${t.pago_ahorros.toFixed(2)}`, col1, startY + 11);
+      field('Corriente:', `$${t.pago_ahorros.toFixed(2)}`, col1, startY + 11);
       field('Efectivo:', `$${t.pago_efectivo.toFixed(2)}`, col2, startY + 11);
       field('Tarjeta + Cheques:', `$${(t.pago_tarjeta + t.pago_cheques).toFixed(2)}`, col3, startY + 11);
 
@@ -773,7 +809,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       doc.autoTable({
         startY: startY + 18,
-        head: [['Fecha', 'Tipo', 'Cliente', 'Total', 'Ahorros', 'Transfer.', 'Cheques', 'Tarjeta', 'Efectivo', 'Factura N°', 'Obs.']],
+        head: [['Fecha', 'Tipo', 'Cliente', 'Total', 'Corriente', 'Transfer.', 'Cheques', 'Tarjeta', 'Efectivo', 'Factura N°', 'Obs.']],
         body: tableBody,
         foot: [[
           { content: 'TOTALES', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
