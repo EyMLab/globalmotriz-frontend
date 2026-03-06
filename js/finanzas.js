@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
       doc.text('Período:', marginL + 4, startY + 12);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
-      doc.text(`${fechaDesde} → ${hoyStr}`, marginL + 22, startY + 12);
+      doc.text(`${fechaDesde} - ${hoyStr}`, marginL + 22, startY + 12);
 
       // Semáforo (3 círculos, top-right del box)
       const r = 3.2;
