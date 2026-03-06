@@ -7,6 +7,9 @@
 
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- jsPDF para reportes PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 
 <body>
@@ -57,6 +60,7 @@
       <div class="finanzas-actions">
         <button class="btn-obs" onclick="modalRegistrarGasto()">+ Registrar Gasto</button>
         <button class="btn-obs" onclick="modalReposicion()">Reposición</button>
+        <button class="btn-pdf" onclick="descargarReporteCajaChica()">&#8595; Descargar Reporte</button>
       </div>
 
       <!-- Tabla historial -->
@@ -90,13 +94,14 @@
         <h2 style="margin:0;">Cierre de Caja</h2>
       </div>
 
-      <!-- Selector de mes + botón -->
+      <!-- Selector de mes + botones -->
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
         <div class="mes-selector">
           <label for="input-mes">Mes:</label>
           <input type="month" id="input-mes">
         </div>
         <button class="btn-obs" onclick="modalRegistrarCobro()">+ Registrar Cobro</button>
+        <button class="btn-pdf" onclick="descargarReporteCierre()">&#8595; Descargar Reporte</button>
       </div>
 
       <!-- Tabla cobros -->

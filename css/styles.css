@@ -1451,4 +1451,17 @@ div.swal2-backdrop-show {
 }
 .cuadre-ok   { color: #16a34a; font-weight: 600; }
 .cuadre-diff { color: #dc2626; font-weight: 600; }
+
+/* Botón descargar PDF (finanzas + compras) */
+.btn-pdf {
+  background: #ea580c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background 0.2s;
 }
+.btn-pdf:hover { background: #c2410c; }

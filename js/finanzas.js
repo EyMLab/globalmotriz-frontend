@@ -501,4 +501,322 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // =========================================================
+  // Utilidad: cargar logo como base64
+  // =========================================================
+  function cargarImagenBase64(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  // =========================================================
+  // PDF helpers compartidos
+  // =========================================================
+  const COLOR_PRIMARY  = [30, 85, 112];   // #1E5570
+  const COLOR_ACCENT   = [234, 88, 12];   // naranja
+  const COLOR_GRAY     = [100, 116, 139];
+  const COLOR_DARK     = [15, 23, 42];
+  const COLOR_BLUE_ROW = [219, 234, 254]; // fondo reposición
+
+  async function construirCabeceraPDF(doc, titulo, subtitulo) {
+    const pageW  = doc.internal.pageSize.getWidth();
+    const marginL = 14;
+
+    // Franja superior
+    doc.setFillColor(...COLOR_PRIMARY);
+    doc.rect(0, 0, pageW, 3, 'F');
+
+    // Logo
+    let logoX = marginL;
+    try {
+      const logoImg = await cargarImagenBase64('img/logo.png');
+      if (logoImg) {
+        doc.addImage(logoImg, 'PNG', marginL, 6, 30, 15);
+        logoX = marginL + 34;
+      }
+    } catch { /* sin logo */ }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...COLOR_PRIMARY);
+    doc.text('GLOBAL MOTRIZ S.A.', logoX, 13);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_GRAY);
+    doc.text('Sistema de Gestión Financiera', logoX, 18);
+
+    // Título derecha
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(...COLOR_ACCENT);
+    doc.text(titulo, pageW - marginL, 12, { align: 'right' });
+
+    if (subtitulo) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...COLOR_GRAY);
+      doc.text(subtitulo, pageW - marginL, 18, { align: 'right' });
+    }
+
+    // Línea separadora
+    doc.setDrawColor(...COLOR_PRIMARY);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, 24, pageW - marginL, 24);
+
+    return 28; // Y inicial para contenido
+  }
+
+  // =========================================================
+  // PDF - CAJA CHICA (desde última reposición)
+  // =========================================================
+  window.descargarReporteCajaChica = async function () {
+    try {
+      const res = await apiFetch(`/finanzas/caja-chica/reporte?tipo=${tipoCajaActual}`);
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error al obtener datos');
+
+      if (!data.registros.length) {
+        return Swal.fire('Sin datos', 'No hay registros para generar el reporte.', 'info');
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+      const pageW  = doc.internal.pageSize.getWidth();
+      const marginL = 14;
+      const marginR = 14;
+
+      const fechaDesde = data.fecha_desde
+        ? new Date(data.fecha_desde).toLocaleDateString('es-EC')
+        : 'Inicio';
+      const hoyStr = new Date().toLocaleDateString('es-EC');
+
+      const startY = await construirCabeceraPDF(
+        doc,
+        `CAJA CHICA - ${tipoCajaActual}`,
+        `Desde: ${fechaDesde}  |  Emitido: ${hoyStr}`
+      );
+
+      // Info box: saldo
+      const pct = Math.min(100, Math.max(0, (data.saldo / data.limite) * 100));
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(marginL, startY, pageW - marginL - marginR, 14, 2, 2, 'FD');
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
+      doc.text('Saldo actual:', marginL + 4, startY + 6);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
+      doc.text(`$${data.saldo.toFixed(2)} / $${data.limite.toFixed(2)} (${pct.toFixed(1)}%)`,
+        marginL + 32, startY + 6);
+
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
+      doc.text('Período:', marginL + 4, startY + 11);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
+      doc.text(`${fechaDesde} → ${hoyStr}`, marginL + 22, startY + 11);
+
+      // Tabla
+      const tableBody = data.registros.map(r => {
+        const fecha = new Date(r.fecha).toLocaleDateString('es-EC');
+        if (r.es_reposicion) {
+          return [fecha, 'REPOSICIÓN', '', '', '', '—', '—', '—', `$${parseFloat(r.total).toFixed(2)}`];
+        }
+        return [
+          fecha,
+          r.tipo_doc,
+          r.num_documento || '—',
+          r.proveedor || '—',
+          r.concepto || '—',
+          r.tipo_iva + '%',
+          `$${parseFloat(r.monto_base).toFixed(2)}`,
+          `$${parseFloat(r.iva).toFixed(2)}`,
+          `$${parseFloat(r.total).toFixed(2)}`
+        ];
+      });
+
+      // Totales al pie de tabla
+      const totalGastos = data.registros
+        .filter(r => !r.es_reposicion)
+        .reduce((s, r) => s + parseFloat(r.total), 0);
+      const totalRepos = data.registros
+        .filter(r => r.es_reposicion)
+        .reduce((s, r) => s + parseFloat(r.total), 0);
+
+      doc.autoTable({
+        startY: startY + 18,
+        head: [['Fecha', 'Tipo Doc', 'N° Doc', 'Proveedor', 'Concepto', 'IVA%', 'Base', 'IVA $', 'Total']],
+        body: tableBody,
+        foot: [[
+          { content: 'TOTALES', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: `$${(totalRepos - totalGastos).toFixed(2)} saldo`, styles: { fontStyle: 'bold' } }
+        ]],
+        margin: { left: marginL, right: marginR },
+        styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2 },
+        headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold' },
+        footStyles: { fillColor: [241, 245, 249], textColor: COLOR_DARK, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 24 },
+          2: { cellWidth: 28 },
+          3: { cellWidth: 38 },
+          4: { cellWidth: 45 },
+          5: { cellWidth: 14, halign: 'center' },
+          6: { cellWidth: 20, halign: 'right' },
+          7: { cellWidth: 18, halign: 'right' },
+          8: { cellWidth: 22, halign: 'right' }
+        },
+        didParseCell: (hookData) => {
+          if (hookData.section === 'body') {
+            const rowData = data.registros[hookData.row.index];
+            if (rowData?.es_reposicion) {
+              hookData.cell.styles.fillColor = COLOR_BLUE_ROW;
+              hookData.cell.styles.fontStyle = 'bold';
+            }
+          }
+        }
+      });
+
+      const mesActual = new Date().toISOString().slice(0, 7);
+      doc.save(`Caja_Chica_${tipoCajaActual}_${mesActual}.pdf`);
+
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  };
+
+  // =========================================================
+  // PDF - CIERRE DE CAJA (mes seleccionado)
+  // =========================================================
+  window.descargarReporteCierre = async function () {
+    const mes = document.getElementById('input-mes').value;
+    if (!mes) return Swal.fire('Selecciona un mes', '', 'warning');
+
+    try {
+      const res = await apiFetch(`/finanzas/cierre-caja?mes=${mes}`);
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error al obtener datos');
+
+      if (!data.cobros.length) {
+        return Swal.fire('Sin datos', 'No hay cobros para este mes.', 'info');
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+      const pageW  = doc.internal.pageSize.getWidth();
+      const marginL = 14;
+      const marginR = 14;
+
+      // Nombre del mes en español
+      const [anio, numMes] = mes.split('-');
+      const nombreMes = new Date(parseInt(anio), parseInt(numMes) - 1, 1)
+        .toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+      const hoyStr = new Date().toLocaleDateString('es-EC');
+
+      const startY = await construirCabeceraPDF(
+        doc,
+        'CIERRE DE CAJA',
+        `${nombreMes.toUpperCase()}  |  Emitido: ${hoyStr}`
+      );
+
+      // Resumen totales
+      const t = data.totales;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(marginL, startY, pageW - marginL - marginR, 14, 2, 2, 'FD');
+
+      const col1 = marginL + 4;
+      const col2 = col1 + 70;
+      const col3 = col2 + 70;
+
+      doc.setFontSize(8.5);
+      const field = (label, val, x, y) => {
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
+        doc.text(label, x, y);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
+        doc.text(val, x + doc.getTextWidth(label) + 1.5, y);
+      };
+
+      field('Total cobrado:', `$${t.total.toFixed(2)}`, col1, startY + 6);
+      field('Cobros:', `${data.cobros.length} registros`, col2, startY + 6);
+      field('Transferencias:', `$${t.pago_transferencia.toFixed(2)}`, col3, startY + 6);
+      field('Ahorros:', `$${t.pago_ahorros.toFixed(2)}`, col1, startY + 11);
+      field('Efectivo:', `$${t.pago_efectivo.toFixed(2)}`, col2, startY + 11);
+      field('Tarjeta + Cheques:', `$${(t.pago_tarjeta + t.pago_cheques).toFixed(2)}`, col3, startY + 11);
+
+      // Tabla
+      const tableBody = data.cobros.map(r => [
+        new Date(r.fecha).toLocaleDateString('es-EC'),
+        r.tipo,
+        r.cliente,
+        `$${parseFloat(r.total).toFixed(2)}`,
+        `$${parseFloat(r.pago_ahorros).toFixed(2)}`,
+        `$${parseFloat(r.pago_transferencia).toFixed(2)}`,
+        `$${parseFloat(r.pago_cheques).toFixed(2)}`,
+        `$${parseFloat(r.pago_tarjeta).toFixed(2)}`,
+        `$${parseFloat(r.pago_efectivo).toFixed(2)}`,
+        r.factura_num || '—',
+        r.observaciones || '—'
+      ]);
+
+      doc.autoTable({
+        startY: startY + 18,
+        head: [['Fecha', 'Tipo', 'Cliente', 'Total', 'Ahorros', 'Transfer.', 'Cheques', 'Tarjeta', 'Efectivo', 'Factura N°', 'Obs.']],
+        body: tableBody,
+        foot: [[
+          { content: 'TOTALES', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: `$${t.total.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: `$${t.pago_ahorros.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: `$${t.pago_transferencia.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: `$${t.pago_cheques.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: `$${t.pago_tarjeta.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: `$${t.pago_efectivo.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: '', colSpan: 2 }
+        ]],
+        margin: { left: marginL, right: marginR },
+        styles: { fontSize: 7, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2 },
+        headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold' },
+        footStyles: { fillColor: [241, 245, 249], textColor: COLOR_DARK },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 42 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 22, halign: 'right' },
+          5: { cellWidth: 24, halign: 'right' },
+          6: { cellWidth: 20, halign: 'right' },
+          7: { cellWidth: 20, halign: 'right' },
+          8: { cellWidth: 20, halign: 'right' },
+          9: { cellWidth: 26 },
+          10: { cellWidth: 28 }
+        },
+        didParseCell: (hookData) => {
+          if (hookData.section === 'body') {
+            const r = data.cobros[hookData.row.index];
+            if (r?.tipo === 'SEGURO') {
+              hookData.cell.styles.fillColor = [240, 249, 255];
+            }
+          }
+        }
+      });
+
+      doc.save(`Cierre_Caja_${mes}.pdf`);
+
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  };
+
 });
