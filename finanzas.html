@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finanzas - Global Motriz</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+
+    <!-- ============================================================
+         SUB-TABS NAV
+    ============================================================ -->
+    <div class="subtabs-nav">
+      <button class="subtab-btn active" data-tab="caja-chica">Caja Chica</button>
+      <button class="subtab-btn" data-tab="cierre-caja">Cierre de Caja</button>
+      <button class="subtab-btn" disabled title="Próximamente">— Próximamente</button>
+      <button class="subtab-btn" disabled title="Próximamente">— Próximamente</button>
+    </div>
+
+    <!-- ============================================================
+         PANEL 1: CAJA CHICA
+    ============================================================ -->
+    <div id="panel-caja-chica" class="subtab-panel active">
+
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Caja Chica</h2>
+      </div>
+
+      <!-- Toggle tipo -->
+      <div class="caja-toggle">
+        <button class="btn-tipo active" data-tipo="GENERAL">General</button>
+        <button class="btn-tipo" data-tipo="COMBUSTIBLE">Combustible</button>
+      </div>
+
+      <!-- Balance cards -->
+      <div class="balance-card" id="balance-cards">
+        <div class="balance-box">
+          <h4>Saldo disponible</h4>
+          <div class="balance-amount" id="balance-saldo">—</div>
+          <div class="balance-limite" id="balance-limite">Límite: —</div>
+          <div class="balance-bar">
+            <div class="balance-bar-fill" id="balance-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="finanzas-actions">
+        <button class="btn-obs" onclick="modalRegistrarGasto()">+ Registrar Gasto</button>
+        <button class="btn-obs" onclick="modalReposicion()">Reposición</button>
+      </div>
+
+      <!-- Tabla historial -->
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo Doc</th>
+            <th>N° Doc</th>
+            <th>Proveedor</th>
+            <th>Concepto</th>
+            <th>IVA%</th>
+            <th>Base</th>
+            <th>IVA $</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-caja-chica">
+          <tr><td colspan="9">Cargando...</td></tr>
+        </tbody>
+      </table>
+
+    </div>
+
+    <!-- ============================================================
+         PANEL 2: CIERRE DE CAJA
+    ============================================================ -->
+    <div id="panel-cierre-caja" class="subtab-panel">
+
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Cierre de Caja</h2>
+      </div>
+
+      <!-- Selector de mes + botón -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+        <div class="mes-selector">
+          <label for="input-mes">Mes:</label>
+          <input type="month" id="input-mes">
+        </div>
+        <button class="btn-obs" onclick="modalRegistrarCobro()">+ Registrar Cobro</button>
+      </div>
+
+      <!-- Tabla cobros -->
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Ahorros</th>
+            <th>Transfer.</th>
+            <th>Cheques</th>
+            <th>Tarjeta</th>
+            <th>Efectivo</th>
+            <th>Factura N°</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-cierre"></tbody>
+        <tfoot>
+          <tr class="totales-row" id="fila-totales-cierre" style="display:none;">
+            <td colspan="3"><strong>TOTALES</strong></td>
+            <td id="tot-total">—</td>
+            <td id="tot-ahorros">—</td>
+            <td id="tot-transfer">—</td>
+            <td id="tot-cheques">—</td>
+            <td id="tot-tarjeta">—</td>
+            <td id="tot-efectivo">—</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+
+    </div>
+
+  </div>
+
+  <!-- JS -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/finanzas.js"></script>
+
+</body>
+</html>

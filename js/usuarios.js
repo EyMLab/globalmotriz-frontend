@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <option value="bodega">Bodega</option>
               <option value="asesor">Asesor</option>
               <option value="seguro">Seguro</option>
+              <option value="asistente_contable">Asistente Contable</option>
             </select>
           </div>
 
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <option value="bodega" ${rol === 'bodega' ? 'selected' : ''}>Bodega</option>
               <option value="asesor" ${rol === 'asesor' ? 'selected' : ''}>Asesor</option>
               <option value="seguro" ${rol === 'seguro' ? 'selected' : ''}>Seguro</option>
+              <option value="asistente_contable" ${rol === 'asistente_contable' ? 'selected' : ''}>Asistente Contable</option>
             </select>
           </div>
 

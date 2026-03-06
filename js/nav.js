@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pagina = "Facturas";
 
     if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
+    else if (window.location.pathname.includes("finanzas")) pagina = "Finanzas";
     else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
     else if (window.location.pathname.includes("inventario") || window.location.pathname.includes("historial")) {
         pagina = "Inventario";
@@ -33,6 +34,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Seguro solo puede ver Taller
     if (rol === 'seguro' && pagina !== 'Taller') {
       window.location.href = 'lpr.html';
+      return;
+    }
+
+    // Asistente contable solo puede ver Finanzas
+    if (rol === 'asistente_contable' && pagina !== 'Finanzas') {
+      window.location.href = 'finanzas.html';
       return;
     }
 
@@ -63,6 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>`
       : "";
 
+    const enlaceFinanzas = ['admin', 'asistente_contable'].includes(rol)
+      ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
+      : "";
+
     // ============================================
     // Renderizado del navbar
     // ============================================
@@ -80,6 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${enlaceInventario}
           ${enlaceCompras}
           ${enlaceLPR}
+          ${enlaceFinanzas}
           ${enlaceUsuarios}
         </nav>
 

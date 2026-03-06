@@ -408,7 +408,25 @@ document.addEventListener("DOMContentLoaded", () => {
   ====================================================== */
 
   window.verFotoGrande = (url, estacion, fecha) => {
-    window.open(url, '_blank');
+    Swal.fire({
+      imageUrl: url,
+      imageAlt: `Foto en ${estacion}`,
+      title: `Ingreso a ${estacion}`,
+      text: fecha,
+      footer: '<small>Clic en la imagen para verla en tamaño completo</small>',
+      width: 800,
+      padding: '1em',
+      background: '#fff',
+      backdrop: 'rgba(0,0,0,0.8)',
+      zIndex: Z_INDEX_ALERTA,
+      didOpen: () => {
+        const img = Swal.getPopup().querySelector('.swal2-image');
+        if (img) {
+          img.style.cursor = 'pointer';
+          img.addEventListener('click', () => window.open(url, '_blank'));
+        }
+      }
+    });
   };
 
   window.editarPlaca = async (placaActual) => {
