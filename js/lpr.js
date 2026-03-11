@@ -306,10 +306,19 @@ document.addEventListener("DOMContentLoaded", () => {
         </button>`
       : "";
 
+    const btnEliminar = rolUsuario === 'admin'
+      ? `<button onclick="eliminarPlaca('${veh.placa}')"
+                style="background:none; border:1px solid #dc3545; color:#dc3545; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
+                title="Eliminar vehiculo del taller">
+          ELIMINAR
+        </button>`
+      : "";
+
     modalPlaca.innerHTML = `
       <div style="display:flex; align-items:center; gap:15px;">
         <span>${veh.placa}</span>
         ${btnEditar}
+        ${btnEliminar}
       </div>
     `;
 
@@ -475,6 +484,36 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         Swal.fire({ title: 'Error', text: 'Fallo de conexión', icon: 'error', zIndex: Z_INDEX_ALERTA });
       }
+    }
+  };
+
+  window.eliminarPlaca = async (placa) => {
+    const confirm = await Swal.fire({
+      title: 'Eliminar vehiculo',
+      html: `Vas a eliminar <strong>${placa}</strong> del taller.<br>Se borrara toda su sesion activa.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      confirmButtonText: 'Si, eliminar',
+      cancelButtonText: 'Cancelar',
+      zIndex: Z_INDEX_ALERTA
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await apiFetch(`/lpr/eliminar/${placa}`, { method: 'DELETE' });
+      if (res && res.ok) {
+        await Swal.fire({ title: 'Eliminado', text: `${placa} fue eliminado del taller`, icon: 'success', zIndex: Z_INDEX_ALERTA });
+        cerrarTodosLosModales();
+        pausaLPR = false;
+        cargarLPR();
+      } else {
+        const data = await safeJson(res);
+        Swal.fire({ title: 'Error', text: data?.error || 'No se pudo eliminar', icon: 'error', zIndex: Z_INDEX_ALERTA });
+      }
+    } catch (err) {
+      Swal.fire({ title: 'Error', text: 'Fallo de conexion', icon: 'error', zIndex: Z_INDEX_ALERTA });
     }
   };
 
