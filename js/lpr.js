@@ -115,6 +115,8 @@ document.addEventListener("DOMContentLoaded", () => {
     header.innerHTML = `<span class="strip-title">${est.estacion}</span><span class="kanban-count">${count}</span>`;
     section.appendChild(header);
 
+    section.dataset.estacion = est.estacion;
+
     const cards = document.createElement("div");
     cards.className = "strip-cards";
 
@@ -124,6 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
       est.vehiculos.forEach(v => {
         const pill = document.createElement("div");
         pill.className = "strip-card";
+        pill.dataset.placa = v.placa;
+        if (rolUsuario === 'admin') pill.draggable = true;
         pill.innerHTML = `
           <span class="placa">${v.placa}</span>
           <span class="time">${formatTime(v.segundos_total)}</span>
@@ -142,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     col.className = "kanban-column";
     col.style.borderTop = `5px solid ${est.color}`;
     col.style.background = est.color + "10";
+    col.dataset.estacion = est.estacion;
 
     const count = est.vehiculos.length;
     col.innerHTML = `
@@ -154,6 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
     est.vehiculos.forEach(v => {
       const card = document.createElement("div");
       card.className = "vehicle-card";
+      card.dataset.placa = v.placa;
+      if (rolUsuario === 'admin') card.draggable = true;
 
       const puestoUI = formatPuestoUI(v.puesto);
       const puestoHtml = puestoUI
@@ -231,8 +238,70 @@ document.addEventListener("DOMContentLoaded", () => {
         `Sincronizado: ${new Date(data.ultima_actualizacion).toLocaleTimeString("es-EC")}`;
     }
 
+    // Drag and drop para admin
+    configurarDragAndDrop();
+
     // Reaplicar filtro de búsqueda tras cada actualización del kanban
     filtrarKanban(terminoBusqueda);
+  }
+
+  function configurarDragAndDrop() {
+    if (rolUsuario !== 'admin') return;
+
+    document.querySelectorAll('.vehicle-card[draggable], .strip-card[draggable]').forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', card.dataset.placa);
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('dragging');
+        pausaLPR = true;
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+        setTimeout(() => { pausaLPR = false; }, 500);
+      });
+    });
+
+    document.querySelectorAll('.kanban-column[data-estacion], .strip-section[data-estacion]').forEach(zone => {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        zone.classList.add('drop-highlight');
+      });
+      zone.addEventListener('dragleave', (e) => {
+        if (!zone.contains(e.relatedTarget)) {
+          zone.classList.remove('drop-highlight');
+        }
+      });
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        zone.classList.remove('drop-highlight');
+        const placa = e.dataTransfer.getData('text/plain');
+        const estacionDestino = zone.dataset.estacion;
+        if (!placa || !estacionDestino) return;
+        await moverVehiculo(placa, estacionDestino);
+      });
+    });
+  }
+
+  async function moverVehiculo(placa, estacionDestino) {
+    try {
+      const res = await apiFetch('/lpr/mover', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placa, estacionDestino })
+      });
+      if (res && res.ok) {
+        cargarLPR();
+      } else {
+        const data = await safeJson(res);
+        Swal.fire({ title: 'Error', text: data?.error || 'No se pudo mover', icon: 'error', zIndex: Z_INDEX_ALERTA });
+      }
+    } catch (err) {
+      Swal.fire({ title: 'Error', text: 'Fallo de conexion', icon: 'error', zIndex: Z_INDEX_ALERTA });
+    } finally {
+      pausaLPR = false;
+    }
   }
 
   function filtrarKanban(texto) {
