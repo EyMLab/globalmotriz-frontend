@@ -602,126 +602,120 @@ table.usuarios-table td {
 
 /* ── Modal vehiculo card ── */
 .modal-vehiculo-card {
-  width: 460px !important;
-  padding: 28px 24px !important;
+  width: 440px !important;
+  padding: 24px !important;
 }
 .mv-placa-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .mv-placa-row .mv-placa {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 1px;
   color: #1e293b;
 }
 .mv-placa-row button {
-  font-size: 0.75rem !important;
+  font-size: 0.72rem !important;
   padding: 3px 10px !important;
   border-radius: 4px !important;
 }
-.mv-stats {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.mv-stat-box {
-  flex: 1;
-  background: #f1f5f9;
+/* Hero: estación actual destacada */
+.mv-hero {
   border-radius: 10px;
-  padding: 12px 10px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.mv-stat-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #64748b;
-  font-weight: 600;
-}
-.mv-stat-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-.mv-section-title {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #64748b;
-  margin: 0 0 12px 0;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #e2e8f0;
-}
-.mv-historial {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-bottom: 16px;
-}
-.mv-hist-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0;
-  position: relative;
-}
-.mv-hist-item:not(:last-child) {
-  border-bottom: 1px solid #f1f5f9;
-}
-.mv-hist-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 5px;
-  flex-shrink: 0;
-}
-.mv-hist-body {
-  flex: 1;
-  min-width: 0;
-}
-.mv-hist-est {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #1e293b;
-}
-.mv-hist-puesto {
-  font-weight: 400;
-  color: #64748b;
-  font-size: 0.8rem;
-  margin-left: 4px;
-}
-.mv-hist-fecha {
-  font-size: 0.78rem;
-  color: #94a3b8;
-  margin-top: 2px;
-}
-.mv-hist-right {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  color: #fff;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
+}
+.mv-hero-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
-.mv-hist-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 12px;
-  color: #fff;
+.mv-hero-text {
+  flex: 1;
 }
-.mv-hist-foto {
+.mv-hero-estacion {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.mv-hero-detalle {
+  font-size: 0.82rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.mv-total {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 0 0 14px 0;
+  text-align: center;
+}
+.mv-total strong {
+  color: #1e293b;
+  font-size: 1rem;
+}
+.mv-section-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #94a3b8;
+  margin: 0 0 10px 0;
+  font-weight: 600;
+}
+/* Recorrido: chips con flechas */
+.mv-recorrido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.mv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+}
+.mv-chip-name {
+  line-height: 1;
+}
+.mv-chip-time {
+  font-weight: 400;
+  opacity: 0.85;
+  font-size: 0.7rem;
+}
+.mv-chip-foto {
   cursor: pointer;
-  font-size: 1.1rem;
-  opacity: 0.7;
+  font-size: 0.85rem;
+  opacity: 0.8;
   transition: opacity 0.15s;
 }
-.mv-hist-foto:hover {
+.mv-chip-foto:hover {
   opacity: 1;
+}
+.mv-chip-arrow {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 #btn-historial-completo {
   margin-top: 4px;

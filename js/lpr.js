@@ -352,8 +352,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ====================================================== */
   const modalVehiculo = document.getElementById("modal-vehiculo");
   const modalPlaca = document.getElementById("modal-placa");
-  const modalEstacion = document.getElementById("modal-estacion");
-  const modalTiempoEst = document.getElementById("modal-tiempo-estacion");
   const modalTiempoTotal = document.getElementById("modal-tiempo-total");
   const modalHistorial = document.getElementById("modal-historial");
 
@@ -380,22 +378,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modalPlaca.innerHTML = `<span class="mv-placa">${veh.placa}</span>${btnEditar}${btnEliminar}`;
 
+    // Hero: estación actual con color de fondo
     const puestoUI = formatPuestoUI(veh.puesto);
-    const infoEstacion = puestoUI ? `${est.estacion} (${puestoUI})` : est.estacion;
     const estColor = est.color || '#64748b';
-    modalEstacion.innerHTML = `<span style="color:${estColor};">${infoEstacion}</span>`;
-    document.getElementById('mv-stat-estacion').style.borderBottom = `3px solid ${estColor}`;
+    const heroEl = document.getElementById('mv-hero');
+    const detalle = puestoUI ? `${puestoUI} \u00b7 ` : '';
+    heroEl.style.background = estColor;
+    heroEl.innerHTML = `
+      <div class="mv-hero-text">
+        <div class="mv-hero-estacion">${est.estacion}</div>
+        <div class="mv-hero-detalle">${detalle}Hace ${formatTime(veh.segundos_estacion)}</div>
+      </div>`;
 
-    modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
-    modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:12px 0;">Cargando...</p>';
+    modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:8px 0;">Cargando...</p>';
 
     modalVehiculo.style.display = "flex";
 
     try {
       const res = await apiFetch(`/lpr/historial/${veh.placa}`);
       if (!res || !res.ok) {
-        modalHistorial.innerHTML = '<li style="color:red;">Error cargando historial</li>';
+        modalHistorial.innerHTML = '<p style="color:#ef4444;text-align:center;">Error cargando</p>';
         return;
       }
 
@@ -403,10 +406,12 @@ document.addEventListener("DOMContentLoaded", () => {
       modalHistorial.innerHTML = "";
 
       if (!data || !data.historial || data.historial.length === 0) {
-        modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;">Sin movimientos recientes</p>';
+        modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;">Sin movimientos</p>';
         return;
       }
 
+      // Agrupar por estación manteniendo orden cronológico de primera aparición
+      const orden = [];
       const mapaEstaciones = new Map();
       for (const t of data.historial) {
         const key = t.estacion;
@@ -414,53 +419,41 @@ document.addEventListener("DOMContentLoaded", () => {
         if (mapaEstaciones.has(key)) {
           const e = mapaEstaciones.get(key);
           e.total_segundos += seg;
-          e.ultima_inicio = t.inicio;
-          e.puesto = t.puesto;
           if (!e.foto_url && t.foto_url) e.foto_url = t.foto_url;
+          e.ultima_inicio = t.inicio;
         } else {
-          mapaEstaciones.set(key, {
-            estacion: t.estacion,
-            total_segundos: seg,
-            ultima_inicio: t.inicio,
-            foto_url: t.foto_url,
-            puesto: t.puesto
-          });
+          const entry = { estacion: t.estacion, total_segundos: seg, foto_url: t.foto_url, ultima_inicio: t.inicio };
+          mapaEstaciones.set(key, entry);
+          orden.push(entry);
         }
       }
 
-      Array.from(mapaEstaciones.values())
-        .sort((a, b) => new Date(b.ultima_inicio) - new Date(a.ultima_inicio))
-        .slice(0, 5)
-        .forEach(h => {
-          const color = getColorEstacion(h.estacion);
-          const fechaLocal = formatFecha(h.ultima_inicio);
-          const puestoHistUI = formatPuestoUI(h.puesto);
-          const txtPuesto = puestoHistUI ? `<span class="mv-hist-puesto">[${puestoHistUI}]</span>` : "";
+      // Chips con flechas: ENTRADA → ENDEREZADA → PATIO → PINTURA
+      orden.forEach((h, i) => {
+        if (i > 0) {
+          const arrow = document.createElement("span");
+          arrow.className = "mv-chip-arrow";
+          arrow.textContent = "\u2192";
+          modalHistorial.appendChild(arrow);
+        }
+        const color = getColorEstacion(h.estacion);
+        const chip = document.createElement("span");
+        chip.className = "mv-chip";
+        chip.style.background = color;
 
-          const row = document.createElement("div");
-          row.className = "mv-hist-item";
+        let fotoHtml = '';
+        if (h.foto_url) {
+          const fecha = formatFecha(h.ultima_inicio);
+          fotoHtml = `<span class="mv-chip-foto" onclick="event.stopPropagation();verFotoGrande('${h.foto_url}','${h.estacion}','${fecha}')">\ud83d\udcf7</span>`;
+        }
 
-          let fotoBtn = '';
-          if (h.foto_url) {
-            fotoBtn = `<span class="mv-hist-foto" onclick="verFotoGrande('${h.foto_url}','${h.estacion}','${fechaLocal}')">\ud83d\uddbc\ufe0f</span>`;
-          }
-
-          row.innerHTML = `
-            <span class="mv-hist-dot" style="background:${color};"></span>
-            <div class="mv-hist-body">
-              <div><span class="mv-hist-est">${h.estacion}</span>${txtPuesto}</div>
-              <div class="mv-hist-fecha">${fechaLocal}</div>
-            </div>
-            <div class="mv-hist-right">
-              <span class="mv-hist-badge" style="background:${color};">${formatTime(h.total_segundos)}</span>
-              ${fotoBtn}
-            </div>`;
-          modalHistorial.appendChild(row);
-        });
+        chip.innerHTML = `<span class="mv-chip-name">${h.estacion}</span><span class="mv-chip-time">${formatTime(h.total_segundos)}</span>${fotoHtml}`;
+        modalHistorial.appendChild(chip);
+      });
 
     } catch (err) {
-      console.error("❌ Error historial", err);
-      modalHistorial.innerHTML = '<li style="color:red;">Error de conexión</li>';
+      console.error("Error historial", err);
+      modalHistorial.innerHTML = '<p style="color:#ef4444;text-align:center;">Error de conexi\u00f3n</p>';
     }
   }
 
