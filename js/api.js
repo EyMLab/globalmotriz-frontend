@@ -26,6 +26,7 @@ async function apiFetch(path, options = {}) {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers || {})
     }
   });
