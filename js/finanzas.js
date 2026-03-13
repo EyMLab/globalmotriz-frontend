@@ -13,6 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let tipoCajaActual = 'GENERAL';
   const LIMITES = { GENERAL: 150, COMBUSTIBLE: 100 };
 
+  // Helper: formatea "YYYY-MM-DD" sin bug de timezone
+  function fmtFecha(str) {
+    if (!str) return '—';
+    const [y, m, d] = str.split('T')[0].split('-');
+    return `${parseInt(d)}/${parseInt(m)}/${y}`;
+  }
+
   // =========================================================
   // Tab switching
   // =========================================================
@@ -102,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     tbody.innerHTML = historial.map(r => {
-      const fecha = new Date(r.fecha).toLocaleDateString('es-EC');
+      const fecha = fmtFecha(r.fecha);
       const esRepo = r.es_reposicion;
       return `<tr style="${esRepo ? 'background:#eff6ff;' : ''}">
         <td>${fecha}</td>
@@ -315,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     tbody.innerHTML = cobros.map(r => {
-      const fecha = new Date(r.fecha).toLocaleDateString('es-EC');
+      const fecha = fmtFecha(r.fecha);
       return `<tr>
         <td>${fecha}</td>
         <td><span class="badge-estado ${r.tipo === 'SEGURO' ? 'badge-pendiente' : 'badge-finalizado'}">${r.tipo}</span></td>
@@ -600,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const marginR = 14;
 
       const fechaDesde = data.fecha_desde
-        ? new Date(data.fecha_desde).toLocaleDateString('es-EC')
+        ? fmtFecha(data.fecha_desde)
         : 'Inicio';
       const hoyStr = new Date().toLocaleDateString('es-EC');
 
@@ -666,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Tabla
       const tableBody = data.registros.map(r => {
-        const fecha = new Date(r.fecha).toLocaleDateString('es-EC');
+        const fecha = fmtFecha(r.fecha);
         if (r.es_reposicion) {
           return [fecha, 'REPOSICIÓN', '', '', '', '—', '—', '—', `$${parseFloat(r.total).toFixed(2)}`];
         }
@@ -794,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Tabla
       const tableBody = data.cobros.map(r => [
-        new Date(r.fecha).toLocaleDateString('es-EC'),
+        fmtFecha(r.fecha),
         r.tipo,
         r.cliente,
         `$${parseFloat(r.total).toFixed(2)}`,
