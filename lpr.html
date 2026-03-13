@@ -64,19 +64,30 @@
 
   <!-- ================= MODAL VEHÍCULO ================= -->
   <div id="modal-vehiculo" class="modal-vehiculo" style="display:none;">
-    <div class="modal-content">
+    <div class="modal-content modal-vehiculo-card">
       <span id="modal-close" class="close">&times;</span>
 
-      <h3 id="modal-placa"></h3>
+      <div id="modal-placa" class="mv-placa-row"></div>
 
-      <p><b>Estación actual:</b> <span id="modal-estacion"></span></p>
-      <p><b>Tiempo en estación:</b> <span id="modal-tiempo-estacion"></span></p>
-      <p><b>Tiempo total en taller:</b> <span id="modal-tiempo-total"></span></p>
+      <div class="mv-stats">
+        <div class="mv-stat-box" id="mv-stat-estacion">
+          <span class="mv-stat-label">Estación actual</span>
+          <span class="mv-stat-value" id="modal-estacion"></span>
+        </div>
+        <div class="mv-stat-box">
+          <span class="mv-stat-label">En estación</span>
+          <span class="mv-stat-value" id="modal-tiempo-estacion"></span>
+        </div>
+        <div class="mv-stat-box">
+          <span class="mv-stat-label">Total en taller</span>
+          <span class="mv-stat-value" id="modal-tiempo-total"></span>
+        </div>
+      </div>
 
-      <h4>Historial reciente</h4>
-      <ul id="modal-historial"></ul>
+      <h4 class="mv-section-title">Recorrido reciente</h4>
+      <div id="modal-historial" class="mv-historial"></div>
 
-      <button id="btn-historial-completo" class="btn-nav" style="margin-top:15px;">
+      <button id="btn-historial-completo" class="btn-nav">
         Ver historial completo
       </button>
     </div>

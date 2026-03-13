@@ -369,36 +369,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const btnEditar = rolUsuario === 'admin'
       ? `<button onclick="editarPlaca('${veh.placa}')"
-                style="background:none; border:1px solid #007bff; color:#007bff; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
-                title="Corregir Placa">
-          EDITAR PLACA
-        </button>`
+                style="background:none; border:1px solid #007bff; color:#007bff; cursor:pointer; font-weight:bold;"
+                title="Corregir Placa">EDITAR</button>`
       : "";
-
     const btnEliminar = rolUsuario === 'admin'
       ? `<button onclick="eliminarPlaca('${veh.placa}')"
-                style="background:none; border:1px solid #dc3545; color:#dc3545; cursor:pointer; font-size:0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
-                title="Eliminar vehiculo del taller">
-          ELIMINAR
-        </button>`
+                style="background:none; border:1px solid #dc3545; color:#dc3545; cursor:pointer; font-weight:bold;"
+                title="Eliminar vehiculo">ELIMINAR</button>`
       : "";
 
-    modalPlaca.innerHTML = `
-      <div style="display:flex; align-items:center; gap:15px;">
-        <span>${veh.placa}</span>
-        ${btnEditar}
-        ${btnEliminar}
-      </div>
-    `;
+    modalPlaca.innerHTML = `<span class="mv-placa">${veh.placa}</span>${btnEditar}${btnEliminar}`;
 
-    // ✅ Mostrar puesto bonito en el modal
     const puestoUI = formatPuestoUI(veh.puesto);
     const infoEstacion = puestoUI ? `${est.estacion} (${puestoUI})` : est.estacion;
-    modalEstacion.textContent = infoEstacion;
+    const estColor = est.color || '#64748b';
+    modalEstacion.innerHTML = `<span style="color:${estColor};">${infoEstacion}</span>`;
+    document.getElementById('mv-stat-estacion').style.borderBottom = `3px solid ${estColor}`;
 
     modalTiempoEst.textContent = formatTime(veh.segundos_estacion);
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
-    modalHistorial.innerHTML = '<li style="color:gray;">Cargando historial...</li>';
+    modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:12px 0;">Cargando...</p>';
 
     modalVehiculo.style.display = "flex";
 
@@ -413,12 +403,10 @@ document.addEventListener("DOMContentLoaded", () => {
       modalHistorial.innerHTML = "";
 
       if (!data || !data.historial || data.historial.length === 0) {
-        modalHistorial.innerHTML = "<li>Sin movimientos recientes</li>";
+        modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;">Sin movimientos recientes</p>';
         return;
       }
 
-      // Agrupar TODAS las visitas a la misma estación (sin importar el orden)
-      // Acumular tiempo total por estación y guardar la visita más reciente
       const mapaEstaciones = new Map();
       for (const t of data.historial) {
         const key = t.estacion;
@@ -426,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (mapaEstaciones.has(key)) {
           const e = mapaEstaciones.get(key);
           e.total_segundos += seg;
-          e.ultima_inicio = t.inicio; // historial viene ordenado asc, el último es el más reciente
+          e.ultima_inicio = t.inicio;
           e.puesto = t.puesto;
           if (!e.foto_url && t.foto_url) e.foto_url = t.foto_url;
         } else {
@@ -440,35 +428,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Ordenar por última visita (más reciente primero) y mostrar las 5 estaciones únicas
       Array.from(mapaEstaciones.values())
         .sort((a, b) => new Date(b.ultima_inicio) - new Date(a.ultima_inicio))
         .slice(0, 5)
         .forEach(h => {
-          const li = document.createElement("li");
+          const color = getColorEstacion(h.estacion);
           const fechaLocal = formatFecha(h.ultima_inicio);
-
           const puestoHistUI = formatPuestoUI(h.puesto);
-          const txtPuesto = puestoHistUI ? ` [${puestoHistUI}]` : "";
+          const txtPuesto = puestoHistUI ? `<span class="mv-hist-puesto">[${puestoHistUI}]</span>` : "";
 
-          li.innerHTML = `<strong>${h.estacion}${txtPuesto}</strong> - ${fechaLocal} <br><small>(${formatTime(h.total_segundos)})</small>`;
+          const row = document.createElement("div");
+          row.className = "mv-hist-item";
 
+          let fotoBtn = '';
           if (h.foto_url) {
-            const btnCamara = document.createElement("button");
-            btnCamara.innerHTML = "VER FOTO";
-            btnCamara.style.marginLeft = "10px";
-            btnCamara.style.cursor = "pointer";
-            btnCamara.style.border = "1px solid #28a745";
-            btnCamara.style.color = "#28a745";
-            btnCamara.style.fontWeight = "bold";
-            btnCamara.style.borderRadius = "4px";
-            btnCamara.style.padding = "2px 8px";
-            btnCamara.style.backgroundColor = "white";
-
-            btnCamara.onclick = () => verFotoGrande(h.foto_url, h.estacion, fechaLocal);
-            li.appendChild(btnCamara);
+            fotoBtn = `<span class="mv-hist-foto" onclick="verFotoGrande('${h.foto_url}','${h.estacion}','${fechaLocal}')">\ud83d\uddbc\ufe0f</span>`;
           }
-          modalHistorial.appendChild(li);
+
+          row.innerHTML = `
+            <span class="mv-hist-dot" style="background:${color};"></span>
+            <div class="mv-hist-body">
+              <div><span class="mv-hist-est">${h.estacion}</span>${txtPuesto}</div>
+              <div class="mv-hist-fecha">${fechaLocal}</div>
+            </div>
+            <div class="mv-hist-right">
+              <span class="mv-hist-badge" style="background:${color};">${formatTime(h.total_segundos)}</span>
+              ${fotoBtn}
+            </div>`;
+          modalHistorial.appendChild(row);
         });
 
     } catch (err) {
