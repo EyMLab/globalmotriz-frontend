@@ -419,6 +419,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      // Forzar ENTRADA al inicio si tiene el mismo timestamp que otro
+      const iEntrada = orden.findIndex(h => h.est === 'ENTRADA');
+      if (iEntrada > 0) {
+        const entradaFecha = new Date(orden[iEntrada].fecha).getTime();
+        const primeraFecha = new Date(orden[0].fecha).getTime();
+        if (entradaFecha <= primeraFecha) {
+          const [e] = orden.splice(iEntrada, 1);
+          orden.unshift(e);
+        }
+      }
+
       // Filtrar 0m en estaciones de trabajo, mostrar más reciente arriba
       const filtrado = orden.filter(h => h.total > 0 || ESTACIONES_PASO.includes(h.est));
       filtrado.reverse();
