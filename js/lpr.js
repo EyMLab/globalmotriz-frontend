@@ -401,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!data || !data.historial || data.historial.length === 0) return;
 
-      // Agrupar por estación, orden cronológico
+      // Agrupar por estación, orden cronológico, guardar primera fecha
       const orden = [];
       const mapa = new Map();
       for (const t of data.historial) {
@@ -411,40 +411,32 @@ document.addEventListener("DOMContentLoaded", () => {
           const e = mapa.get(key);
           e.total += seg;
           if (!e.foto && t.foto_url) e.foto = t.foto_url;
-          e.inicio = t.inicio;
         } else {
-          const entry = { est: t.estacion, total: seg, foto: t.foto_url, inicio: t.inicio };
+          const entry = { est: t.estacion, total: seg, foto: t.foto_url, fecha: t.inicio };
           mapa.set(key, entry);
           orden.push(entry);
         }
       }
 
-      // Texto plano: ENTRADA → ENDEREZADA (11h) → PATIO → PINTURA (3h)
-      const currentEst = est.estacion;
-      orden.forEach((h, i) => {
-        if (i > 0) {
-          const arrow = document.createElement("span");
-          arrow.className = "mv-step-arrow";
-          arrow.textContent = "\u2192";
-          modalHistorial.appendChild(arrow);
-        }
-
+      // Lista vertical: punto color + nombre + fecha + tiempo
+      orden.forEach(h => {
         const color = getColorEstacion(h.est);
-        const step = document.createElement("span");
-        step.className = "mv-step";
-        if (h.est === currentEst) step.classList.add("mv-step-current");
-        step.style.color = color;
-        if (h.est === currentEst) step.style.borderColor = color;
+        const row = document.createElement("div");
+        row.className = "mv-row";
 
-        const time = h.total > 0 ? ` <span class="mv-step-time">${formatTime(h.total)}</span>` : '';
-        let foto = '';
+        let fotoHtml = '';
         if (h.foto) {
-          const f = formatFecha(h.inicio);
-          foto = ` <span class="mv-step-foto" onclick="verFotoGrande('${h.foto}','${h.est}','${f}')">\ud83d\udcf7</span>`;
+          const f = formatFecha(h.fecha);
+          fotoHtml = `<span class="mv-row-foto" onclick="verFotoGrande('${h.foto}','${h.est}','${f}')">\ud83d\udcf7</span>`;
         }
 
-        step.innerHTML = `${h.est}${time}${foto}`;
-        modalHistorial.appendChild(step);
+        row.innerHTML = `
+          <span class="mv-row-dot" style="background:${color};"></span>
+          <span class="mv-row-name">${h.est}</span>
+          <span class="mv-row-fecha">${formatFecha(h.fecha)}</span>
+          <span class="mv-row-time">${formatTime(h.total)}</span>
+          ${fotoHtml}`;
+        modalHistorial.appendChild(row);
       });
 
     } catch (err) {

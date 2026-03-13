@@ -628,7 +628,6 @@ table.usuarios-table td {
 .mv-ubicacion-est {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1e293b;
 }
 .mv-ubicacion-det {
   font-size: 0.85rem;
@@ -650,34 +649,49 @@ table.usuarios-table td {
 }
 .mv-recorrido {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 2px;
+  flex-direction: column;
+  gap: 0;
   margin-bottom: 18px;
-  line-height: 1.8;
 }
-.mv-step {
-  font-size: 0.82rem;
+.mv-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.mv-row:last-child { border-bottom: none; }
+.mv-row-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.mv-row-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #1e293b;
+  min-width: 0;
+}
+.mv-row-fecha {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  padding-left: 8px;
+}
+.mv-row-time {
+  font-size: 0.75rem;
+  color: #64748b;
   font-weight: 600;
   white-space: nowrap;
+  padding-left: 8px;
 }
-.mv-step-current {
-  border-bottom: 2px solid;
-}
-.mv-step-time {
-  font-weight: 400;
-  color: #94a3b8;
-  font-size: 0.75rem;
-}
-.mv-step-foto {
+.mv-row-foto {
   cursor: pointer;
   font-size: 0.8rem;
-  vertical-align: middle;
-}
-.mv-step-arrow {
-  color: #cbd5e1;
-  font-size: 0.8rem;
-  margin: 0 2px;
+  padding-left: 6px;
+  flex-shrink: 0;
 }
 #btn-historial-completo {
   margin-top: 0;
