@@ -62,6 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarCierreCaja(inputMes.value);
   });
 
+  // Click en observaciones largas → mostrar texto completo
+  document.getElementById('tabla-cierre').addEventListener('click', e => {
+    const td = e.target.closest('td.obs-expandible');
+    if (!td) return;
+    Swal.fire({ title: 'Observaciones', text: td.dataset.obs, confirmButtonText: 'Cerrar', width: 500 });
+  });
+
   // =========================================================
   // Carga inicial
   // =========================================================
@@ -334,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>$${parseFloat(r.pago_tarjeta).toFixed(2)}</td>
         <td>$${parseFloat(r.pago_efectivo).toFixed(2)}</td>
         <td>${r.factura_num || '—'}</td>
-        <td title="${r.observaciones || ''}">${r.observaciones ? r.observaciones.substring(0, 20) + (r.observaciones.length > 20 ? '…' : '') : '—'}</td>
+        <td class="${r.observaciones ? 'obs-expandible' : ''}" data-obs="${(r.observaciones || '').replace(/"/g, '&quot;')}" style="${r.observaciones ? 'cursor:pointer;' : ''}" title="${r.observaciones || ''}">${r.observaciones ? r.observaciones.substring(0, 30) + (r.observaciones.length > 30 ? '…' : '') : '—'}</td>
       </tr>`;
     }).join('');
 
@@ -419,19 +426,19 @@ document.addEventListener('DOMContentLoaded', () => {
         <div id="cc-cuadre" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 14px;margin-top:6px;font-size:0.88rem;">
           Cuadre: <strong id="cc-cuadre-txt">—</strong>
         </div>
-        <div class="form-row" style="margin-top:8px;">
-          <div class="form-group">
+        <div style="margin-top:8px;">
+          <div class="form-group" style="width:100%;">
             <label>N° Factura/OT</label>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
-              <select id="cc-doc-tipo" class="swal2-select" style="width:auto;min-width:130px;flex:0 0 auto;margin:0;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="cc-doc-tipo" class="swal2-select" style="flex:0 0 150px;margin:0;">
                 <option value="F">Factura (F-)</option>
                 <option value="OT">Orden (OT-)</option>
               </select>
-              <span id="cc-doc-prefijo" style="font-weight:700;color:#1E5570;white-space:nowrap;">F-</span>
+              <span id="cc-doc-prefijo" style="font-weight:700;color:#1E5570;white-space:nowrap;min-width:28px;">F-</span>
               <input id="cc-factura-num" class="swal2-input" style="flex:1;margin:0;" placeholder="001-001-000456">
             </div>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="width:100%;margin-top:8px;">
             <label>Observaciones</label>
             <input id="cc-obs" class="swal2-input" placeholder="Opcional">
           </div>
