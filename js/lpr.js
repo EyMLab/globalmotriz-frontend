@@ -590,7 +590,23 @@ document.addEventListener("DOMContentLoaded", () => {
       MODAL HISTORIAL COMPLETO (SOPORTE 5 COLUMNAS)
   ====================================================== */
   const modalHistComp = document.getElementById("modal-historial-completo");
-  const tablaHistComp = document.getElementById("tabla-historial-completo");
+  const timelineContainer = document.getElementById("timeline-historial-completo");
+
+  const COLORES_ESTACION = {
+    'ENTRADA': '#90a4ae',
+    'PATIO / ESPERA': '#42a5f5',
+    'ENDEREZADA': '#ffa726',
+    'PINTURA': '#ef5350',
+    'MEC\u00c1NICA': '#66bb6a',
+    'LAVADO': '#26a69a',
+    'ARMADO': '#ab47bc',
+    'PREPARACI\u00d3N': '#8d6e63',
+    'FUERA DEL TALLER': '#78909c',
+    'SALIDA': '#78909c'
+  };
+  function getColorEstacion(est) {
+    return COLORES_ESTACION[est] || '#66bb6a';
+  }
 
   document.getElementById("modal-historial-close").onclick = () => {
     cerrarTodosLosModales();
@@ -606,76 +622,77 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!resSesiones || !resSesiones.ok) return;
 
       const dataSesiones = await safeJson(resSesiones);
-      tablaHistComp.innerHTML = "";
+      timelineContainer.innerHTML = "";
 
       if (!dataSesiones || !dataSesiones.sesiones || dataSesiones.sesiones.length === 0) {
-        tablaHistComp.innerHTML = `<tr><td colspan="5">Sin historial</td></tr>`;
+        timelineContainer.innerHTML = '<p style="text-align:center;color:#999;">Sin historial</p>';
         modalHistComp.style.display = "flex";
         return;
       }
 
       for (const sesion of dataSesiones.sesiones) {
+        const seccion = document.createElement("div");
+        seccion.className = "timeline-sesion";
 
-        const trSesion = document.createElement("tr");
-        trSesion.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#e3f2fd' : '#f5f5f5';
-        trSesion.style.fontWeight = 'bold';
-
-        const estadoBadge = sesion.estado === 'ACTIVA'
-          ? '<span style="color: green;">🟢 ACTIVA</span>'
-          : '<span style="color: gray;">⚫ FINALIZADA</span>';
-
+        const esActiva = sesion.estado === 'ACTIVA';
         const entrada = formatFecha(sesion.fecha_entrada);
         const salida = sesion.fecha_salida ? formatFecha(sesion.fecha_salida) : 'En proceso';
         const tiempoTotal = sesion.segundos_total ? formatTime(sesion.segundos_total) : '-';
 
-        trSesion.innerHTML = `
-          <td colspan="5" style="padding: 12px 8px;">
-            ${estadoBadge} | Entrada: ${entrada} | Salida: ${salida} | Tiempo: ${tiempoTotal}
-          </td>
-        `;
-        tablaHistComp.appendChild(trSesion);
+        const header = document.createElement("div");
+        header.className = `timeline-header ${esActiva ? 'activa' : 'finalizada'}`;
+        header.innerHTML = `
+          <span>${esActiva ? '\ud83d\udfe2 ACTIVA' : '\u26ab FINALIZADA'}</span>
+          <span style="margin-left:auto;font-weight:400;font-size:12px;">
+            ${entrada} \u2192 ${salida} | ${tiempoTotal}
+          </span>`;
+        seccion.appendChild(header);
 
         const resTramos = await apiFetch(`/lpr/historial/${placa}?sesion_id=${sesion.sesion_id}`);
         if (resTramos && resTramos.ok) {
           const dataTramos = await safeJson(resTramos);
 
           if (dataTramos && dataTramos.historial && dataTramos.historial.length > 0) {
+            const items = document.createElement("div");
+            items.className = "timeline-items";
+
             dataTramos.historial.forEach(h => {
-              const tr = document.createElement("tr");
-              tr.style.backgroundColor = sesion.estado === 'ACTIVA' ? '#f1f8ff' : '#fafafa';
+              const color = getColorEstacion(h.estacion);
+              const item = document.createElement("div");
+              item.className = "timeline-item";
+              item.style.setProperty('--tl-color', color);
 
               const inicioLocal = formatFecha(h.inicio);
-              const finLocal = h.fin ? formatFecha(h.fin) : "Actual";
+              const finLocal = h.fin ? formatFecha(h.fin) : 'Actual';
+              const puestoUI = formatPuestoUI(h.puesto);
+              const puestoTxt = puestoUI ? `<span class="timeline-puesto">[${puestoUI}]</span>` : '';
 
-              // Enlace a foto
-              let fotoLink = h.foto_url
-                ? ` <span style="cursor:pointer; color:#28a745;" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">🖼️</span>`
-                : '';
+              let fotoHtml = '';
+              if (h.foto_url) {
+                fotoHtml = `<span class="timeline-foto" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">\ud83d\uddbc\ufe0f</span>`;
+              }
 
-              // ✅ Puesto bonito en tabla completa
-              const puestoUI = formatPuestoUI(h.puesto) || "-";
+              item.innerHTML = `
+                <div class="timeline-info">
+                  <div><span class="timeline-estacion">${h.estacion}</span>${puestoTxt}${fotoHtml}</div>
+                  <div class="timeline-fechas">${inicioLocal} \u2192 ${finLocal}</div>
+                </div>
+                <span class="timeline-badge" style="background:${color};">${formatTime(h.segundos_estacion)}</span>`;
 
-              tr.innerHTML = `
-                <td style="text-align:left; padding-left:20px;">↳ ${h.estacion} ${fotoLink}</td>
-                <td style="text-align:center;">${puestoUI}</td>
-                <td>${inicioLocal}</td>
-                <td>${finLocal}</td>
-                <td>${formatTime(h.segundos_estacion)}</td>
-              `;
-              tablaHistComp.appendChild(tr);
+              items.appendChild(item);
             });
+
+            seccion.appendChild(items);
           }
         }
 
-        const trSeparador = document.createElement("tr");
-        trSeparador.innerHTML = `<td colspan="5" style="height: 5px; background: white;"></td>`;
-        tablaHistComp.appendChild(trSeparador);
+        timelineContainer.appendChild(seccion);
       }
 
       modalHistComp.style.display = "flex";
 
     } catch (err) {
-      console.error("❌ Error historial completo", err);
+      console.error("Error historial completo", err);
     }
   }
 

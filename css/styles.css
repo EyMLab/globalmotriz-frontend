@@ -1081,6 +1081,107 @@ button.btn-obs:hover,
   padding: 2px 0;
 }
 
+/* ====================================================================
+   TIMELINE HISTORIAL
+====================================================================== */
+.timeline-sesion {
+  margin-bottom: 20px;
+}
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.timeline-header.activa {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.timeline-header.finalizada {
+  background: #f5f5f5;
+  color: #666;
+}
+.timeline-items {
+  position: relative;
+  padding-left: 28px;
+}
+.timeline-item {
+  position: relative;
+  padding: 8px 0 8px 22px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--tl-color, #ccc);
+  border-radius: 2px;
+}
+.timeline-item:last-child::before {
+  bottom: 50%;
+}
+.timeline-item::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 14px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--tl-color, #ccc);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--tl-color, #ccc);
+}
+.timeline-info {
+  flex: 1;
+  min-width: 0;
+}
+.timeline-estacion {
+  font-weight: 700;
+  font-size: 13px;
+  color: #333;
+}
+.timeline-puesto {
+  font-size: 11px;
+  color: #888;
+  margin-left: 6px;
+}
+.timeline-fechas {
+  font-size: 12px;
+  color: #777;
+  margin-top: 2px;
+}
+.timeline-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--tl-color, #999);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.timeline-foto {
+  cursor: pointer;
+  color: #28a745;
+  margin-left: 6px;
+  font-size: 14px;
+}
+.timeline-foto:hover {
+  opacity: 0.7;
+}
+
 /* Drag and Drop */
 .vehicle-card[draggable="true"],
 .strip-card[draggable="true"] {
