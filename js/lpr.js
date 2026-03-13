@@ -622,6 +622,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!resSesiones || !resSesiones.ok) return;
 
       const dataSesiones = await safeJson(resSesiones);
+      document.getElementById("timeline-titulo").textContent = `Historial completo \u2014 ${placa}`;
       timelineContainer.innerHTML = "";
 
       if (!dataSesiones || !dataSesiones.sesiones || dataSesiones.sesiones.length === 0) {
@@ -656,7 +657,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const items = document.createElement("div");
             items.className = "timeline-items";
 
+            const ESTACIONES_PASO = ['ENTRADA', 'PATIO / ESPERA', 'FUERA DEL TALLER'];
             dataTramos.historial.forEach(h => {
+              const segs = Number(h.segundos_estacion || 0);
+              if (segs === 0 && !ESTACIONES_PASO.includes(h.estacion)) return;
+
               const color = getColorEstacion(h.estacion);
               const item = document.createElement("div");
               item.className = "timeline-item";
