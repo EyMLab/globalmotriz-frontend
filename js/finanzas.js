@@ -957,8 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <select id="ded-modo" class="swal2-select" style="margin:0;">
               <option value="TARJETA">Tarjeta</option>
               <option value="TRANSFERENCIA">Transferencia</option>
-              <option value="CHEQUE">Cheque</option>
-              <option value="EFECTIVO">Efectivo</option>
+              <option value="DEPOSITO">Cheque</option>
             </select>
           </div>
         </div>
