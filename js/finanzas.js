@@ -890,6 +890,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   // DEDUCIBLES POR DEVOLVER
   // =========================================================
+  let _deduciblesData = [];
+
   async function cargarDeducibles() {
     const tbody = document.getElementById('tabla-deducibles');
     tbody.innerHTML = `<tr><td colspan="10">Cargando...</td></tr>`;
@@ -897,11 +899,38 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await apiFetch('/finanzas/deducibles');
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
-      renderTablaDeducibles(data.deducibles);
+      _deduciblesData = data.deducibles;
+      filtrarDeducibles();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="10">Error: ${err.message}</td></tr>`;
     }
   }
+
+  function filtrarDeducibles() {
+    const estado = document.getElementById('ded-filtro-estado')?.value || '';
+    const ot = (document.getElementById('ded-filtro-ot')?.value || '').toLowerCase().trim();
+    const aseg = (document.getElementById('ded-filtro-aseguradora')?.value || '').toLowerCase().trim();
+    const filtrados = _deduciblesData.filter(r => {
+      if (estado && r.estado !== estado) return false;
+      if (ot && !r.ot.toLowerCase().includes(ot)) return false;
+      if (aseg && !r.aseguradora.toLowerCase().includes(aseg)) return false;
+      return true;
+    });
+    renderTablaDeducibles(filtrados);
+  }
+
+  window.limpiarFiltrosDeducibles = function () {
+    document.getElementById('ded-filtro-estado').value = '';
+    document.getElementById('ded-filtro-ot').value = '';
+    document.getElementById('ded-filtro-aseguradora').value = '';
+    filtrarDeducibles();
+  };
+
+  // Listeners filtros
+  ['ded-filtro-estado', 'ded-filtro-ot', 'ded-filtro-aseguradora'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', filtrarDeducibles);
+    document.getElementById(id)?.addEventListener('change', filtrarDeducibles);
+  });
 
   function renderTablaDeducibles(registros) {
     const tbody = document.getElementById('tabla-deducibles');

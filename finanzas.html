@@ -151,6 +151,17 @@
         <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
       </div>
 
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+        <select id="ded-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
+          <option value="">Todos los estados</option>
+          <option value="PENDIENTE">⚠ Pendiente</option>
+          <option value="DEVUELTO">✓ Devuelto</option>
+        </select>
+        <input id="ded-filtro-ot" placeholder="Buscar OT..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:130px;">
+        <input id="ded-filtro-aseguradora" placeholder="Buscar aseguradora..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:180px;">
+        <button class="btn btn-obs" onclick="limpiarFiltrosDeducibles()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
+      </div>
+
       <div class="table-container">
         <table class="data-table">
           <thead>
