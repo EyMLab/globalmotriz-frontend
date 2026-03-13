@@ -576,15 +576,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const COLORES_ESTACION = {
     'ENTRADA': '#90a4ae',
-    'PATIO / ESPERA': '#42a5f5',
-    'ENDEREZADA': '#ffa726',
-    'PINTURA': '#ef5350',
-    'MEC\u00c1NICA': '#66bb6a',
-    'LAVADO': '#26a69a',
-    'ARMADO': '#ab47bc',
-    'PREPARACI\u00d3N': '#8d6e63',
-    'FUERA DEL TALLER': '#78909c',
-    'SALIDA': '#78909c'
+    'PATIO / ESPERA': '#3B82F6',
+    'ENDEREZADA': '#F59E0B',
+    'PINTURA': '#EF4444',
+    'MEC\u00c1NICA': '#10B981',
+    'LAVADO': '#06B6D4',
+    'ARMADO': '#F97316',
+    'PREPARACI\u00d3N': '#8B5CF6',
+    'FUERA DEL TALLER': '#64748B',
+    'SALIDA': '#64748B'
   };
   function getColorEstacion(est) {
     return COLORES_ESTACION[est] || '#66bb6a';
