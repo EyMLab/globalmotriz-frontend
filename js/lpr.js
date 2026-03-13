@@ -449,7 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="mv-row-dot" style="background:${color};"></span>
           <span class="mv-row-name">${h.est}</span>
           <span class="mv-row-fecha">${formatFecha(h.fecha)}</span>
-          <span class="mv-row-time">${formatTime(h.total)}</span>
+          <span class="mv-row-time">${(h.est === 'ENTRADA' || h.est === 'FUERA DEL TALLER') ? '' : formatTime(h.total)}</span>
           ${fotoHtml}`;
         modalHistorial.appendChild(row);
       });
