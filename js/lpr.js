@@ -378,82 +378,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modalPlaca.innerHTML = `<span class="mv-placa">${veh.placa}</span>${btnEditar}${btnEliminar}`;
 
-    // Hero: estación actual con color de fondo
+    // Ubicación actual
     const puestoUI = formatPuestoUI(veh.puesto);
-    const estColor = est.color || '#64748b';
-    const heroEl = document.getElementById('mv-hero');
-    const detalle = puestoUI ? `${puestoUI} \u00b7 ` : '';
-    heroEl.style.background = estColor;
-    heroEl.innerHTML = `
-      <div class="mv-hero-text">
-        <div class="mv-hero-estacion">${est.estacion}</div>
-        <div class="mv-hero-detalle">${detalle}Hace ${formatTime(veh.segundos_estacion)}</div>
-      </div>`;
+    const estColor = est.color || '#1e293b';
+    const ubEl = document.getElementById('mv-ubicacion');
+    const detTxt = puestoUI ? ` \u00b7 ${puestoUI}` : '';
+    ubEl.innerHTML = `
+      <div class="mv-ubicacion-est" style="color:${estColor};">${est.estacion}${detTxt}</div>
+      <div class="mv-ubicacion-det">${formatTime(veh.segundos_estacion)} en esta estaci\u00f3n</div>`;
 
     modalTiempoTotal.textContent = formatTime(veh.segundos_total);
-    modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:8px 0;">Cargando...</p>';
+    modalHistorial.innerHTML = '';
 
     modalVehiculo.style.display = "flex";
 
     try {
       const res = await apiFetch(`/lpr/historial/${veh.placa}`);
-      if (!res || !res.ok) {
-        modalHistorial.innerHTML = '<p style="color:#ef4444;text-align:center;">Error cargando</p>';
-        return;
-      }
+      if (!res || !res.ok) return;
 
       const data = await safeJson(res);
       modalHistorial.innerHTML = "";
 
-      if (!data || !data.historial || data.historial.length === 0) {
-        modalHistorial.innerHTML = '<p style="color:#94a3b8;text-align:center;">Sin movimientos</p>';
-        return;
-      }
+      if (!data || !data.historial || data.historial.length === 0) return;
 
-      // Agrupar por estación manteniendo orden cronológico de primera aparición
+      // Agrupar por estación, orden cronológico
       const orden = [];
-      const mapaEstaciones = new Map();
+      const mapa = new Map();
       for (const t of data.historial) {
         const key = t.estacion;
         const seg = Number(t.segundos_estacion || 0);
-        if (mapaEstaciones.has(key)) {
-          const e = mapaEstaciones.get(key);
-          e.total_segundos += seg;
-          if (!e.foto_url && t.foto_url) e.foto_url = t.foto_url;
-          e.ultima_inicio = t.inicio;
+        if (mapa.has(key)) {
+          const e = mapa.get(key);
+          e.total += seg;
+          if (!e.foto && t.foto_url) e.foto = t.foto_url;
+          e.inicio = t.inicio;
         } else {
-          const entry = { estacion: t.estacion, total_segundos: seg, foto_url: t.foto_url, ultima_inicio: t.inicio };
-          mapaEstaciones.set(key, entry);
+          const entry = { est: t.estacion, total: seg, foto: t.foto_url, inicio: t.inicio };
+          mapa.set(key, entry);
           orden.push(entry);
         }
       }
 
-      // Chips con flechas: ENTRADA → ENDEREZADA → PATIO → PINTURA
+      // Texto plano: ENTRADA → ENDEREZADA (11h) → PATIO → PINTURA (3h)
+      const currentEst = est.estacion;
       orden.forEach((h, i) => {
         if (i > 0) {
           const arrow = document.createElement("span");
-          arrow.className = "mv-chip-arrow";
+          arrow.className = "mv-step-arrow";
           arrow.textContent = "\u2192";
           modalHistorial.appendChild(arrow);
         }
-        const color = getColorEstacion(h.estacion);
-        const chip = document.createElement("span");
-        chip.className = "mv-chip";
-        chip.style.background = color;
 
-        let fotoHtml = '';
-        if (h.foto_url) {
-          const fecha = formatFecha(h.ultima_inicio);
-          fotoHtml = `<span class="mv-chip-foto" onclick="event.stopPropagation();verFotoGrande('${h.foto_url}','${h.estacion}','${fecha}')">\ud83d\udcf7</span>`;
+        const color = getColorEstacion(h.est);
+        const step = document.createElement("span");
+        step.className = "mv-step";
+        if (h.est === currentEst) step.classList.add("mv-step-current");
+        step.style.color = color;
+        if (h.est === currentEst) step.style.borderColor = color;
+
+        const time = h.total > 0 ? ` <span class="mv-step-time">${formatTime(h.total)}</span>` : '';
+        let foto = '';
+        if (h.foto) {
+          const f = formatFecha(h.inicio);
+          foto = ` <span class="mv-step-foto" onclick="verFotoGrande('${h.foto}','${h.est}','${f}')">\ud83d\udcf7</span>`;
         }
 
-        chip.innerHTML = `<span class="mv-chip-name">${h.estacion}</span><span class="mv-chip-time">${formatTime(h.total_segundos)}</span>${fotoHtml}`;
-        modalHistorial.appendChild(chip);
+        step.innerHTML = `${h.est}${time}${foto}`;
+        modalHistorial.appendChild(step);
       });
 
     } catch (err) {
       console.error("Error historial", err);
-      modalHistorial.innerHTML = '<p style="color:#ef4444;text-align:center;">Error de conexi\u00f3n</p>';
     }
   }
 
