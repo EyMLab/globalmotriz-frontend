@@ -401,40 +401,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!data || !data.historial || data.historial.length === 0) return;
 
-      // Agrupar por estación, orden cronológico, guardar primera fecha
-      const orden = [];
-      const mapa = new Map();
-      for (const t of data.historial) {
-        const key = t.estacion;
-        const seg = Number(t.segundos_estacion || 0);
-        if (mapa.has(key)) {
-          const e = mapa.get(key);
-          e.total += seg;
-          if (!e.foto && t.foto_url) e.foto = t.foto_url;
-        } else {
-          const entry = { est: t.estacion, total: seg, foto: t.foto_url, fecha: t.inicio };
-          mapa.set(key, entry);
-          orden.push(entry);
-        }
-      }
+      // Últimos 6 tramos individuales, más reciente arriba
+      const ESTACIONES_PASO = ['ENTRADA', 'PATIO / ESPERA', 'FUERA DEL TALLER'];
+      const tramos = data.historial
+        .filter(t => {
+          const seg = Number(t.segundos_estacion || 0);
+          return seg > 0 || ESTACIONES_PASO.includes(t.estacion);
+        })
+        .slice(-6)
+        .reverse();
 
-      // Lista vertical: punto color + nombre + fecha + tiempo
-      orden.forEach(h => {
-        const color = getColorEstacion(h.est);
+      tramos.forEach(h => {
+        const color = getColorEstacion(h.estacion);
         const row = document.createElement("div");
         row.className = "mv-row";
 
         let fotoHtml = '';
-        if (h.foto) {
-          const f = formatFecha(h.fecha);
-          fotoHtml = `<span class="mv-row-foto" onclick="verFotoGrande('${h.foto}','${h.est}','${f}')">\ud83d\udcf7</span>`;
+        if (h.foto_url) {
+          const f = formatFecha(h.inicio);
+          fotoHtml = `<span class="mv-row-foto" onclick="verFotoGrande('${h.foto_url}','${h.estacion}','${f}')">\ud83d\udcf7</span>`;
         }
 
         row.innerHTML = `
           <span class="mv-row-dot" style="background:${color};"></span>
-          <span class="mv-row-name">${h.est}</span>
-          <span class="mv-row-fecha">${formatFecha(h.fecha)}</span>
-          <span class="mv-row-time">${formatTime(h.total)}</span>
+          <span class="mv-row-name">${h.estacion}</span>
+          <span class="mv-row-fecha">${formatFecha(h.inicio)}</span>
+          <span class="mv-row-time">${formatTime(Number(h.segundos_estacion || 0))}</span>
           ${fotoHtml}`;
         modalHistorial.appendChild(row);
       });
