@@ -421,8 +421,15 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="form-row" style="margin-top:8px;">
           <div class="form-group">
-            <label>Factura N°</label>
-            <input id="cc-factura" class="swal2-input" placeholder="Ej: 001-001-000456">
+            <label>N° Factura/OT</label>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
+              <select id="cc-doc-tipo" class="swal2-select" style="width:auto;min-width:130px;flex:0 0 auto;margin:0;">
+                <option value="F">Factura (F-)</option>
+                <option value="OT">Orden (OT-)</option>
+              </select>
+              <span id="cc-doc-prefijo" style="font-weight:700;color:#1E5570;white-space:nowrap;">F-</span>
+              <input id="cc-factura-num" class="swal2-input" style="flex:1;margin:0;" placeholder="001-001-000456">
+            </div>
           </div>
           <div class="form-group">
             <label>Observaciones</label>
@@ -440,6 +447,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const esSeguro = document.querySelector('input[name="cc-tipo"]:checked').value === 'SEGURO';
             document.getElementById('cc-seguro-fields').style.display = esSeguro ? '' : 'none';
           });
+        });
+
+        // Prefijo automático Factura/OT
+        document.getElementById('cc-doc-tipo').addEventListener('change', function () {
+          document.getElementById('cc-doc-prefijo').textContent = this.value + '-';
         });
 
         // Calcular cuadre en tiempo real
@@ -485,7 +497,12 @@ document.addEventListener('DOMContentLoaded', () => {
           pago_cheques: parseFloat(document.getElementById('cc-cheques').value) || 0,
           pago_tarjeta: parseFloat(document.getElementById('cc-tarjeta').value) || 0,
           pago_efectivo: parseFloat(document.getElementById('cc-efectivo').value) || 0,
-          factura_num: document.getElementById('cc-factura').value.trim() || null,
+          factura_num: (() => {
+            const num = document.getElementById('cc-factura-num').value.trim();
+            if (!num) return null;
+            const prefijo = document.getElementById('cc-doc-tipo').value;
+            return `${prefijo}-${num}`;
+          })(),
           observaciones: document.getElementById('cc-obs').value.trim() || null
         };
       }
@@ -816,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       doc.autoTable({
         startY: startY + 18,
-        head: [['Fecha', 'Tipo', 'Cliente', 'Total', 'Corriente', 'Transfer.', 'Cheques', 'Tarjeta', 'Efectivo', 'Factura N°', 'Obs.']],
+        head: [['Fecha', 'Tipo', 'Cliente', 'Total', 'Corriente', 'Transfer.', 'Cheques', 'Tarjeta', 'Efectivo', 'N° Factura/OT', 'Obs.']],
         body: tableBody,
         foot: [[
           { content: 'TOTALES', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
