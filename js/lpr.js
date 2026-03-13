@@ -797,6 +797,11 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.style.display = 'inline-block';
             btn.onclick = abrirModalInternos;
           }
+          const btnRefresh = document.getElementById('btn-refresh-dashboard');
+          if (btnRefresh) {
+            btnRefresh.style.display = 'inline-block';
+            btnRefresh.onclick = () => { cargarLPR(); };
+          }
         }
 
         if (rolUsuario === 'seguro') {
