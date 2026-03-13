@@ -25,7 +25,7 @@
     <div class="subtabs-nav">
       <button class="subtab-btn active" data-tab="caja-chica">Caja Chica</button>
       <button class="subtab-btn" data-tab="cierre-caja">Cierre de Caja</button>
-      <button class="subtab-btn" disabled title="Próximamente">— Próximamente</button>
+      <button class="subtab-btn" data-tab="deducibles">Deducibles</button>
       <button class="subtab-btn" disabled title="Próximamente">— Próximamente</button>
     </div>
 
@@ -135,6 +135,41 @@
           </tr>
         </tfoot>
       </table>
+
+    </div>
+
+    <!-- ============================================================
+         PANEL 3: DEDUCIBLES POR DEVOLVER
+    ============================================================ -->
+    <div id="panel-deducibles" class="subtab-panel">
+
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Deducibles por Devolver</h2>
+      </div>
+
+      <div class="finanzas-actions">
+        <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>OT</th>
+              <th>Aseguradora</th>
+              <th>Fecha Cobro</th>
+              <th>Comp. Ingreso</th>
+              <th>Modo Pago</th>
+              <th>Valor</th>
+              <th>Fecha Dev.</th>
+              <th>Comp. Egreso</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-deducibles"></tbody>
+        </table>
+      </div>
 
     </div>
 

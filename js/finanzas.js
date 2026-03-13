@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   cargarCajaChica(tipoCajaActual);
   cargarCierreCaja(mesDefault);
+  cargarDeducibles();
 
   // =========================================================
   // CAJA CHICA - Cargar
@@ -881,6 +882,166 @@ document.addEventListener('DOMContentLoaded', () => {
 
       doc.save(`Cierre_Caja_${mes}.pdf`);
 
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  };
+
+  // =========================================================
+  // DEDUCIBLES POR DEVOLVER
+  // =========================================================
+  async function cargarDeducibles() {
+    const tbody = document.getElementById('tabla-deducibles');
+    tbody.innerHTML = `<tr><td colspan="10">Cargando...</td></tr>`;
+    try {
+      const res = await apiFetch('/finanzas/deducibles');
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      renderTablaDeducibles(data.deducibles);
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="10">Error: ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderTablaDeducibles(registros) {
+    const tbody = document.getElementById('tabla-deducibles');
+    if (!registros.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Sin registros</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = registros.map(r => {
+      const pendiente = r.estado === 'PENDIENTE';
+      const badgeClass = pendiente ? 'badge-pendiente' : 'badge-finalizado';
+      const badgeLabel = pendiente ? '⚠ Pendiente' : '✓ Devuelto';
+      const accion = pendiente
+        ? `<button class="btn btn-obs" onclick="registrarDevolucion(${r.id})">Registrar Dev.</button>`
+        : '—';
+      return `<tr>
+        <td>${r.ot}</td>
+        <td>${r.aseguradora}</td>
+        <td>${fmtFecha(r.fecha_cobro)}</td>
+        <td>${r.comprobante_ingreso || '—'}</td>
+        <td>${r.modo_pago}</td>
+        <td>$${parseFloat(r.valor).toFixed(2)}</td>
+        <td>${r.fecha_devolucion ? fmtFecha(r.fecha_devolucion) : '—'}</td>
+        <td>${r.comprobante_egreso || '—'}</td>
+        <td><span class="badge-estado ${badgeClass}">${badgeLabel}</span></td>
+        <td>${accion}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.modalRegistrarDeducible = async function () {
+    const hoyStr = new Date().toISOString().split('T')[0];
+    const { value: form } = await Swal.fire({
+      title: 'Registrar Deducible',
+      width: 520,
+      html: `
+        <div class="form-row">
+          <div class="form-group">
+            <label>OT</label>
+            <input id="ded-ot" class="swal2-input" placeholder="Ej: 813">
+          </div>
+          <div class="form-group">
+            <label>Aseguradora</label>
+            <input id="ded-aseguradora" class="swal2-input" placeholder="Ej: HDI">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha Cobro</label>
+            <input id="ded-fecha" type="date" class="swal2-input" value="${hoyStr}">
+          </div>
+          <div class="form-group">
+            <label>Modo de Pago</label>
+            <select id="ded-modo" class="swal2-select" style="margin:0;">
+              <option value="TARJETA">Tarjeta</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="EFECTIVO">Efectivo</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valor a Devolver</label>
+            <input id="ded-valor" type="number" min="0.01" step="0.01" class="swal2-input" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Comp. Ingreso</label>
+            <input id="ded-comp-ingreso" class="swal2-input" placeholder="Opcional">
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Registrar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const ot = document.getElementById('ded-ot').value.trim();
+        const aseguradora = document.getElementById('ded-aseguradora').value.trim();
+        const fecha_cobro = document.getElementById('ded-fecha').value;
+        const modo_pago = document.getElementById('ded-modo').value;
+        const valor = parseFloat(document.getElementById('ded-valor').value);
+        if (!ot) { Swal.showValidationMessage('OT es obligatorio'); return false; }
+        if (!aseguradora) { Swal.showValidationMessage('Aseguradora es obligatoria'); return false; }
+        if (!fecha_cobro) { Swal.showValidationMessage('Fecha es obligatoria'); return false; }
+        if (!valor || valor <= 0) { Swal.showValidationMessage('Valor debe ser mayor a 0'); return false; }
+        return {
+          ot, aseguradora, fecha_cobro, modo_pago, valor,
+          comprobante_ingreso: document.getElementById('ded-comp-ingreso').value.trim() || null
+        };
+      }
+    });
+
+    if (!form) return;
+    try {
+      const res = await apiFetch('/finanzas/deducibles', { method: 'POST', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Registrado', timer: 1200, showConfirmButton: false });
+      cargarDeducibles();
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  };
+
+  window.registrarDevolucion = async function (id) {
+    const hoyStr = new Date().toISOString().split('T')[0];
+    const { value: form } = await Swal.fire({
+      title: 'Registrar Devolución',
+      width: 440,
+      html: `
+        <div class="form-group" style="width:100%;">
+          <label>Fecha de Devolución</label>
+          <input id="dev-fecha" type="date" class="swal2-input" value="${hoyStr}">
+        </div>
+        <div class="form-group" style="width:100%;margin-top:8px;">
+          <label>Comprobante Egreso</label>
+          <input id="dev-comp-egreso" class="swal2-input" placeholder="Ej: TRF-9001">
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar Devolución',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const fecha_devolucion = document.getElementById('dev-fecha').value;
+        const comprobante_egreso = document.getElementById('dev-comp-egreso').value.trim();
+        if (!fecha_devolucion) { Swal.showValidationMessage('Fecha es obligatoria'); return false; }
+        if (!comprobante_egreso) { Swal.showValidationMessage('Comprobante de egreso es obligatorio'); return false; }
+        return { fecha_devolucion, comprobante_egreso };
+      }
+    });
+
+    if (!form) return;
+    try {
+      const res = await apiFetch(`/finanzas/deducibles/${id}/devolver`, {
+        method: 'PUT',
+        body: JSON.stringify(form)
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Devolución registrada', timer: 1200, showConfirmButton: false });
+      cargarDeducibles();
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
     }
