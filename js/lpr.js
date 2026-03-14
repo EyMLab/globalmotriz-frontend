@@ -83,6 +83,49 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================================================
+      CAPTURA BAJO DEMANDA (ADMIN)
+  ====================================================== */
+  const ESTACIONES_CON_CAMARA = ['LAVADO', 'MEC\u00c1NICA', 'ENDEREZADA', 'PINTURA', 'SALIDA'];
+
+  async function solicitarCaptura(estacion, btnEl) {
+    try {
+      btnEl.disabled = true;
+      btnEl.textContent = '...';
+      const res = await apiFetch('/lpr/solicitar-captura', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estacion })
+      });
+      if (res && res.ok) {
+        btnEl.textContent = '\u2713';
+        setTimeout(() => { btnEl.textContent = '\u21bb'; btnEl.disabled = false; }, 3000);
+      } else {
+        btnEl.textContent = '\u2717';
+        setTimeout(() => { btnEl.textContent = '\u21bb'; btnEl.disabled = false; }, 2000);
+      }
+    } catch (e) {
+      console.error('Error solicitando captura:', e);
+      btnEl.textContent = '\u21bb';
+      btnEl.disabled = false;
+    }
+  }
+
+  function crearBtnCaptura(estacion) {
+    if (rolUsuario !== 'admin' || !ESTACIONES_CON_CAMARA.includes(estacion)) return '';
+    return '';
+  }
+
+  function agregarBtnCaptura(headerEl, estacion) {
+    if (rolUsuario !== 'admin' || !ESTACIONES_CON_CAMARA.includes(estacion)) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn-captura-estacion';
+    btn.title = 'Solicitar captura de c\u00e1mara';
+    btn.textContent = '\u21bb';
+    btn.onclick = (e) => { e.stopPropagation(); solicitarCaptura(estacion, btn); };
+    headerEl.appendChild(btn);
+  }
+
+  /* ======================================================
       KANBAN PRINCIPAL (LÓGICA DE PUESTOS Y PATIO)
   ====================================================== */
   async function cargarLPR() {
@@ -113,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const header = document.createElement("div");
     header.className = "strip-header";
     header.innerHTML = `<span class="strip-title">${est.estacion}</span><span class="kanban-count">${count}</span>`;
+    agregarBtnCaptura(header, est.estacion);
     section.appendChild(header);
 
     section.dataset.estacion = est.estacion;
@@ -155,6 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ? "<p style='text-align:center;opacity:.5;margin-top:8px;font-size:12px;'>Vacío</p>"
         : ""}
     `;
+    const titleEl = col.querySelector('.kanban-title');
+    if (titleEl) agregarBtnCaptura(titleEl, est.estacion);
 
     est.vehiculos.forEach(v => {
       const card = document.createElement("div");
@@ -796,11 +842,6 @@ document.addEventListener("DOMContentLoaded", () => {
           if (btn) {
             btn.style.display = 'inline-block';
             btn.onclick = abrirModalInternos;
-          }
-          const btnRefresh = document.getElementById('btn-refresh-dashboard');
-          if (btnRefresh) {
-            btnRefresh.style.display = 'inline-block';
-            btnRefresh.onclick = () => { cargarLPR(); };
           }
         }
 

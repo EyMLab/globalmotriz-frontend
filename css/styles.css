@@ -1316,6 +1316,30 @@ button.btn-obs:hover,
   margin-bottom: 6px;
 }
 
+.btn-captura-estacion {
+  background: none;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  line-height: 1;
+  color: #475569;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0;
+  transition: all .2s;
+  vertical-align: middle;
+}
+.btn-captura-estacion:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+.btn-captura-estacion:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 .kanban-count {
   display: inline-block;
   font-size: 11px;
