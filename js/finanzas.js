@@ -1224,12 +1224,15 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.registrarFacturaNueva = async function (id) {
+    const registro = _facturasAnuladasData.find(r => r.id === id);
+    const numAnulada = parseInt(registro?.factura_anulada) || null;
+
     const { value: form } = await Swal.fire({
       title: 'Registrar Factura Nueva',
       width: 400,
       html: `
         <div class="form-group" style="width:100%;">
-          <label>N° Factura Nueva</label>
+          <label>N° Factura Nueva <small style="color:#64748b;">(reemplaza a ${registro?.factura_anulada})</small></label>
           <input id="fan-factura-nueva" class="swal2-input" placeholder="Ej: 3457">
         </div>
       `,
@@ -1239,6 +1242,13 @@ document.addEventListener('DOMContentLoaded', () => {
       preConfirm: () => {
         const factura_nueva = document.getElementById('fan-factura-nueva').value.trim();
         if (!factura_nueva) { Swal.showValidationMessage('El número de factura es obligatorio'); return false; }
+        if (numAnulada !== null) {
+          const numNueva = parseInt(factura_nueva);
+          if (!isNaN(numNueva) && numNueva <= numAnulada) {
+            Swal.showValidationMessage(`El N° de factura nueva debe ser mayor a ${registro.factura_anulada}`);
+            return false;
+          }
+        }
         return { factura_nueva };
       }
     });
