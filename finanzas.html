@@ -26,7 +26,7 @@
       <button class="subtab-btn active" data-tab="caja-chica">Caja Chica</button>
       <button class="subtab-btn" data-tab="cierre-caja">Cierre de Caja</button>
       <button class="subtab-btn" data-tab="deducibles">Deducibles</button>
-      <button class="subtab-btn" disabled title="Próximamente">— Próximamente</button>
+      <button class="subtab-btn" data-tab="facturas-anuladas">Facturas Anuladas</button>
     </div>
 
     <!-- ============================================================
@@ -179,6 +179,51 @@
             </tr>
           </thead>
           <tbody id="tabla-deducibles"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         PANEL 4: FACTURAS ANULADAS
+    ============================================================ -->
+    <div id="panel-facturas-anuladas" class="subtab-panel">
+
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Facturas Anuladas</h2>
+      </div>
+
+      <div class="finanzas-actions">
+        <button class="btn btn-primary" onclick="modalRegistrarAnulacion()">+ Registrar Anulación</button>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+        <select id="fan-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
+          <option value="">Todos los estados</option>
+          <option value="PENDIENTE">⚠ Pendiente</option>
+          <option value="REEMPLAZADA">✓ Reemplazada</option>
+        </select>
+        <input id="fan-filtro-ot" placeholder="Buscar OT..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:130px;">
+        <input id="fan-filtro-factura" placeholder="Buscar N° factura..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:165px;">
+        <button class="btn btn-obs" onclick="limpiarFiltrosFacturas()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>OT</th>
+              <th>Tipo</th>
+              <th>Cliente</th>
+              <th>Placa</th>
+              <th>Factura Anulada</th>
+              <th>Motivo</th>
+              <th>Factura Nueva</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-facturas-anuladas"></tbody>
         </table>
       </div>
 

@@ -1075,4 +1075,186 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // =========================================================
+  // FACTURAS ANULADAS
+  // =========================================================
+  let _facturasAnuladasData = [];
+
+  async function cargarFacturasAnuladas() {
+    const tbody = document.getElementById('tabla-facturas-anuladas');
+    tbody.innerHTML = `<tr><td colspan="9">Cargando...</td></tr>`;
+    try {
+      const res = await apiFetch('/finanzas/facturas-anuladas');
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      _facturasAnuladasData = data.facturas;
+      filtrarFacturasAnuladas();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
+    }
+  }
+
+  function filtrarFacturasAnuladas() {
+    const estado = document.getElementById('fan-filtro-estado')?.value || '';
+    const ot = (document.getElementById('fan-filtro-ot')?.value || '').toLowerCase().trim();
+    const factura = (document.getElementById('fan-filtro-factura')?.value || '').toLowerCase().trim();
+    const filtrados = _facturasAnuladasData.filter(r => {
+      if (estado && r.estado !== estado) return false;
+      if (ot && !r.ot.toLowerCase().includes(ot)) return false;
+      if (factura && !(r.factura_anulada.toLowerCase().includes(factura) || (r.factura_nueva || '').toLowerCase().includes(factura))) return false;
+      return true;
+    });
+    renderTablaFacturasAnuladas(filtrados);
+  }
+
+  window.limpiarFiltrosFacturas = function () {
+    document.getElementById('fan-filtro-estado').value = '';
+    document.getElementById('fan-filtro-ot').value = '';
+    document.getElementById('fan-filtro-factura').value = '';
+    filtrarFacturasAnuladas();
+  };
+
+  ['fan-filtro-estado', 'fan-filtro-ot', 'fan-filtro-factura'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', filtrarFacturasAnuladas);
+    document.getElementById(id)?.addEventListener('change', filtrarFacturasAnuladas);
+  });
+
+  function renderTablaFacturasAnuladas(registros) {
+    const tbody = document.getElementById('tabla-facturas-anuladas');
+    if (!registros.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Sin registros</td></tr>`;
+      return;
+    }
+    const anuladas = new Set(_facturasAnuladasData.map(r => r.factura_anulada));
+    tbody.innerHTML = registros.map(r => {
+      const pendiente = r.estado === 'PENDIENTE';
+      const badgeClass = pendiente ? 'badge-pendiente' : 'badge-finalizado';
+      const badgeLabel = pendiente ? '⚠ Pendiente' : '✓ Reemplazada';
+      const fnueva = r.factura_nueva
+        ? `${r.factura_nueva}${anuladas.has(r.factura_nueva) ? ' 🔗' : ''}`
+        : '—';
+      const accion = pendiente
+        ? `<button class="btn btn-obs" onclick="registrarFacturaNueva(${r.id})">Registrar F. Nueva</button>`
+        : '—';
+      return `<tr>
+        <td>${r.ot}</td>
+        <td>${r.tipo}</td>
+        <td>${r.cliente}</td>
+        <td>${r.placa || '—'}</td>
+        <td>${r.factura_anulada}</td>
+        <td>${r.motivo || '—'}</td>
+        <td>${fnueva}</td>
+        <td><span class="badge-estado ${badgeClass}">${badgeLabel}</span></td>
+        <td>${accion}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.modalRegistrarAnulacion = async function () {
+    const { value: form } = await Swal.fire({
+      title: 'Registrar Factura Anulada',
+      width: 540,
+      html: `
+        <div class="form-row">
+          <div class="form-group">
+            <label>OT</label>
+            <input id="fan-ot" class="swal2-input" placeholder="Ej: 813">
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="fan-tipo" class="swal2-input">
+              <option value="SEGURO">Seguro</option>
+              <option value="PARTICULAR">Particular</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente</label>
+            <input id="fan-cliente" class="swal2-input" placeholder="Nombre del cliente">
+          </div>
+          <div class="form-group">
+            <label>Placa</label>
+            <input id="fan-placa" class="swal2-input" placeholder="Ej: ABC-1234 (opcional)">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° Factura Anulada</label>
+            <input id="fan-factura-anulada" class="swal2-input" placeholder="Ej: 3456">
+          </div>
+          <div class="form-group">
+            <label>Motivo</label>
+            <input id="fan-motivo" class="swal2-input" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="form-group" style="width:100%;margin-top:8px;">
+          <label>Observaciones</label>
+          <input id="fan-obs" class="swal2-input" placeholder="Opcional">
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Registrar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const ot = document.getElementById('fan-ot').value.trim();
+        const tipo = document.getElementById('fan-tipo').value;
+        const cliente = document.getElementById('fan-cliente').value.trim();
+        const placa = document.getElementById('fan-placa').value.trim();
+        const factura_anulada = document.getElementById('fan-factura-anulada').value.trim();
+        const motivo = document.getElementById('fan-motivo').value.trim();
+        const observaciones = document.getElementById('fan-obs').value.trim();
+        if (!ot) { Swal.showValidationMessage('OT es obligatorio'); return false; }
+        if (!cliente) { Swal.showValidationMessage('Cliente es obligatorio'); return false; }
+        if (!factura_anulada) { Swal.showValidationMessage('N° Factura Anulada es obligatorio'); return false; }
+        return { ot, tipo, cliente, placa: placa || null, factura_anulada, motivo: motivo || null, observaciones: observaciones || null };
+      }
+    });
+
+    if (!form) return;
+    try {
+      const res = await apiFetch('/finanzas/facturas-anuladas', { method: 'POST', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Registrado', timer: 1200, showConfirmButton: false });
+      cargarFacturasAnuladas();
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  };
+
+  window.registrarFacturaNueva = async function (id) {
+    const { value: form } = await Swal.fire({
+      title: 'Registrar Factura Nueva',
+      width: 400,
+      html: `
+        <div class="form-group" style="width:100%;">
+          <label>N° Factura Nueva</label>
+          <input id="fan-factura-nueva" class="swal2-input" placeholder="Ej: 3457">
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const factura_nueva = document.getElementById('fan-factura-nueva').value.trim();
+        if (!factura_nueva) { Swal.showValidationMessage('El número de factura es obligatorio'); return false; }
+        return { factura_nueva };
+      }
+    });
+
+    if (!form) return;
+    try {
+      const res = await apiFetch(`/finanzas/facturas-anuladas/${id}/reemplazar`, { method: 'PUT', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Factura nueva registrada', timer: 1200, showConfirmButton: false });
+      cargarFacturasAnuladas();
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  };
+
+  cargarFacturasAnuladas();
+
 });
