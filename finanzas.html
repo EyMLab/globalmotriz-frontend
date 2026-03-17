@@ -152,27 +152,31 @@
 
         <h2 style="margin:0;">Deducibles por Devolver</h2>
 
-        <!-- Tarjeta resumen + gráfica -->
-        <div style="width:260px;flex-shrink:0;">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-            <h4 style="margin:0 0 12px;font-size:13px;color:#1e3a5f;font-weight:700;">Resumen de Deducibles</h4>
-            <canvas id="chart-deducibles"></canvas>
-            <div style="margin-top:12px;font-size:13px;display:flex;flex-direction:column;gap:7px;">
+        <!-- Tarjeta resumen + gráfica (horizontal) -->
+        <div style="flex-shrink:0;">
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:16px;">
+            <!-- Gráfica -->
+            <div style="width:110px;height:110px;flex-shrink:0;">
+              <canvas id="chart-deducibles" width="110" height="110"></canvas>
+            </div>
+            <!-- Stats -->
+            <div style="font-size:13px;display:flex;flex-direction:column;gap:7px;min-width:200px;">
+              <div style="font-weight:700;color:#1e3a5f;font-size:13px;margin-bottom:2px;">Resumen de Deducibles</div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <span style="color:#f59e0b;font-weight:600;">⚠ Pendiente</span>
-                <span id="ded-stat-pendiente" style="font-weight:600;">—</span>
+                <span id="ded-stat-pendiente" style="font-weight:600;margin-left:16px;">—</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <span style="color:#10b981;font-weight:600;">✓ Devuelto</span>
-                <span id="ded-stat-devuelto" style="font-weight:600;">—</span>
+                <span id="ded-stat-devuelto" style="font-weight:600;margin-left:16px;">—</span>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:7px;margin-top:1px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:6px;">
                 <span style="font-weight:700;color:#1e3a5f;">Total</span>
-                <span id="ded-stat-total" style="font-weight:700;color:#1e3a5f;">—</span>
+                <span id="ded-stat-total" style="font-weight:700;color:#1e3a5f;margin-left:16px;">—</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;color:#64748b;font-size:12px;">
                 <span>Registros</span>
-                <span id="ded-stat-count">—</span>
+                <span id="ded-stat-count" style="margin-left:16px;">—</span>
               </div>
             </div>
           </div>

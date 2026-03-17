@@ -949,9 +949,10 @@ document.addEventListener('DOMContentLoaded', () => {
           datasets: [{ data: vals, backgroundColor: ['#f59e0b', '#10b981'], borderWidth: 2, borderColor: '#fff' }]
         },
         options: {
-          responsive: true,
+          responsive: false,
+          maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { font: { size: 12 } } },
+            legend: { display: false },
             tooltip: { callbacks: { label: c => ` ${c.label}: $${c.parsed.toFixed(2)}` } }
           }
         }
