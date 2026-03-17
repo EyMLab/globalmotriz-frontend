@@ -891,6 +891,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // DEDUCIBLES POR DEVOLVER
   // =========================================================
   let _deduciblesData = [];
+  let _deduciblesFiltrados = [];
+  let _chartDeducibles = null;
 
   async function cargarDeducibles() {
     const tbody = document.getElementById('tabla-deducibles');
@@ -910,14 +912,74 @@ document.addEventListener('DOMContentLoaded', () => {
     const estado = document.getElementById('ded-filtro-estado')?.value || '';
     const ot = (document.getElementById('ded-filtro-ot')?.value || '').toLowerCase().trim();
     const aseg = (document.getElementById('ded-filtro-aseguradora')?.value || '').toLowerCase().trim();
-    const filtrados = _deduciblesData.filter(r => {
+    _deduciblesFiltrados = _deduciblesData.filter(r => {
       if (estado && r.estado !== estado) return false;
       if (ot && !r.ot.toLowerCase().includes(ot)) return false;
       if (aseg && !r.aseguradora.toLowerCase().includes(aseg)) return false;
       return true;
     });
-    renderTablaDeducibles(filtrados);
+    renderTablaDeducibles(_deduciblesFiltrados);
+    actualizarGraficaDeducibles(_deduciblesFiltrados);
   }
+
+  function actualizarGraficaDeducibles(registros) {
+    const pendientes = registros.filter(r => r.estado === 'PENDIENTE');
+    const devueltos  = registros.filter(r => r.estado === 'DEVUELTO');
+    const totalPend  = pendientes.reduce((s, r) => s + parseFloat(r.valor || 0), 0);
+    const totalDev   = devueltos.reduce((s, r)  => s + parseFloat(r.valor || 0), 0);
+
+    const fmt = v => `$${v.toFixed(2)}`;
+    document.getElementById('ded-stat-pendiente').textContent = `${fmt(totalPend)} (${pendientes.length})`;
+    document.getElementById('ded-stat-devuelto').textContent  = `${fmt(totalDev)} (${devueltos.length})`;
+    document.getElementById('ded-stat-total').textContent     = fmt(totalPend + totalDev);
+    document.getElementById('ded-stat-count').textContent     = registros.length;
+
+    const ctx = document.getElementById('chart-deducibles')?.getContext('2d');
+    if (!ctx) return;
+
+    const vals = [totalPend, totalDev];
+    if (_chartDeducibles) {
+      _chartDeducibles.data.datasets[0].data = vals;
+      _chartDeducibles.update();
+    } else {
+      _chartDeducibles = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pendiente', 'Devuelto'],
+          datasets: [{ data: vals, backgroundColor: ['#f59e0b', '#10b981'], borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 12 } } },
+            tooltip: { callbacks: { label: c => ` ${c.label}: $${c.parsed.toFixed(2)}` } }
+          }
+        }
+      });
+    }
+  }
+
+  window.exportarDeduciblesExcel = function () {
+    if (!_deduciblesFiltrados.length) {
+      Swal.fire('Sin datos', 'No hay registros para exportar.', 'info');
+      return;
+    }
+    const filas = _deduciblesFiltrados.map(r => ({
+      'OT':             r.ot,
+      'Aseguradora':    r.aseguradora,
+      'Fecha Cobro':    fmtFecha(r.fecha_cobro),
+      'Comp. Ingreso':  r.comprobante_ingreso || '',
+      'Modo Pago':      r.modo_pago,
+      'Valor':          parseFloat(r.valor),
+      'Fecha Dev.':     r.fecha_devolucion ? fmtFecha(r.fecha_devolucion) : '',
+      'Comp. Egreso':   r.comprobante_egreso || '',
+      'Estado':         r.estado
+    }));
+    const ws = XLSX.utils.json_to_sheet(filas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Deducibles');
+    XLSX.writeFile(wb, `deducibles_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   window.limpiarFiltrosDeducibles = function () {
     document.getElementById('ded-filtro-estado').value = '';
