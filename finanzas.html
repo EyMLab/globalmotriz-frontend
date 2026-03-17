@@ -147,20 +147,20 @@
     ============================================================ -->
     <div id="panel-deducibles" class="subtab-panel">
 
-      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h2 style="margin:0;">Deducibles por Devolver</h2>
-      </div>
-
-      <div class="finanzas-actions">
-        <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
-        <button class="btn btn-obs" onclick="exportarDeduciblesExcel()">&#8595; Exportar Excel</button>
-      </div>
-
-      <!-- Layout 2 columnas: tabla izquierda | resumen derecha -->
+      <!-- Layout: columna izquierda (todo) | columna derecha (resumen) -->
       <div style="display:flex;gap:20px;align-items:flex-start;">
 
-        <!-- Columna izquierda: filtros + tabla -->
+        <!-- Columna izquierda: título + botones + filtros + tabla -->
         <div style="flex:1;min-width:0;">
+
+          <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="margin:0;">Deducibles por Devolver</h2>
+          </div>
+
+          <div class="finanzas-actions">
+            <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
+            <button class="btn btn-obs" onclick="exportarDeduciblesExcel()">&#8595; Exportar Excel</button>
+          </div>
 
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
             <select id="ded-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
@@ -195,8 +195,8 @@
 
         </div>
 
-        <!-- Columna derecha: resumen + gráfica -->
-        <div style="width:250px;flex-shrink:0;">
+        <!-- Columna derecha: tarjeta resumen + gráfica -->
+        <div style="width:240px;flex-shrink:0;position:sticky;top:20px;">
           <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
             <h4 style="margin:0 0 14px;font-size:14px;color:#1e3a5f;font-weight:700;">Resumen de Deducibles</h4>
             <canvas id="chart-deducibles"></canvas>
