@@ -147,19 +147,34 @@
     ============================================================ -->
     <div id="panel-deducibles" class="subtab-panel">
 
-      <!-- Fila superior: título a la izquierda, tarjeta resumen a la derecha -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:16px;">
+      <!-- Fila superior: izquierda (título+botones+filtros) | derecha (tarjeta) -->
+      <div style="display:flex;gap:20px;align-items:stretch;margin-bottom:16px;">
 
-        <h2 style="margin:0;">Deducibles por Devolver</h2>
+        <!-- Columna izquierda -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+          <h2 style="margin:0;">Deducibles por Devolver</h2>
+          <div class="finanzas-actions" style="margin:0;">
+            <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
+            <button class="btn btn-obs" onclick="exportarDeduciblesExcel()">&#8595; Exportar Excel</button>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select id="ded-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
+              <option value="">Todos los estados</option>
+              <option value="PENDIENTE">⚠ Pendiente</option>
+              <option value="DEVUELTO">✓ Devuelto</option>
+            </select>
+            <input id="ded-filtro-ot" placeholder="Buscar OT..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:130px;">
+            <input id="ded-filtro-aseguradora" placeholder="Buscar aseguradora..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:180px;">
+            <button class="btn btn-obs" onclick="limpiarFiltrosDeducibles()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
+          </div>
+        </div>
 
-        <!-- Tarjeta resumen + gráfica (horizontal) -->
+        <!-- Tarjeta resumen: se estira para igualar la altura izquierda -->
         <div style="flex-shrink:0;">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:16px;">
-            <!-- Gráfica -->
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:16px;height:100%;">
             <div style="width:110px;height:110px;flex-shrink:0;">
               <canvas id="chart-deducibles" width="110" height="110"></canvas>
             </div>
-            <!-- Stats -->
             <div style="font-size:13px;display:flex;flex-direction:column;gap:7px;min-width:200px;">
               <div style="font-weight:700;color:#1e3a5f;font-size:13px;margin-bottom:2px;">Resumen de Deducibles</div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -182,23 +197,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- Botones, filtros y tabla a ancho completo -->
-      <div class="finanzas-actions">
-        <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
-        <button class="btn btn-obs" onclick="exportarDeduciblesExcel()">&#8595; Exportar Excel</button>
-      </div>
-
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-        <select id="ded-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE">⚠ Pendiente</option>
-          <option value="DEVUELTO">✓ Devuelto</option>
-        </select>
-        <input id="ded-filtro-ot" placeholder="Buscar OT..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:130px;">
-        <input id="ded-filtro-aseguradora" placeholder="Buscar aseguradora..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:180px;">
-        <button class="btn btn-obs" onclick="limpiarFiltrosDeducibles()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
       </div>
 
       <div class="table-container">
