@@ -46,31 +46,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
     // Enlaces según rol
     // ============================================
-    const enlaceUsuarios = rol === 'admin'
+    const enlaceUsuarios = ['admin', 'control'].includes(rol)
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
       : "";
 
-    const enlaceInsumos = ['admin', 'bodega', 'asesor'].includes(rol)
+    const enlaceInsumos = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
       ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>`
       : "";
 
-    const enlaceInventario = ['admin', 'bodega', 'asesor'].includes(rol)
+    const enlaceInventario = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
       ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Inventario</a>`
       : "";
 
-    const enlaceCompras = ['admin', 'bodega'].includes(rol)
+    const enlaceCompras = ['admin', 'control', 'bodega'].includes(rol)
       ? `<a href="compras.html" class="${pagina === 'Compras' ? 'active' : ''}">Compras</a>`
       : "";
 
-    const enlaceLPR = ['admin', 'seguro'].includes(rol)
+    const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
       : "";
 
-    const enlaceFacturas = rol === 'admin'
+    const enlaceFacturas = ['admin', 'control'].includes(rol)
       ? `<a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>`
       : "";
 
-    const enlaceFinanzas = ['admin', 'asistente_contable'].includes(rol)
+    const enlaceFinanzas = ['admin', 'control', 'asistente_contable'].includes(rol)
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 

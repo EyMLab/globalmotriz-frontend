@@ -70,6 +70,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
+  // Detectar rol para ocultar formularios si es control
+  // =========================================================
+  let esControlFinanzas = false;
+  apiFetch('/auth/me').then(r => r && r.ok ? safeJson(r) : null).then(d => {
+    if (d && d.rol === 'control') {
+      esControlFinanzas = true;
+      // Ocultar todos los formularios de registro
+      document.querySelectorAll('form, .form-registro, .form-caja').forEach(f => f.style.display = 'none');
+      // Ocultar botones de registro
+      document.querySelectorAll('.btn-registrar, .btn-nuevo-gasto, .btn-cerrar-mes').forEach(b => b.style.display = 'none');
+    }
+  });
+
+  // =========================================================
   // Carga inicial
   // =========================================================
   cargarCajaChica(tipoCajaActual);

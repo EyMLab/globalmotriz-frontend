@@ -73,16 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       state.rol = data.rol;
       state.esAdmin  = data.rol === 'admin';
+      state.esControl = data.rol === 'control';
       state.esBodega = data.rol === 'bodega';
       state.esAsesor = data.rol === 'asesor';
 
-      if (!state.esAdmin && !state.esBodega && !state.esAsesor) {
+      if (!state.esAdmin && !state.esControl && !state.esBodega && !state.esAsesor) {
         Swal.fire('Acceso denegado', '', 'error');
         window.location.href = 'dashboard.html';
         return;
       }
 
-      if (state.esAsesor) {
+      if (state.esAsesor || state.esControl) {
         if (btnNuevaOC) btnNuevaOC.style.display = 'none';
         if (btnNuevoProv) btnNuevoProv.style.display = 'none';
       }

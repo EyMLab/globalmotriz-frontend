@@ -60,11 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
       state.localidadUsuario = data.localidad || '';
 
       state.esAdmin  = data.rol === 'admin';
+      state.esControl = data.rol === 'control';
       state.esBodega = data.rol === 'bodega';
       state.esAsesor = data.rol === 'asesor';
 
       // Seguridad Frontend: Si no tiene rol válido, fuera
-      if (!state.esAdmin && !state.esBodega && !state.esAsesor) {
+      if (!state.esAdmin && !state.esControl && !state.esBodega && !state.esAsesor) {
         Swal.fire('Acceso denegado', 'No tienes permiso para Inventario', 'error');
         window.location.href = 'dashboard.html';
         return;
@@ -84,8 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function configurarVistaPorRol() {
-    // Si es ASESOR, ocultamos botones de acción masiva
-    if (state.esAsesor) {
+    // Si es ASESOR o CONTROL, ocultamos botones de acción masiva
+    if (state.esAsesor || state.esControl) {
       const botones = [btnNuevo, btnImportar, btnPlantilla, btnTraslado];
       botones.forEach(btn => {
         if (btn) btn.style.display = 'none';

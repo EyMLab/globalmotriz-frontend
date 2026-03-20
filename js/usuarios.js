@@ -21,10 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await safeJson(res);
-      if (data.rol !== 'admin') {
+      if (data.rol !== 'admin' && data.rol !== 'control') {
         Swal.fire('Acceso denegado', 'Solo admin puede acceder a Usuarios', 'error');
         return window.location.href = 'dashboard.html';
       }
+      window._rolUsuario = data.rol;
+      if (data.rol === 'control') btnNuevoUsuario.style.display = 'none';
 
       cargarUsuarios();
     });
@@ -57,18 +59,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const esControl = window._rolUsuario === 'control';
     usuarios.forEach(u => {
       const tr = document.createElement('tr');
+
+      const acciones = esControl ? '' : `
+          <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
+          <button class="btn-obs" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">Clave</button>
+          <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>`;
 
       tr.innerHTML = `
         <td>${u.usuario}</td>
         <td>${u.rol.toUpperCase()}</td>
         <td>${u.localidad}</td>
-        <td class="user-actions">
-          <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
-          <button class="btn-obs" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">Clave</button>
-          <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>
-        </td>
+        <td class="user-actions">${acciones}</td>
       `;
 
       tablaUsuarios.appendChild(tr);
@@ -97,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <label>Rol</label>
             <select id="nuevo-rol" class="swal2-select">
               <option value="admin">Admin</option>
+              <option value="control">Control</option>
               <option value="bodega">Bodega</option>
               <option value="asesor">Asesor</option>
               <option value="seguro">Seguro</option>
@@ -164,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <label>Rol</label>
             <select id="rol-edit" class="swal2-select">
               <option value="admin" ${rol === 'admin' ? 'selected' : ''}>Admin</option>
+              <option value="control" ${rol === 'control' ? 'selected' : ''}>Control</option>
               <option value="bodega" ${rol === 'bodega' ? 'selected' : ''}>Bodega</option>
               <option value="asesor" ${rol === 'asesor' ? 'selected' : ''}>Asesor</option>
               <option value="seguro" ${rol === 'seguro' ? 'selected' : ''}>Seguro</option>

@@ -92,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       rol = data.rol;
 
-      // Solo admin puede ver Facturas
-      if (rol !== 'admin') {
+      // Solo admin y control pueden ver Facturas
+      if (rol !== 'admin' && rol !== 'control') {
         window.location.href = 'inventario.html';
         return false;
       }
