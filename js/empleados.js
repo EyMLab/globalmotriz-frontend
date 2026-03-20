@@ -26,7 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.location.href = 'dashboard.html';
       }
       window._rolEmpleados = data.rol;
-      if (data.rol === 'control' && btnNuevoEmpleado) btnNuevoEmpleado.style.display = 'none';
+      if (data.rol === 'control') {
+        if (btnNuevoEmpleado) btnNuevoEmpleado.style.display = 'none';
+        document.querySelectorAll('th').forEach(th => {
+          if (th.textContent.trim() === 'Acciones') th.style.display = 'none';
+        });
+      }
 
       cargarEmpleados();
     });
@@ -80,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${e.activo ? 'Activo' : 'Inactivo'}
           </span>
         </td>
-        <td class="user-actions">${acciones}</td>
+        ${esCtrl ? '' : `<td class="user-actions">${acciones}</td>`}
       `;
 
       tablaEmpleados.appendChild(tr);

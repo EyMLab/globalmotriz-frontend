@@ -26,7 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.location.href = 'dashboard.html';
       }
       window._rolUsuario = data.rol;
-      if (data.rol === 'control') btnNuevoUsuario.style.display = 'none';
+      if (data.rol === 'control') {
+        btnNuevoUsuario.style.display = 'none';
+        document.querySelectorAll('th:last-child').forEach(th => {
+          if (th.textContent.trim() === 'Acciones') th.style.display = 'none';
+        });
+      }
 
       cargarUsuarios();
     });
@@ -72,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${u.usuario}</td>
         <td>${u.rol.toUpperCase()}</td>
         <td>${u.localidad}</td>
-        <td class="user-actions">${acciones}</td>
+        ${esControl ? '' : `<td class="user-actions">${acciones}</td>`}
       `;
 
       tablaUsuarios.appendChild(tr);
