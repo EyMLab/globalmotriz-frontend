@@ -21,10 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await safeJson(res);
-      if (data.rol !== 'admin') {
+      if (data.rol !== 'admin' && data.rol !== 'control') {
         Swal.fire('Acceso denegado', 'Solo admin puede gestionar empleados', 'error');
         return window.location.href = 'dashboard.html';
       }
+      window._rolEmpleados = data.rol;
+      if (data.rol === 'control' && btnNuevoEmpleado) btnNuevoEmpleado.style.display = 'none';
 
       cargarEmpleados();
     });
@@ -57,8 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const esCtrl = window._rolEmpleados === 'control';
     empleados.forEach(e => {
       const tr = document.createElement('tr');
+
+      const acciones = esCtrl ? '' : `
+          <button class="btn-obs" onclick="editarEmpleado(${e.id})">Editar</button>
+          <button class="btn-obs" onclick="toggleEmpleado(${e.id}, ${e.activo})">
+            ${e.activo ? 'Desactivar' : 'Activar'}
+          </button>
+          <button class="btn-eliminar" onclick="eliminarEmpleado(${e.id})">Eliminar</button>`;
 
       tr.innerHTML = `
         <td>${e.id}</td>
@@ -70,13 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${e.activo ? 'Activo' : 'Inactivo'}
           </span>
         </td>
-        <td class="user-actions">
-          <button class="btn-obs" onclick="editarEmpleado(${e.id})">Editar</button>
-          <button class="btn-obs" onclick="toggleEmpleado(${e.id}, ${e.activo})">
-            ${e.activo ? 'Desactivar' : 'Activar'}
-          </button>
-          <button class="btn-eliminar" onclick="eliminarEmpleado(${e.id})">Eliminar</button>
-        </td>
+        <td class="user-actions">${acciones}</td>
       `;
 
       tablaEmpleados.appendChild(tr);
