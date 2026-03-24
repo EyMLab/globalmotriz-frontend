@@ -532,9 +532,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const placaTexto = placa ? `<span style="font-weight:bold; font-size:1.1em;">${placa}</span> \u2014 ` : '';
     Swal.fire({
       html: `
-        <img class="foto-evidencia" id="foto-zoom" src="${urlFirmada}" alt="Foto en ${estacion}"
-          style="width:100%; max-height:65vh; object-fit:contain; user-select:none; cursor:zoom-in; transition:transform .3s;"
-          draggable="false" oncontextmenu="return false">
+        <div id="foto-contenedor" style="overflow:hidden; max-height:65vh; border-radius:8px;">
+          <img class="foto-evidencia" id="foto-zoom" src="${urlFirmada}" alt="Foto en ${estacion}"
+            style="width:100%; max-height:65vh; object-fit:contain; user-select:none; cursor:zoom-in;"
+            draggable="false" oncontextmenu="return false">
+        </div>
         <h3 style="margin:.5em 0 .2em; color:#2c5282;">${placaTexto}Ingreso a ${estacion}</h3>
         <p style="margin:0; color:#666;">${fecha}</p>
       `,
@@ -551,11 +553,50 @@ document.addEventListener("DOMContentLoaded", () => {
         const img = document.getElementById('foto-zoom');
         if (img) {
           let zoomed = false;
-          img.addEventListener('click', () => {
+          const contenedor = document.getElementById('foto-contenedor');
+          img.addEventListener('click', (e) => {
             zoomed = !zoomed;
-            img.style.transform = zoomed ? 'scale(2)' : 'scale(1)';
-            img.style.cursor = zoomed ? 'zoom-out' : 'zoom-in';
-            img.style.pointerEvents = 'auto';
+            if (zoomed) {
+              contenedor.style.overflow = 'auto';
+              contenedor.style.maxHeight = '65vh';
+              contenedor.style.cursor = 'grab';
+              img.style.width = '200%';
+              img.style.maxHeight = 'none';
+              img.style.cursor = 'zoom-out';
+              // Centrar scroll en donde hizo clic
+              const rect = img.getBoundingClientRect();
+              const clickX = (e.clientX - rect.left) / rect.width;
+              const clickY = (e.clientY - rect.top) / rect.height;
+              setTimeout(() => {
+                contenedor.scrollLeft = (img.offsetWidth * clickX) - (contenedor.offsetWidth / 2);
+                contenedor.scrollTop = (img.offsetHeight * clickY) - (contenedor.offsetHeight / 2);
+              }, 10);
+            } else {
+              contenedor.style.overflow = 'hidden';
+              contenedor.style.maxHeight = '';
+              img.style.width = '100%';
+              img.style.maxHeight = '65vh';
+              img.style.cursor = 'zoom-in';
+              contenedor.style.cursor = '';
+            }
+          });
+          // Drag para mover cuando hay zoom
+          let dragging = false, startX, startY, scrollL, scrollT;
+          contenedor.addEventListener('mousedown', (e) => {
+            if (!zoomed) return;
+            dragging = true;
+            startX = e.pageX; startY = e.pageY;
+            scrollL = contenedor.scrollLeft; scrollT = contenedor.scrollTop;
+            contenedor.style.cursor = 'grabbing';
+            e.preventDefault();
+          });
+          document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            contenedor.scrollLeft = scrollL - (e.pageX - startX);
+            contenedor.scrollTop = scrollT - (e.pageY - startY);
+          });
+          document.addEventListener('mouseup', () => {
+            if (dragging) { dragging = false; contenedor.style.cursor = zoomed ? 'grab' : ''; }
           });
         }
       }
