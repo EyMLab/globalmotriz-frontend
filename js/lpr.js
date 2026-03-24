@@ -548,6 +548,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const popup = Swal.getPopup();
         popup.style.width = '80vw';
         popup.style.maxWidth = '1000px';
+        const img = document.getElementById('foto-zoom');
+        if (img) {
+          let zoomed = false;
+          img.addEventListener('click', () => {
+            zoomed = !zoomed;
+            img.style.transform = zoomed ? 'scale(2)' : 'scale(1)';
+            img.style.cursor = zoomed ? 'zoom-out' : 'zoom-in';
+            img.style.pointerEvents = 'auto';
+          });
+        }
       }
     });
   };
