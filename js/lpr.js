@@ -551,52 +551,38 @@ document.addEventListener("DOMContentLoaded", () => {
         popup.style.width = '80vw';
         popup.style.maxWidth = '1000px';
         const img = document.getElementById('foto-zoom');
-        if (img) {
+        const contenedor = document.getElementById('foto-contenedor');
+        if (img && contenedor) {
           let zoomed = false;
-          const contenedor = document.getElementById('foto-contenedor');
           img.addEventListener('click', (e) => {
             zoomed = !zoomed;
             if (zoomed) {
-              contenedor.style.overflow = 'auto';
-              contenedor.style.maxHeight = '65vh';
-              contenedor.style.cursor = 'grab';
-              img.style.width = '200%';
+              contenedor.style.overflow = 'hidden';
+              img.style.width = '250%';
               img.style.maxHeight = 'none';
               img.style.cursor = 'zoom-out';
-              // Centrar scroll en donde hizo clic
-              const rect = img.getBoundingClientRect();
-              const clickX = (e.clientX - rect.left) / rect.width;
-              const clickY = (e.clientY - rect.top) / rect.height;
-              setTimeout(() => {
-                contenedor.scrollLeft = (img.offsetWidth * clickX) - (contenedor.offsetWidth / 2);
-                contenedor.scrollTop = (img.offsetHeight * clickY) - (contenedor.offsetHeight / 2);
-              }, 10);
+              img.style.transformOrigin = 'center center';
+              // Posicionar donde hizo clic
+              const rect = contenedor.getBoundingClientRect();
+              const px = (e.clientX - rect.left) / rect.width * 100;
+              const py = (e.clientY - rect.top) / rect.height * 100;
+              img.style.transformOrigin = px + '% ' + py + '%';
+              img.style.transform = 'scale(1)';
+              // Mover con mouse
+              contenedor.onmousemove = (ev) => {
+                const r = contenedor.getBoundingClientRect();
+                const x = (ev.clientX - r.left) / r.width * 100;
+                const y = (ev.clientY - r.top) / r.height * 100;
+                img.style.transformOrigin = x + '% ' + y + '%';
+              };
             } else {
-              contenedor.style.overflow = 'hidden';
-              contenedor.style.maxHeight = '';
               img.style.width = '100%';
               img.style.maxHeight = '65vh';
               img.style.cursor = 'zoom-in';
-              contenedor.style.cursor = '';
+              img.style.transform = '';
+              img.style.transformOrigin = '';
+              contenedor.onmousemove = null;
             }
-          });
-          // Drag para mover cuando hay zoom
-          let dragging = false, startX, startY, scrollL, scrollT;
-          contenedor.addEventListener('mousedown', (e) => {
-            if (!zoomed) return;
-            dragging = true;
-            startX = e.pageX; startY = e.pageY;
-            scrollL = contenedor.scrollLeft; scrollT = contenedor.scrollTop;
-            contenedor.style.cursor = 'grabbing';
-            e.preventDefault();
-          });
-          document.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
-            contenedor.scrollLeft = scrollL - (e.pageX - startX);
-            contenedor.scrollTop = scrollT - (e.pageY - startY);
-          });
-          document.addEventListener('mouseup', () => {
-            if (dragging) { dragging = false; contenedor.style.cursor = zoomed ? 'grab' : ''; }
           });
         }
       }
