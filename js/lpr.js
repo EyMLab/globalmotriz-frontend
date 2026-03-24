@@ -513,13 +513,28 @@ document.addEventListener("DOMContentLoaded", () => {
       FUNCIONES AUXILIARES (FOTOS, EDICIÓN)
   ====================================================== */
 
-  window.verFotoGrande = (url, estacion, fecha) => {
+  async function obtenerUrlFirmada(urlPublica) {
+    try {
+      const res = await apiFetch(`/lpr/foto?url=${encodeURIComponent(urlPublica)}`);
+      if (res && res.ok) {
+        const data = await safeJson(res);
+        return data.url;
+      }
+    } catch (e) {
+      console.error('Error obteniendo URL firmada:', e);
+    }
+    return urlPublica; // fallback al URL público si falla
+  }
+
+  window.verFotoGrande = async (url, estacion, fecha) => {
+    Swal.fire({ title: 'Cargando foto...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const urlFirmada = await obtenerUrlFirmada(url);
     Swal.fire({
-      imageUrl: url,
+      imageUrl: urlFirmada,
       imageAlt: `Foto en ${estacion}`,
       title: `Ingreso a ${estacion}`,
       text: fecha,
-      footer: '<small>Clic en la imagen para verla en tamaño completo</small>',
+      footer: '<small>Clic en la imagen para verla en tama\u00f1o completo</small>',
       width: 800,
       padding: '1em',
       background: '#fff',
@@ -529,7 +544,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const img = Swal.getPopup().querySelector('.swal2-image');
         if (img) {
           img.style.cursor = 'pointer';
-          img.addEventListener('click', () => window.open(url, '_blank'));
+          img.addEventListener('click', () => window.open(urlFirmada, '_blank'));
         }
       }
     });
