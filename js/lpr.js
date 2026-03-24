@@ -532,19 +532,22 @@ document.addEventListener("DOMContentLoaded", () => {
     Swal.fire({
       html: `
         <img src="${urlFirmada}" alt="Foto en ${estacion}"
-          style="width:100%; max-height:70vh; object-fit:contain; user-select:none; pointer-events:none;"
+          style="width:100%; user-select:none; pointer-events:none;"
           draggable="false" oncontextmenu="return false">
         <h3 style="margin:.5em 0 .2em; color:#2c5282;">Ingreso a ${estacion}</h3>
         <p style="margin:0; color:#666;">${fecha}</p>
       `,
-      width: '90vw',
-      maxWidth: '1200px',
       padding: '1em',
       background: '#fff',
       backdrop: 'rgba(0,0,0,0.85)',
       showConfirmButton: true,
       confirmButtonText: 'OK',
-      confirmButtonColor: '#2c6975'
+      confirmButtonColor: '#2c6975',
+      didOpen: () => {
+        const popup = Swal.getPopup();
+        popup.style.width = '90vw';
+        popup.style.maxWidth = '1200px';
+      }
     });
   };
 
