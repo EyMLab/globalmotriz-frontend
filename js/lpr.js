@@ -530,25 +530,21 @@ document.addEventListener("DOMContentLoaded", () => {
     Swal.fire({ title: 'Cargando foto...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const urlFirmada = await obtenerUrlFirmada(url);
     Swal.fire({
-      imageUrl: urlFirmada,
-      imageAlt: `Foto en ${estacion}`,
-      title: `Ingreso a ${estacion}`,
-      text: fecha,
+      html: `
+        <img src="${urlFirmada}" alt="Foto en ${estacion}"
+          style="width:100%; max-height:70vh; object-fit:contain; user-select:none; pointer-events:none;"
+          draggable="false" oncontextmenu="return false">
+        <h3 style="margin:.5em 0 .2em; color:#2c5282;">Ingreso a ${estacion}</h3>
+        <p style="margin:0; color:#666;">${fecha}</p>
+      `,
       width: '90vw',
+      maxWidth: '1200px',
       padding: '1em',
       background: '#fff',
-      backdrop: 'rgba(0,0,0,0.8)',
-      customClass: { image: 'swal-img-full' },
-      didOpen: () => {
-        const img = Swal.getPopup().querySelector('.swal2-image');
-        if (img) {
-          img.style.maxWidth = '100%';
-          img.style.maxHeight = '75vh';
-          img.style.userSelect = 'none';
-          img.style.pointerEvents = 'none';
-          img.setAttribute('draggable', 'false');
-        }
-      }
+      backdrop: 'rgba(0,0,0,0.85)',
+      showConfirmButton: true,
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#2c6975'
     });
   };
 
