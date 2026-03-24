@@ -534,13 +534,16 @@ document.addEventListener("DOMContentLoaded", () => {
       imageAlt: `Foto en ${estacion}`,
       title: `Ingreso a ${estacion}`,
       text: fecha,
-      width: 800,
+      width: '90vw',
       padding: '1em',
       background: '#fff',
       backdrop: 'rgba(0,0,0,0.8)',
+      customClass: { image: 'swal-img-full' },
       didOpen: () => {
         const img = Swal.getPopup().querySelector('.swal2-image');
         if (img) {
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '75vh';
           img.style.userSelect = 'none';
           img.style.pointerEvents = 'none';
           img.setAttribute('draggable', 'false');
