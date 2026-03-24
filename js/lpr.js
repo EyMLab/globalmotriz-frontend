@@ -531,7 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlFirmada = await obtenerUrlFirmada(url);
     Swal.fire({
       html: `
-        <img src="${urlFirmada}" alt="Foto en ${estacion}"
+        <img class="foto-evidencia" src="${urlFirmada}" alt="Foto en ${estacion}"
           style="width:100%; user-select:none; pointer-events:none;"
           draggable="false" oncontextmenu="return false">
         <h3 style="margin:.5em 0 .2em; color:#2c5282;">Ingreso a ${estacion}</h3>

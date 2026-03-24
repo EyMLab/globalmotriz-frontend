@@ -761,7 +761,7 @@ table.usuarios-table td {
 }
 
 /* El ancho lo controla cada Swal.fire() individualmente via width: */
-.swal2-popup:not(:has(.form-group)):not(:has(.form-row)):not(:has(.tabla-recepcion)) {
+.swal2-popup:not(:has(.form-group)):not(:has(.form-row)):not(:has(.tabla-recepcion)):not(:has(.foto-evidencia)) {
   width: 380px !important;
 }
 
