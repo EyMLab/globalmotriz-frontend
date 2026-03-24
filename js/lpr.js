@@ -534,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
       html: `
         <div id="foto-contenedor" style="overflow:hidden; max-height:65vh; border-radius:8px;">
           <img class="foto-evidencia" id="foto-zoom" src="${urlFirmada}" alt="Foto en ${estacion}"
-            style="width:100%; max-height:65vh; object-fit:contain; user-select:none; cursor:zoom-in;"
+            style="width:100%; max-height:65vh; object-fit:contain; user-select:none; cursor:zoom-in; transform:scale(1); transition:transform .2s ease;"
             draggable="false" oncontextmenu="return false">
         </div>
         <h3 style="margin:.5em 0 .2em; color:#2c5282;">${placaTexto}Ingreso a ${estacion}</h3>
@@ -554,35 +554,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const contenedor = document.getElementById('foto-contenedor');
         if (img && contenedor) {
           let zoomed = false;
-          img.addEventListener('click', (e) => {
+          contenedor.addEventListener('click', (e) => {
             zoomed = !zoomed;
             if (zoomed) {
-              contenedor.style.overflow = 'hidden';
-              img.style.width = '250%';
-              img.style.maxHeight = 'none';
               img.style.cursor = 'zoom-out';
-              img.style.transformOrigin = 'center center';
-              // Posicionar donde hizo clic
-              const rect = contenedor.getBoundingClientRect();
-              const px = (e.clientX - rect.left) / rect.width * 100;
-              const py = (e.clientY - rect.top) / rect.height * 100;
-              img.style.transformOrigin = px + '% ' + py + '%';
-              img.style.transform = 'scale(1)';
-              // Mover con mouse
-              contenedor.onmousemove = (ev) => {
-                const r = contenedor.getBoundingClientRect();
-                const x = (ev.clientX - r.left) / r.width * 100;
-                const y = (ev.clientY - r.top) / r.height * 100;
-                img.style.transformOrigin = x + '% ' + y + '%';
-              };
+              const r = contenedor.getBoundingClientRect();
+              const x = (e.clientX - r.left) / r.width * 100;
+              const y = (e.clientY - r.top) / r.height * 100;
+              img.style.transformOrigin = x + '% ' + y + '%';
+              img.style.transform = 'scale(2.5)';
             } else {
-              img.style.width = '100%';
-              img.style.maxHeight = '65vh';
               img.style.cursor = 'zoom-in';
-              img.style.transform = '';
-              img.style.transformOrigin = '';
-              contenedor.onmousemove = null;
+              img.style.transform = 'scale(1)';
+              img.style.transformOrigin = 'center center';
             }
+          });
+          contenedor.addEventListener('mousemove', (e) => {
+            if (!zoomed) return;
+            const r = contenedor.getBoundingClientRect();
+            const x = (e.clientX - r.left) / r.width * 100;
+            const y = (e.clientY - r.top) / r.height * 100;
+            img.style.transformOrigin = x + '% ' + y + '%';
           });
         }
       }
