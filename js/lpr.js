@@ -488,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let fotoHtml = '';
         if (h.foto) {
           const f = formatFecha(h.fecha);
-          fotoHtml = `<span class="mv-row-foto" onclick="verFotoGrande('${h.foto}','${h.est}','${f}')">\ud83d\udcf7</span>`;
+          fotoHtml = `<span class="mv-row-foto" onclick="verFotoGrande('${h.foto}','${h.est}','${f}','${veh.placa}')">\ud83d\udcf7</span>`;
         }
 
         row.innerHTML = `
@@ -526,15 +526,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return urlPublica; // fallback al URL público si falla
   }
 
-  window.verFotoGrande = async (url, estacion, fecha) => {
+  window.verFotoGrande = async (url, estacion, fecha, placa) => {
     Swal.fire({ title: 'Cargando foto...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const urlFirmada = await obtenerUrlFirmada(url);
+    const placaTexto = placa ? `<span style="font-weight:bold; font-size:1.1em;">${placa}</span> \u2014 ` : '';
     Swal.fire({
       html: `
-        <img class="foto-evidencia" src="${urlFirmada}" alt="Foto en ${estacion}"
-          style="width:100%; user-select:none; pointer-events:none;"
+        <img class="foto-evidencia" id="foto-zoom" src="${urlFirmada}" alt="Foto en ${estacion}"
+          style="width:100%; max-height:65vh; object-fit:contain; user-select:none; cursor:zoom-in; transition:transform .3s;"
           draggable="false" oncontextmenu="return false">
-        <h3 style="margin:.5em 0 .2em; color:#2c5282;">Ingreso a ${estacion}</h3>
+        <h3 style="margin:.5em 0 .2em; color:#2c5282;">${placaTexto}Ingreso a ${estacion}</h3>
         <p style="margin:0; color:#666;">${fecha}</p>
       `,
       padding: '1em',
@@ -545,8 +546,8 @@ document.addEventListener("DOMContentLoaded", () => {
       confirmButtonColor: '#2c6975',
       didOpen: () => {
         const popup = Swal.getPopup();
-        popup.style.width = '90vw';
-        popup.style.maxWidth = '1200px';
+        popup.style.width = '80vw';
+        popup.style.maxWidth = '1000px';
       }
     });
   };
@@ -718,7 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
               let fotoHtml = '';
               if (h.foto_url) {
-                fotoHtml = `<span class="timeline-foto" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}')">\ud83d\uddbc\ufe0f</span>`;
+                fotoHtml = `<span class="timeline-foto" onclick="verFotoGrande('${h.foto_url}', '${h.estacion}', '${inicioLocal}', '${placa}')">\ud83d\uddbc\ufe0f</span>`;
               }
 
               item.innerHTML = `
