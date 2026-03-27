@@ -498,7 +498,7 @@
 
       const result = await Swal.fire({
         title: `Solicitud #${sol.id}`,
-        width: '92%',
+        width: 1100,
         html: `
           <div class="detalle-solicitud" style="text-align:left;font-size:14px;">
             <!-- Fotos arriba -->
