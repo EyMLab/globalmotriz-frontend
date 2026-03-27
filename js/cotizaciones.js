@@ -500,7 +500,7 @@
         title: `Solicitud #${sol.id}`,
         width: '92%',
         html: `
-          <div style="text-align:left;font-size:14px;">
+          <div class="detalle-solicitud" style="text-align:left;font-size:14px;">
             <!-- Fotos arriba -->
             ${(sol.foto_matricula_url || sol.foto_proforma_url) ? `
             <div style="display:flex;gap:12px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
