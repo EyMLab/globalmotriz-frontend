@@ -126,9 +126,11 @@
 
       // Poblar filtro aseguradoras
       const sel = document.getElementById('filtro-aseguradora');
-      state.aseguradoras.forEach(a => {
-        if (a.activa) sel.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
-      });
+      if (sel) {
+        state.aseguradoras.forEach(a => {
+          if (a.activa) sel.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+        });
+      }
     } catch (err) {
       console.error('Error cargando catalogos:', err);
     }
@@ -150,7 +152,7 @@
   function initBotones() {
     // Boton nueva solicitud (solo asesor y admin)
     const btnNueva = document.getElementById('btnNuevaSolicitud');
-    if (state.esAdmin || state.esAsesor) {
+    if (btnNueva && (state.esAdmin || state.esAsesor)) {
       btnNueva.style.display = 'inline-block';
       btnNueva.addEventListener('click', modalNuevaSolicitud);
     }
@@ -174,12 +176,12 @@
         page: state.paginaActual,
         pageSize: state.pageSize
       });
-      const estado = document.getElementById('filtro-estado').value;
-      const placa = document.getElementById('filtro-placa').value.trim();
-      const tipo = document.getElementById('filtro-tipo').value;
-      const aseg = document.getElementById('filtro-aseguradora').value;
-      const desde = document.getElementById('filtro-desde').value;
-      const hasta = document.getElementById('filtro-hasta').value;
+      const estado = document.getElementById('filtro-estado')?.value || '';
+      const placa = document.getElementById('filtro-placa')?.value?.trim() || '';
+      const tipo = document.getElementById('filtro-tipo')?.value || '';
+      const aseg = document.getElementById('filtro-aseguradora')?.value || '';
+      const desde = document.getElementById('filtro-desde')?.value || '';
+      const hasta = document.getElementById('filtro-hasta')?.value || '';
 
       if (estado) params.set('estado', estado);
       if (placa) params.set('placa', placa);
@@ -202,6 +204,7 @@
 
   function renderTablaSolicitudes() {
     const tbody = document.getElementById('tablaSolicitudes');
+    if (!tbody) return;
     if (!state.solicitudes.length) {
       tbody.innerHTML = '<tr><td colspan="8">No hay solicitudes</td></tr>';
       actualizarPaginacion();
@@ -234,9 +237,13 @@
 
   function actualizarPaginacion() {
     const total = Math.ceil(state.totalSolicitudes / state.pageSize) || 1;
-    document.getElementById('page-info').textContent = `Pagina ${state.paginaActual} de ${total}`;
-    document.getElementById('btn-prev').disabled = state.paginaActual === 1;
-    document.getElementById('btn-next').disabled = state.paginaActual >= total;
+    const pageInfo = document.getElementById('page-info');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    if (!pageInfo) return;
+    pageInfo.textContent = `Pagina ${state.paginaActual} de ${total}`;
+    if (btnPrev) btnPrev.disabled = state.paginaActual === 1;
+    if (btnNext) btnNext.disabled = state.paginaActual >= total;
   }
 
   function badgeEstado(estado) {
@@ -607,6 +614,7 @@
   async function cargarPendientesCotizar() {
     const container = document.getElementById('lista-pendientes');
     const workspace = document.getElementById('workspace-container');
+    if (!container || !workspace) return;
     workspace.innerHTML = '';
 
     try {
@@ -992,6 +1000,7 @@
   // =====================================================
   async function cargarPorRecibir() {
     const tbody = document.getElementById('tablaPorRecibir');
+    if (!tbody) return;
     try {
       const res = await apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=Por Recibir');
       const data = await safeJson(res);
