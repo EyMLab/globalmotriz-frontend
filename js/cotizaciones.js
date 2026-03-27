@@ -498,26 +498,26 @@
 
       const result = await Swal.fire({
         title: `Solicitud #${sol.id}`,
-        width: '95%',
+        width: 960,
         html: `
-          <div style="text-align:left;">
-            <!-- Cabecera: Info + Fotos -->
-            <div style="display:grid;grid-template-columns:1fr auto;gap:20px;margin-bottom:16px;">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;font-size:14px;">
-                <p><strong>Placa:</strong> ${sol.placa}</p>
-                <p><strong>Tipo:</strong> <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${sol.tipo_cliente}</span></p>
-                <p><strong>Aseguradora:</strong> ${sol.aseguradora_nombre || '-'}</p>
-                <p><strong>Estado:</strong> ${badgeEstado(sol.estado)}</p>
-                <p><strong>Creado por:</strong> ${sol.creado_por} <span style="color:#94a3b8;">(${sol.fecha_creacion_fmt || '-'})</span></p>
-                ${sol.cotizado_por ? `<p><strong>Cotizado por:</strong> ${sol.cotizado_por} <span style="color:#94a3b8;">(${sol.fecha_cotizacion_fmt || '-'})</span></p>` : '<p></p>'}
-                ${sol.aprobado_por ? `<p><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'} por:</strong> ${sol.aprobado_por} <span style="color:#94a3b8;">(${sol.fecha_aprobacion_fmt || '-'})</span></p>` : ''}
-                ${sol.notas_asesor ? `<p style="grid-column:1/-1;"><strong>Notas del asesor:</strong> ${sol.notas_asesor}</p>` : ''}
-              </div>
-              <div style="display:flex;gap:10px;flex-shrink:0;">
-                ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="width:130px;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>` : ''}
-                ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="width:130px;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>` : ''}
-              </div>
+          <div style="text-align:left;font-size:14px;">
+            <!-- Fotos arriba -->
+            ${(sol.foto_matricula_url || sol.foto_proforma_url) ? `
+            <div style="display:flex;gap:12px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
+              ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="height:90px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>` : ''}
+              ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="height:90px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>` : ''}
+            </div>` : ''}
+            <!-- Info en linea -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+              <span><strong>Placa:</strong> ${sol.placa}</span>
+              <span><strong>Tipo:</strong> <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${sol.tipo_cliente}</span></span>
+              <span><strong>Aseguradora:</strong> ${sol.aseguradora_nombre || '-'}</span>
+              <span><strong>Estado:</strong> ${badgeEstado(sol.estado)}</span>
+              <span><strong>Creado:</strong> ${sol.creado_por} <span style="color:#94a3b8;">(${sol.fecha_creacion_fmt || '-'})</span></span>
+              ${sol.cotizado_por ? `<span><strong>Cotizado:</strong> ${sol.cotizado_por} <span style="color:#94a3b8;">(${sol.fecha_cotizacion_fmt || '-'})</span></span>` : ''}
+              ${sol.aprobado_por ? `<span><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'}:</strong> ${sol.aprobado_por} <span style="color:#94a3b8;">(${sol.fecha_aprobacion_fmt || '-'})</span></span>` : ''}
             </div>
+            ${sol.notas_asesor ? `<div style="margin-bottom:10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;"><strong>Notas del asesor:</strong> ${sol.notas_asesor}</div>` : ''}
             ${obsHTML}
             <!-- Tabla comparativa -->
             <div style="overflow-x:auto;">
