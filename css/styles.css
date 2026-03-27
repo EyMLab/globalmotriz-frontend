@@ -1755,4 +1755,95 @@ div.swal2-backdrop-show {
 .notif-item:hover { background: var(--row-hover); }
 .notif-item.no-leida { background: #eff6ff; font-weight: 500; }
 .notif-item .notif-fecha { font-size: 11px; color: var(--text-light); margin-top: 3px; }
+
+/* ======================================================================
+   RESPONSIVE GLOBAL (navbar, contenedor, tablas)
+====================================================================== */
+@media (max-width: 768px) {
+  /* Navbar: se apila en columna */
+  .navbar {
+    height: auto;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .nav-left {
+    gap: 8px;
+  }
+  .nav-title {
+    font-size: 16px;
+  }
+  .logo-header {
+    width: 34px;
+  }
+  .nav-center {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .nav-links a {
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .nav-right {
+    gap: 6px;
+  }
+  .btn-nav {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .usuario-badge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  /* Contenedor principal */
+  .dashboard-container {
+    margin: 8px;
+    padding: 12px;
+  }
+
+  /* Tablas generales: scroll horizontal */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table th, table td {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+
+  /* Filtros generales */
+  .filtros {
+    padding: 12px !important;
+    gap: 8px !important;
+    flex-direction: column;
+  }
+  .filtro-grupo {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Paginacion */
+  .pagination-controls {
+    gap: 10px;
+  }
+  .pagination-controls button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* SweetAlert2 modales */
+  .swal2-popup {
+    padding: 16px 14px 14px !important;
+  }
+  .swal2-title {
+    font-size: 18px !important;
+  }
+}
 .notif-empty { padding: 24px; text-align: center; color: var(--text-light); font-size: 13px; }

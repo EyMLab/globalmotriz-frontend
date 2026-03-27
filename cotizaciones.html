@@ -212,6 +212,112 @@
       cursor: pointer; font-size: 12px; font-weight: 600;
     }
     .notif-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+
+    /* ====== RESPONSIVE COTIZACIONES ====== */
+    @media (max-width: 768px) {
+      /* Tabs */
+      .tabs-bar {
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      /* Filtros: apilados */
+      .filtros.insumos {
+        flex-direction: column !important;
+        padding: 12px !important;
+        gap: 8px !important;
+      }
+      .filtros.insumos .filtro-grupo {
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
+      }
+
+      /* Tabla principal: scroll horizontal */
+      #panel-solicitudes > table,
+      #panel-por-recibir > table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 12px;
+      }
+      #panel-solicitudes > table th,
+      #panel-solicitudes > table td,
+      #panel-por-recibir > table th,
+      #panel-por-recibir > table td {
+        white-space: nowrap;
+        padding: 8px 6px;
+        font-size: 12px;
+      }
+
+      /* Workspace cotizar */
+      .workspace {
+        padding: 12px;
+      }
+      .workspace-header {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .workspace-header .info h3 {
+        font-size: 16px;
+      }
+      .proforma-thumb {
+        width: 80px;
+        height: 80px;
+      }
+
+      /* Tabla cotizacion: scroll horizontal */
+      .tabla-cotizacion {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .col-repuesto { min-width: 120px; }
+      .col-proveedor { min-width: 100px; }
+      .col-precio { width: 70px; }
+      .col-tipo { width: 70px; }
+
+      /* Workspace actions */
+      .workspace-actions {
+        flex-direction: column;
+      }
+      .workspace-actions button {
+        width: 100%;
+      }
+
+      /* Botones */
+      .btn-add-item {
+        width: 100%;
+      }
+
+      /* Notificaciones dropdown */
+      .notif-dropdown {
+        width: 280px;
+        right: -40px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .tab-btn {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      .proforma-thumb {
+        width: 60px;
+        height: 60px;
+      }
+      .workspace-header .info h3 {
+        font-size: 14px;
+      }
+      .workspace-header .info p {
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
