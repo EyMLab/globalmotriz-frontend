@@ -242,8 +242,12 @@
           </div>
         </div>
         <div class="form-group">
+          <label>Foto de matricula</label>
+          <input id="sol-foto-matricula" type="file" accept="image/*" capture="environment" class="swal2-file" style="border:1px solid #d1d5db; border-radius:8px; padding:8px; width:100%; box-sizing:border-box;">
+        </div>
+        <div class="form-group">
           <label>Foto de proforma</label>
-          <input id="sol-foto" type="file" accept="image/*" capture="environment" class="swal2-file" style="border:1px solid #d1d5db; border-radius:8px; padding:8px; width:100%; box-sizing:border-box;">
+          <input id="sol-foto-proforma" type="file" accept="image/*" capture="environment" class="swal2-file" style="border:1px solid #d1d5db; border-radius:8px; padding:8px; width:100%; box-sizing:border-box;">
         </div>
         <div class="form-group">
           <label>Notas / Observaciones</label>
@@ -317,10 +321,11 @@
           return false;
         }
 
-        const foto = document.getElementById('sol-foto').files[0] || null;
+        const foto_matricula = document.getElementById('sol-foto-matricula').files[0] || null;
+        const foto_proforma = document.getElementById('sol-foto-proforma').files[0] || null;
         const notas = document.getElementById('sol-notas').value.trim();
 
-        return { placa, tipo_cliente, aseguradora_id, foto, notas };
+        return { placa, tipo_cliente, aseguradora_id, foto_matricula, foto_proforma, notas };
       }
     });
 
@@ -331,7 +336,8 @@
       fd.append('placa', formData.placa.toUpperCase());
       fd.append('tipo_cliente', formData.tipo_cliente);
       if (formData.aseguradora_id) fd.append('aseguradora_id', formData.aseguradora_id);
-      if (formData.foto) fd.append('foto', formData.foto);
+      if (formData.foto_proforma) fd.append('foto_proforma', formData.foto_proforma);
+      if (formData.foto_matricula) fd.append('foto_matricula', formData.foto_matricula);
       if (formData.notas) fd.append('notas_asesor', formData.notas);
 
       const res = await apiFetch('/cotizaciones/solicitudes', {
@@ -406,10 +412,18 @@
         obsHTML += `<div style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;font-size:13px;color:#0c4a6e;"><strong>Observaciones de bodega:</strong> ${sol.observaciones_bodega}</div>`;
       }
 
-      // Foto proforma
-      const fotoHTML = sol.foto_proforma_url
-        ? `<div style="margin:10px 0;"><img src="${sol.foto_proforma_url}" style="max-width:100%;max-height:200px;border-radius:8px;cursor:pointer;" onclick="window.open('${sol.foto_proforma_url}','_blank')"></div>`
-        : '';
+      // Fotos
+      let fotoHTML = '';
+      if (sol.foto_matricula_url || sol.foto_proforma_url) {
+        fotoHTML = `<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;">`;
+        if (sol.foto_matricula_url) {
+          fotoHTML += `<div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="max-width:180px;max-height:160px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${sol.foto_matricula_url}','_blank')"></div>`;
+        }
+        if (sol.foto_proforma_url) {
+          fotoHTML += `<div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="max-width:180px;max-height:160px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${sol.foto_proforma_url}','_blank')"></div>`;
+        }
+        fotoHTML += `</div>`;
+      }
 
       // Botones segun estado y rol
       let botonesHTML = '';
@@ -447,7 +461,10 @@
                 ${sol.aprobado_por ? `<p><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'} por:</strong> ${sol.aprobado_por} (${sol.fecha_aprobacion_fmt || '-'})</p>` : ''}
                 ${sol.notas_asesor ? `<p><strong>Notas del asesor:</strong> ${sol.notas_asesor}</p>` : ''}
               </div>
-              ${sol.foto_proforma_url ? `<div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="window.open('${sol.foto_proforma_url}','_blank')"></div>` : ''}
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="window.open('${sol.foto_matricula_url}','_blank')"></div>` : ''}
+                ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="window.open('${sol.foto_proforma_url}','_blank')"></div>` : ''}
+              </div>
             </div>
             ${obsHTML}
             ${tablaHTML}
@@ -609,9 +626,15 @@
               </p>
               ${sol.notas_asesor ? `<p>Notas del asesor: ${sol.notas_asesor}</p>` : ''}
             </div>
-            ${sol.foto_proforma_url
-              ? `<img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="window.open('${sol.foto_proforma_url}','_blank')" title="Click para agrandar">`
-              : '<div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">Sin foto</div>'}
+            <div style="display:flex;gap:8px;">
+              ${sol.foto_matricula_url
+                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="window.open('${sol.foto_matricula_url}','_blank')" title="Click para agrandar"></div>`
+                : ''}
+              ${sol.foto_proforma_url
+                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="window.open('${sol.foto_proforma_url}','_blank')" title="Click para agrandar"></div>`
+                : ''}
+              ${!sol.foto_matricula_url && !sol.foto_proforma_url ? '<div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">Sin fotos</div>' : ''}
+            </div>
           </div>
           ${obsHTML}
           <div id="ws-items-container"></div>
