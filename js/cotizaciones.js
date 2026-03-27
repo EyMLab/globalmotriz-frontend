@@ -9,14 +9,14 @@
     Swal.fire({
       html: `
         <div style="overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px;cursor:grab;" id="lightbox-container">
-          <img src="${url}" id="lightbox-img" style="max-width:100%;max-height:75vh;transition:transform 0.2s;border-radius:6px;" draggable="false">
+          <img src="${url}" id="lightbox-img" style="max-width:100%;max-height:82vh;transition:transform 0.2s;border-radius:6px;" draggable="false">
         </div>
         <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
           <button type="button" class="btn-obs" onclick="lbZoom(1.3)" style="padding:6px 14px;">+ Zoom</button>
           <button type="button" class="btn-obs" onclick="lbZoom(0.7)" style="padding:6px 14px;">- Zoom</button>
           <button type="button" class="btn-obs" onclick="lbZoom(0)" style="padding:6px 14px;">Reset</button>
         </div>`,
-      width: 700,
+      width: '90%',
       showConfirmButton: true,
       confirmButtonText: 'Cerrar',
       didOpen: () => {
@@ -498,27 +498,31 @@
 
       const result = await Swal.fire({
         title: `Solicitud #${sol.id}`,
-        width: 780,
+        width: '95%',
         html: `
           <div style="text-align:left;">
-            <div style="display:flex;gap:20px;flex-wrap:wrap;">
-              <div style="flex:1;">
+            <!-- Cabecera: Info + Fotos -->
+            <div style="display:grid;grid-template-columns:1fr auto;gap:20px;margin-bottom:16px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;font-size:14px;">
                 <p><strong>Placa:</strong> ${sol.placa}</p>
                 <p><strong>Tipo:</strong> <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${sol.tipo_cliente}</span></p>
                 <p><strong>Aseguradora:</strong> ${sol.aseguradora_nombre || '-'}</p>
                 <p><strong>Estado:</strong> ${badgeEstado(sol.estado)}</p>
-                <p><strong>Creado por:</strong> ${sol.creado_por} (${sol.fecha_creacion_fmt || '-'})</p>
-                ${sol.cotizado_por ? `<p><strong>Cotizado por:</strong> ${sol.cotizado_por} (${sol.fecha_cotizacion_fmt || '-'})</p>` : ''}
-                ${sol.aprobado_por ? `<p><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'} por:</strong> ${sol.aprobado_por} (${sol.fecha_aprobacion_fmt || '-'})</p>` : ''}
-                ${sol.notas_asesor ? `<p><strong>Notas del asesor:</strong> ${sol.notas_asesor}</p>` : ''}
+                <p><strong>Creado por:</strong> ${sol.creado_por} <span style="color:#94a3b8;">(${sol.fecha_creacion_fmt || '-'})</span></p>
+                ${sol.cotizado_por ? `<p><strong>Cotizado por:</strong> ${sol.cotizado_por} <span style="color:#94a3b8;">(${sol.fecha_cotizacion_fmt || '-'})</span></p>` : '<p></p>'}
+                ${sol.aprobado_por ? `<p><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'} por:</strong> ${sol.aprobado_por} <span style="color:#94a3b8;">(${sol.fecha_aprobacion_fmt || '-'})</span></p>` : ''}
+                ${sol.notas_asesor ? `<p style="grid-column:1/-1;"><strong>Notas del asesor:</strong> ${sol.notas_asesor}</p>` : ''}
               </div>
-              <div style="display:flex;flex-direction:column;gap:6px;">
-                ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>` : ''}
-                ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>` : ''}
+              <div style="display:flex;gap:10px;flex-shrink:0;">
+                ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="width:130px;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>` : ''}
+                ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="width:130px;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>` : ''}
               </div>
             </div>
             ${obsHTML}
-            ${tablaHTML}
+            <!-- Tabla comparativa -->
+            <div style="overflow-x:auto;">
+              ${tablaHTML}
+            </div>
             ${botonesHTML}
             ${pdfBtnHTML}
           </div>
