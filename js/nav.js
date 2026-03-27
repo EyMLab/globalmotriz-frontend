@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         pagina = "Inventario";
     }
     else if (window.location.pathname.includes("compras")) pagina = "Compras";
+    else if (window.location.pathname.includes("cotizaciones")) pagina = "Cotizaciones";
     else if (window.location.pathname.includes("lpr")) pagina = "Taller";
 
     // Seguro solo puede ver Taller
@@ -62,6 +63,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="compras.html" class="${pagina === 'Compras' ? 'active' : ''}">Compras</a>`
       : "";
 
+    const enlaceCotizaciones = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
+      ? `<a href="cotizaciones.html" class="${pagina === 'Cotizaciones' ? 'active' : ''}">Cotizaciones</a>`
+      : "";
+
     const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
       : "";
@@ -90,12 +95,27 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${enlaceInsumos}
           ${enlaceInventario}
           ${enlaceCompras}
+          ${enlaceCotizaciones}
           ${enlaceLPR}
           ${enlaceFinanzas}
           ${enlaceUsuarios}
         </nav>
 
         <div class="nav-right">
+          ${['admin', 'control', 'bodega', 'asesor'].includes(rol) ? `
+          <div style="position:relative;display:inline-block;" id="notif-bell-container">
+            <button class="notif-bell" id="btn-notif-bell" title="Notificaciones">&#128276;
+              <span class="notif-badge" id="notif-count" style="display:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown">
+              <div class="notif-header">
+                <span>Notificaciones</span>
+                <button id="btn-leer-todas">Marcar todas leidas</button>
+              </div>
+              <div id="notif-list"></div>
+            </div>
+          </div>
+          ` : ''}
           <p id="usuario-info" class="usuario-badge">${data.usuario} (${rol})</p>
           <button class="btn-nav" onclick="abrirModalCambioClave()">Cambiar contraseña</button>
           <button id="btn-cerrar-sesion" class="btn-nav logout">Cerrar sesión</button>
@@ -105,6 +125,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnCerrar = document.getElementById("btn-cerrar-sesion");
     if (btnCerrar) btnCerrar.addEventListener("click", cerrarSesion);
+
+    // ============================================
+    // Notificaciones (campanita)
+    // ============================================
+    if (['admin', 'control', 'bodega', 'asesor'].includes(rol)) {
+      initNotificaciones();
+    }
 
   } catch (err) {
     console.error("❌ Error al cargar nav:", err.message);
@@ -164,7 +191,98 @@ async function abrirModalCambioClave() {
 
 
 // ===================================================
-// 🚪 Cerrar sesión
+// Notificaciones (campanita)
+// ===================================================
+function initNotificaciones() {
+  const bell = document.getElementById('btn-notif-bell');
+  const dropdown = document.getElementById('notif-dropdown');
+  const countEl = document.getElementById('notif-count');
+
+  if (!bell) return;
+
+  // Toggle dropdown
+  bell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.classList.toggle('open');
+    if (isOpen) cargarNotificaciones();
+  });
+
+  // Cerrar al click fuera
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#notif-bell-container')) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  // Marcar todas leidas
+  document.getElementById('btn-leer-todas')?.addEventListener('click', async () => {
+    try {
+      await apiFetch('/cotizaciones/notificaciones/leer-todas', { method: 'PATCH' });
+      cargarNotificaciones();
+      actualizarContadorNotif();
+    } catch (e) { /* ignore */ }
+  });
+
+  // Polling cada 60s
+  actualizarContadorNotif();
+  setInterval(actualizarContadorNotif, 60000);
+}
+
+async function actualizarContadorNotif() {
+  try {
+    const res = await apiFetch('/cotizaciones/notificaciones/count');
+    if (!res.ok) return;
+    const data = await safeJson(res);
+    const countEl = document.getElementById('notif-count');
+    if (!countEl) return;
+    const n = data.no_leidas || 0;
+    countEl.textContent = n;
+    countEl.style.display = n > 0 ? 'flex' : 'none';
+  } catch (e) { /* ignore */ }
+}
+
+async function cargarNotificaciones() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  try {
+    const res = await apiFetch('/cotizaciones/notificaciones?limit=15');
+    const data = await safeJson(res);
+    if (!res.ok || !data.items?.length) {
+      list.innerHTML = '<div class="notif-empty">Sin notificaciones</div>';
+      return;
+    }
+    list.innerHTML = data.items.map(n => `
+      <div class="notif-item ${n.leida ? '' : 'no-leida'}" onclick="clickNotificacion(${n.id}, ${n.solicitud_id}, ${n.leida})">
+        <div>${n.mensaje}</div>
+        <div class="notif-fecha">${n.fecha}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="notif-empty">Error cargando</div>';
+  }
+}
+
+async function clickNotificacion(id, solicitudId, leida) {
+  if (!leida) {
+    try {
+      await apiFetch(`/cotizaciones/notificaciones/${id}/leer`, { method: 'PATCH' });
+      actualizarContadorNotif();
+    } catch (e) { /* ignore */ }
+  }
+  // Navegar a cotizaciones si no estamos ahi
+  if (!window.location.pathname.includes('cotizaciones')) {
+    window.location.href = `cotizaciones.html`;
+  } else {
+    // Si ya estamos, abrir detalle
+    if (typeof COT !== 'undefined' && COT.verDetalle) {
+      COT.verDetalle(solicitudId);
+      document.getElementById('notif-dropdown')?.classList.remove('open');
+    }
+  }
+}
+
+// ===================================================
+// Cerrar sesion
 // ===================================================
 function cerrarSesion() {
   Swal.fire({

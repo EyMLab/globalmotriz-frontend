@@ -537,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
             style="width:100%; max-height:65vh; object-fit:contain; user-select:none; cursor:zoom-in; transform:scale(1); transition:transform .2s ease;"
             draggable="false" oncontextmenu="return false">
         </div>
-        <h3 style="margin:.5em 0 .2em; color:#2c5282;">${placaTexto}Ingreso a ${estacion}</h3>
+        <h3 style="margin:.5em 0 .2em; color:#2c5282;">${placaTexto}${estacion}</h3>
         <p style="margin:0; color:#666;">${fecha}</p>
       `,
       padding: '1em',

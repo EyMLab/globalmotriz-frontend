@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cotizaciones</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* ====== TABS ====== */
+    .tabs-bar {
+      display: flex; gap: 0; margin-bottom: 20px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .tab-btn {
+      padding: 10px 24px; border: none; background: none;
+      font-size: 14px; font-weight: 600; color: #64748b;
+      cursor: pointer; border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #334155; }
+    .tab-btn.active {
+      color: var(--primary); border-bottom-color: var(--primary);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ====== BADGES ESTADO ====== */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .badge-pendiente      { background: #fef3c7; color: #92400e; }
+    .badge-en-cotizacion  { background: #dbeafe; color: #1e40af; }
+    .badge-cotizada       { background: #e0e7ff; color: #3730a3; }
+    .badge-aprobada       { background: #d1fae5; color: #065f46; }
+    .badge-rechazada      { background: #fee2e2; color: #991b1b; }
+    .badge-por-recibir    { background: #fef3c7; color: #78350f; }
+    .badge-recibida       { background: #d1fae5; color: #065f46; }
+    .badge-anulada        { background: #f1f5f9; color: #475569; }
+
+    /* ====== TIPO BADGES ====== */
+    .tipo-original { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .tipo-alterno  { background: #ffedd5; color: #c2410c; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .tipo-particular   { background: #f3e8ff; color: #7c3aed; }
+    .tipo-aseguradora  { background: #dbeafe; color: #1e40af; }
+
+    /* ====== BOTONES COTIZACIONES ====== */
+    .btn-aprobar {
+      background: #059669; color: white; border: none;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-aprobar:hover { background: #047857; }
+
+    .btn-rechazar {
+      background: #dc2626; color: white; border: none;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-rechazar:hover { background: #b91c1c; }
+
+    .btn-ver-detalle {
+      background: #6366f1; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-ver-detalle:hover { background: #4f46e5; }
+
+    .btn-cotizar {
+      background: var(--primary); color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-cotizar:hover { background: var(--primary-dark); }
+
+    .btn-pdf {
+      background: #ea580c; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-pdf:hover { background: #c2410c; }
+
+    .btn-estado-sm {
+      border: none; padding: 5px 12px; border-radius: 6px;
+      cursor: pointer; font-size: 12px; font-weight: 600; color: white;
+    }
+
+    /* ====== WORKSPACE COTIZAR ====== */
+    .workspace {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 20px; margin-top: 16px;
+    }
+    .workspace-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 20px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .workspace-header .info { flex: 1; }
+    .workspace-header .info h3 { margin: 0 0 6px 0; color: #334155; }
+    .workspace-header .info p { margin: 2px 0; color: #64748b; font-size: 14px; }
+    .proforma-thumb {
+      width: 120px; height: 120px; object-fit: cover;
+      border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .proforma-thumb:hover { transform: scale(1.05); }
+
+    /* ====== TABLA COTIZACION ====== */
+    .tabla-cotizacion {
+      width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px;
+    }
+    .tabla-cotizacion th {
+      background: #f1f5f9; padding: 8px 6px; text-align: center;
+      font-size: 11px; text-transform: uppercase; color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .tabla-cotizacion td {
+      padding: 6px; text-align: center; border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .tabla-cotizacion input[type="text"],
+    .tabla-cotizacion input[type="number"] {
+      width: 100%; padding: 4px 6px; border: 1px solid #cbd5e1;
+      border-radius: 4px; font-size: 13px; box-sizing: border-box;
+    }
+    .tabla-cotizacion select {
+      width: 100%; padding: 4px 6px; border: 1px solid #cbd5e1;
+      border-radius: 4px; font-size: 12px;
+    }
+    .col-repuesto { min-width: 160px; }
+    .col-cant { width: 50px; }
+    .col-proveedor { min-width: 120px; }
+    .col-precio { width: 90px; }
+    .col-tipo { width: 90px; }
+    .col-ganador { width: 60px; }
+    .col-acciones { width: 40px; }
+
+    .ganador-radio { transform: scale(1.3); cursor: pointer; }
+    .fila-ganadora td { background: #ecfdf5 !important; }
+
+    .total-row td {
+      font-weight: 700; font-size: 14px; background: #f1f5f9;
+      border-top: 2px solid #e2e8f0;
+    }
+
+    .btn-add-item {
+      background: #059669; color: white; border: none;
+      padding: 6px 16px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500; margin-top: 10px;
+    }
+    .btn-add-item:hover { background: #047857; }
+
+    .btn-remove-item {
+      background: none; border: none; color: #dc2626;
+      cursor: pointer; font-size: 16px; font-weight: 700;
+    }
+
+    .workspace-actions {
+      display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end;
+    }
+
+    /* ====== OBSERVACIONES RECHAZO ====== */
+    .obs-rechazo {
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 8px; padding: 10px 14px; margin-top: 10px;
+      font-size: 13px; color: #991b1b;
+    }
+    .obs-aprobacion {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 8px; padding: 10px 14px; margin-top: 10px;
+      font-size: 13px; color: #166534;
+    }
+
+    /* ====== NOTIFICACIONES ====== */
+    .notif-bell {
+      position: relative; cursor: pointer;
+      font-size: 20px; padding: 4px 8px;
+      background: none; border: none; color: white;
+    }
+    .notif-badge {
+      position: absolute; top: -2px; right: -2px;
+      background: #ef4444; color: white; font-size: 10px;
+      font-weight: 700; min-width: 16px; height: 16px;
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; padding: 0 4px;
+    }
+    .notif-dropdown {
+      position: absolute; top: 100%; right: 0;
+      background: white; border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      width: 340px; max-height: 400px; overflow-y: auto;
+      z-index: 1001; display: none;
+    }
+    .notif-dropdown.open { display: block; }
+    .notif-item {
+      padding: 10px 14px; border-bottom: 1px solid #f1f5f9;
+      cursor: pointer; transition: background 0.2s;
+      font-size: 13px; color: #334155;
+    }
+    .notif-item:hover { background: #f8fafc; }
+    .notif-item.no-leida { background: #eff6ff; font-weight: 500; }
+    .notif-item .notif-fecha { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .notif-header {
+      padding: 10px 14px; border-bottom: 2px solid #e2e8f0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .notif-header span { font-weight: 700; font-size: 14px; color: #334155; }
+    .notif-header button {
+      background: none; border: none; color: var(--primary);
+      cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+    .notif-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+    <!-- TABS -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" data-tab="solicitudes">Solicitudes</button>
+      <button class="tab-btn" data-tab="cotizar" id="tab-btn-cotizar">Cotizar</button>
+      <button class="tab-btn" data-tab="por-recibir" id="tab-btn-recibir">Por Recibir</button>
+    </div>
+
+    <!-- ======== TAB 1: SOLICITUDES ======== -->
+    <div class="tab-panel active" id="panel-solicitudes">
+      <div class="filtros insumos" style="margin-bottom:12px; flex-wrap:wrap;">
+        <div class="filtro-grupo" style="flex:0 0 140px;">
+          <label>Estado:</label>
+          <select id="filtro-estado">
+            <option value="">Todas</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En Cotizacion">En Cotizacion</option>
+            <option value="Cotizada">Cotizada</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rechazada">Rechazada</option>
+            <option value="Por Recibir">Por Recibir</option>
+            <option value="Recibida">Recibida</option>
+            <option value="Anulada">Anulada</option>
+          </select>
+        </div>
+        <div class="filtro-grupo" style="flex:0 0 120px;">
+          <label>Placa:</label>
+          <input type="text" id="filtro-placa" placeholder="ABC-1234" style="text-transform:uppercase;">
+        </div>
+        <div class="filtro-grupo" style="flex:0 0 140px;">
+          <label>Tipo:</label>
+          <select id="filtro-tipo">
+            <option value="">Todos</option>
+            <option value="Particular">Particular</option>
+            <option value="Aseguradora">Aseguradora</option>
+          </select>
+        </div>
+        <div class="filtro-grupo" style="flex:0 0 160px;">
+          <label>Aseguradora:</label>
+          <select id="filtro-aseguradora">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="filtro-grupo" style="flex:0 0 150px;">
+          <label>Desde:</label>
+          <input type="date" id="filtro-desde">
+        </div>
+        <div class="filtro-grupo" style="flex:0 0 150px;">
+          <label>Hasta:</label>
+          <input type="date" id="filtro-hasta">
+        </div>
+      </div>
+
+      <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="btnNuevaSolicitud" type="button" class="btn-obs" style="display:none;">Nueva Solicitud</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Placa</th>
+            <th>Tipo</th>
+            <th>Aseguradora</th>
+            <th>Estado</th>
+            <th>Creado por</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaSolicitudes"></tbody>
+      </table>
+
+      <div class="pagination-controls">
+        <button id="btn-prev" type="button">Anterior</button>
+        <span id="page-info">Pagina 1</span>
+        <button id="btn-next" type="button">Siguiente</button>
+      </div>
+    </div>
+
+    <!-- ======== TAB 2: COTIZAR ======== -->
+    <div class="tab-panel" id="panel-cotizar">
+      <div id="lista-pendientes"></div>
+      <div id="workspace-container"></div>
+    </div>
+
+    <!-- ======== TAB 3: POR RECIBIR ======== -->
+    <div class="tab-panel" id="panel-por-recibir">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Placa</th>
+            <th>Tipo</th>
+            <th>Aseguradora</th>
+            <th>Cotizado por</th>
+            <th>Fecha Aprobacion</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaPorRecibir"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/cotizaciones.js"></script>
+</body>
+</html>
