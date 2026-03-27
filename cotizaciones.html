@@ -213,6 +213,26 @@
     }
     .notif-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13px; }
 
+    /* ====== FILTROS COTIZACIONES (desktop) ====== */
+    .filtros-cotiz {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .filtros-cotiz .filtro-grupo {
+      flex: 1 1 130px;
+      min-width: 120px;
+    }
+    .filtros-cotiz .filtro-grupo label {
+      text-align: left;
+    }
+    .filtros-cotiz .filtro-grupo input,
+    .filtros-cotiz .filtro-grupo select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
     /* ====== RESPONSIVE COTIZACIONES ====== */
     @media (max-width: 768px) {
       /* Tabs */
@@ -227,32 +247,24 @@
         white-space: nowrap;
       }
 
-      /* Filtros: apilados */
-      .filtros.insumos {
-        flex-direction: column !important;
-        padding: 12px !important;
+      /* Filtros: grid 2 columnas en movil */
+      .filtros-cotiz {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
         gap: 8px !important;
+        padding: 10px !important;
       }
-      .filtros.insumos .filtro-grupo {
-        flex: 1 1 100% !important;
+      .filtros-cotiz .filtro-grupo {
         min-width: 0 !important;
       }
-
-      /* Tabla principal: scroll horizontal */
-      #panel-solicitudes > table,
-      #panel-por-recibir > table {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        font-size: 12px;
+      .filtros-cotiz .filtro-grupo label {
+        font-size: 11px;
+        margin-bottom: 3px;
       }
-      #panel-solicitudes > table th,
-      #panel-solicitudes > table td,
-      #panel-por-recibir > table th,
-      #panel-por-recibir > table td {
-        white-space: nowrap;
-        padding: 8px 6px;
-        font-size: 12px;
+      .filtros-cotiz .filtro-grupo input,
+      .filtros-cotiz .filtro-grupo select {
+        height: 36px;
+        font-size: 13px;
       }
 
       /* Workspace cotizar */
@@ -307,6 +319,10 @@
         padding: 8px 10px;
         font-size: 12px;
       }
+      /* Filtros: 1 columna en pantallas muy chicas */
+      .filtros-cotiz {
+        grid-template-columns: 1fr !important;
+      }
       .proforma-thumb {
         width: 60px;
         height: 60px;
@@ -333,8 +349,8 @@
 
     <!-- ======== TAB 1: SOLICITUDES ======== -->
     <div class="tab-panel active" id="panel-solicitudes">
-      <div class="filtros insumos" style="margin-bottom:12px; flex-wrap:wrap;">
-        <div class="filtro-grupo" style="flex:0 0 140px;">
+      <div class="filtros insumos filtros-cotiz">
+        <div class="filtro-grupo">
           <label>Estado:</label>
           <select id="filtro-estado">
             <option value="">Todas</option>
@@ -348,11 +364,11 @@
             <option value="Anulada">Anulada</option>
           </select>
         </div>
-        <div class="filtro-grupo" style="flex:0 0 120px;">
+        <div class="filtro-grupo">
           <label>Placa:</label>
           <input type="text" id="filtro-placa" placeholder="ABC-1234" style="text-transform:uppercase;">
         </div>
-        <div class="filtro-grupo" style="flex:0 0 140px;">
+        <div class="filtro-grupo">
           <label>Tipo:</label>
           <select id="filtro-tipo">
             <option value="">Todos</option>
@@ -360,17 +376,17 @@
             <option value="Aseguradora">Aseguradora</option>
           </select>
         </div>
-        <div class="filtro-grupo" style="flex:0 0 160px;">
+        <div class="filtro-grupo">
           <label>Aseguradora:</label>
           <select id="filtro-aseguradora">
             <option value="">Todas</option>
           </select>
         </div>
-        <div class="filtro-grupo" style="flex:0 0 150px;">
+        <div class="filtro-grupo">
           <label>Desde:</label>
           <input type="date" id="filtro-desde">
         </div>
-        <div class="filtro-grupo" style="flex:0 0 150px;">
+        <div class="filtro-grupo">
           <label>Hasta:</label>
           <input type="date" id="filtro-hasta">
         </div>
