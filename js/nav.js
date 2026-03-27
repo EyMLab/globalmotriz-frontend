@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="compras.html" class="${pagina === 'Compras' ? 'active' : ''}">Compras</a>`
       : "";
 
-    const enlaceCotizaciones = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
+    const enlaceCotizaciones = ['admin', 'control'].includes(rol)
       ? `<a href="cotizaciones.html" class="${pagina === 'Cotizaciones' ? 'active' : ''}">Cotizaciones</a>`
       : "";
 
