@@ -3,6 +3,55 @@
   'use strict';
 
   // =====================================================
+  // LIGHTBOX CON ZOOM
+  // =====================================================
+  window.abrirFotoCot = function (url) {
+    Swal.fire({
+      html: `
+        <div style="overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px;cursor:grab;" id="lightbox-container">
+          <img src="${url}" id="lightbox-img" style="max-width:100%;max-height:75vh;transition:transform 0.2s;border-radius:6px;" draggable="false">
+        </div>
+        <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
+          <button type="button" class="btn-obs" onclick="lbZoom(1.3)" style="padding:6px 14px;">+ Zoom</button>
+          <button type="button" class="btn-obs" onclick="lbZoom(0.7)" style="padding:6px 14px;">- Zoom</button>
+          <button type="button" class="btn-obs" onclick="lbZoom(0)" style="padding:6px 14px;">Reset</button>
+        </div>`,
+      width: 700,
+      showConfirmButton: true,
+      confirmButtonText: 'Cerrar',
+      didOpen: () => {
+        let scale = 1, posX = 0, posY = 0, isDragging = false, startX, startY;
+        const img = document.getElementById('lightbox-img');
+        const container = document.getElementById('lightbox-container');
+
+        window.lbZoom = function (factor) {
+          if (factor === 0) { scale = 1; posX = 0; posY = 0; }
+          else { scale = Math.max(0.5, Math.min(5, scale * factor)); }
+          img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px)`;
+        };
+
+        container.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; container.style.cursor = 'grabbing'; });
+        container.addEventListener('mousemove', (e) => { if (!isDragging) return; posX = e.clientX - startX; posY = e.clientY - startY; img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px)`; });
+        container.addEventListener('mouseup', () => { isDragging = false; container.style.cursor = 'grab'; });
+        container.addEventListener('mouseleave', () => { isDragging = false; container.style.cursor = 'grab'; });
+        container.addEventListener('wheel', (e) => { e.preventDefault(); lbZoom(e.deltaY < 0 ? 1.15 : 0.87); }, { passive: false });
+
+        // Touch support
+        let lastDist = 0;
+        container.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 1) { isDragging = true; startX = e.touches[0].clientX - posX; startY = e.touches[0].clientY - posY; }
+          if (e.touches.length === 2) { lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+        });
+        container.addEventListener('touchmove', (e) => {
+          if (e.touches.length === 1 && isDragging) { posX = e.touches[0].clientX - startX; posY = e.touches[0].clientY - startY; img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px)`; }
+          if (e.touches.length === 2) { const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); if (lastDist) lbZoom(dist / lastDist); lastDist = dist; }
+        });
+        container.addEventListener('touchend', () => { isDragging = false; lastDist = 0; });
+      }
+    });
+  };
+
+  // =====================================================
   // ESTADO GLOBAL
   // =====================================================
   const state = {
@@ -332,6 +381,8 @@
     if (!formData) return;
 
     try {
+      Swal.fire({ title: 'Registrando solicitud...', text: 'Subiendo fotos y datos, por favor espere.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
       const fd = new FormData();
       fd.append('placa', formData.placa.toUpperCase());
       fd.append('tipo_cliente', formData.tipo_cliente);
@@ -347,7 +398,7 @@
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error);
 
-      Swal.fire('Solicitud creada', `ID: ${data.solicitud_id}`, 'success');
+      Swal.fire({ icon: 'success', title: 'Solicitud registrada', text: `Solicitud #${data.solicitud_id} creada correctamente`, timer: 2500 });
       cargarSolicitudes();
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
@@ -417,10 +468,10 @@
       if (sol.foto_matricula_url || sol.foto_proforma_url) {
         fotoHTML = `<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;">`;
         if (sol.foto_matricula_url) {
-          fotoHTML += `<div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="max-width:180px;max-height:160px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${sol.foto_matricula_url}','_blank')"></div>`;
+          fotoHTML += `<div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="max-width:180px;max-height:160px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>`;
         }
         if (sol.foto_proforma_url) {
-          fotoHTML += `<div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="max-width:180px;max-height:160px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${sol.foto_proforma_url}','_blank')"></div>`;
+          fotoHTML += `<div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="max-width:180px;max-height:160px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>`;
         }
         fotoHTML += `</div>`;
       }
@@ -462,8 +513,8 @@
                 ${sol.notas_asesor ? `<p><strong>Notas del asesor:</strong> ${sol.notas_asesor}</p>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;gap:6px;">
-                ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="window.open('${sol.foto_matricula_url}','_blank')"></div>` : ''}
-                ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="window.open('${sol.foto_proforma_url}','_blank')"></div>` : ''}
+                ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>` : ''}
+                ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>` : ''}
               </div>
             </div>
             ${obsHTML}
@@ -628,10 +679,10 @@
             </div>
             <div style="display:flex;gap:8px;">
               ${sol.foto_matricula_url
-                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="window.open('${sol.foto_matricula_url}','_blank')" title="Click para agrandar"></div>`
+                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_matricula_url}')" title="Click para agrandar"></div>`
                 : ''}
               ${sol.foto_proforma_url
-                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="window.open('${sol.foto_proforma_url}','_blank')" title="Click para agrandar"></div>`
+                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_proforma_url}')" title="Click para agrandar"></div>`
                 : ''}
               ${!sol.foto_matricula_url && !sol.foto_proforma_url ? '<div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">Sin fotos</div>' : ''}
             </div>
