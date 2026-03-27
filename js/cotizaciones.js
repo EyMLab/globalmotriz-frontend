@@ -421,7 +421,7 @@
       // Construir tabla comparativa
       let tablaHTML = '';
       if (items.length > 0) {
-        tablaHTML = `<table class="tabla-cotizacion" style="margin-top:12px;">
+        tablaHTML = `<table class="tabla-cotizacion" style="margin-top:12px;width:100%;">
           <thead><tr>
             <th>Repuesto</th><th>Cant</th>
             <th>Opcion 1</th><th>Opcion 2</th><th>Opcion 3</th>
@@ -498,7 +498,7 @@
 
       const result = await Swal.fire({
         title: `Solicitud #${sol.id}`,
-        width: 960,
+        width: '92%',
         html: `
           <div style="text-align:left;font-size:14px;">
             <!-- Fotos arriba -->
