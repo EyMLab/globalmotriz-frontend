@@ -91,11 +91,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
 
         <nav class="nav-center nav-links">
-          ${enlaceFacturas}
-          ${enlaceInsumos}
-          ${enlaceInventario}
-          ${enlaceCompras}
-          ${enlaceCotizaciones}
+          ${(enlaceInsumos || enlaceInventario || enlaceCompras) ? `
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn ${['Insumos','Inventario','Compras'].includes(pagina) ? 'active' : ''}">Bodega <span class="nav-arrow">&#9662;</span></button>
+            <div class="nav-dropdown-menu">
+              ${enlaceInsumos}
+              ${enlaceInventario}
+              ${enlaceCompras}
+            </div>
+          </div>` : ''}
+          ${(enlaceFacturas || enlaceCotizaciones) ? `
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn ${['Facturas','Cotizaciones'].includes(pagina) ? 'active' : ''}">Ventas <span class="nav-arrow">&#9662;</span></button>
+            <div class="nav-dropdown-menu">
+              ${enlaceFacturas}
+              ${enlaceCotizaciones}
+            </div>
+          </div>` : ''}
           ${enlaceLPR}
           ${enlaceFinanzas}
           ${enlaceUsuarios}
