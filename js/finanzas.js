@@ -745,6 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
           { content: 'TOTALES', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
           { content: `$${(totalRepos - totalGastos).toFixed(2)} saldo`, styles: { fontStyle: 'bold' } }
         ]],
+        showFoot: 'lastPage',
         margin: { left: marginL, right: marginR },
         styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2 },
         headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -867,6 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
           { content: `$${t.pago_efectivo.toFixed(2)}`, styles: { fontStyle: 'bold', halign: 'right' } },
           { content: '', colSpan: 2 }
         ]],
+        showFoot: 'lastPage',
         margin: { left: marginL, right: marginR },
         styles: { fontSize: 7, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2 },
         headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold' },
