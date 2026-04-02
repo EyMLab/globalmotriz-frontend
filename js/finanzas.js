@@ -10,8 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   // Estado global
   // =========================================================
+  const esAdmin = localStorage.getItem('rol') === 'admin';
   let tipoCajaActual = 'GENERAL';
   const LIMITES = { GENERAL: 150, COMBUSTIBLE: 100 };
+  let _cajachicaData = [];
+  let _cierreData = [];
 
   // Helper: formatea "YYYY-MM-DD" sin bug de timezone
   function fmtFecha(str) {
@@ -103,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!res.ok) throw new Error(data?.error || 'Error al cargar');
 
+      _cajachicaData = data.historial;
       renderBalance(data.saldo, data.limite);
       renderTablaCajaChica(data.historial);
     } catch (err) {
@@ -125,14 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderTablaCajaChica(historial) {
     const tbody = document.getElementById('tabla-caja-chica');
 
+    if (esAdmin) document.getElementById('th-edit-cc').textContent = 'Editar';
     if (!historial.length) {
-      tbody.innerHTML = `<tr><td colspan="9">Sin registros</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${esAdmin ? 10 : 9}">Sin registros</td></tr>`;
       return;
     }
 
     tbody.innerHTML = historial.map(r => {
       const fecha = fmtFecha(r.fecha);
       const esRepo = r.es_reposicion;
+      const editBtn = esAdmin && !esRepo
+        ? `<button class="btn btn-obs" style="font-size:11px;padding:4px 8px;" onclick="editarCajaChica(${r.id})">Editar</button>`
+        : '';
       return `<tr style="${esRepo ? 'background:#eff6ff;' : ''}">
         <td>${fecha}</td>
         <td>${esRepo ? '<span class="badge-repo">REPOSICIÓN</span>' : r.tipo_doc}</td>
@@ -143,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${esRepo ? '—' : '$' + parseFloat(r.monto_base).toFixed(2)}</td>
         <td>${esRepo ? '—' : '$' + parseFloat(r.iva).toFixed(2)}</td>
         <td><strong>$${parseFloat(r.total).toFixed(2)}</strong></td>
+        <td>${editBtn}</td>
       </tr>`;
     }).join('');
   }
@@ -329,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
 
+      _cierreData = data.cobros;
       renderTablaCierre(data.cobros, data.totales);
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="11">Error: ${err.message}</td></tr>`;
@@ -338,13 +348,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderTablaCierre(cobros, totales) {
     const tbody = document.getElementById('tabla-cierre');
 
+    if (esAdmin) document.getElementById('th-edit-cierre').textContent = 'Editar';
     if (!cobros.length) {
-      tbody.innerHTML = `<tr><td colspan="11">Sin cobros en este mes</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${esAdmin ? 12 : 11}">Sin cobros en este mes</td></tr>`;
       return;
     }
 
     tbody.innerHTML = cobros.map(r => {
       const fecha = fmtFecha(r.fecha);
+      const editBtn = esAdmin
+        ? `<button class="btn btn-obs" style="font-size:11px;padding:4px 8px;" onclick="editarCierre(${r.id})">Editar</button>`
+        : '';
       return `<tr>
         <td>${fecha}</td>
         <td><span class="badge-estado ${r.tipo === 'SEGURO' ? 'badge-pendiente' : 'badge-finalizado'}">${r.tipo}</span></td>
@@ -357,6 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>$${parseFloat(r.pago_efectivo).toFixed(2)}</td>
         <td>${r.factura_num || '—'}</td>
         <td class="${r.observaciones ? 'obs-expandible' : ''}" data-obs="${(r.observaciones || '').replace(/"/g, '&quot;')}" style="${r.observaciones ? 'cursor:pointer;' : ''}" title="${r.observaciones || ''}">${r.observaciones ? r.observaciones.substring(0, 30) + (r.observaciones.length > 30 ? '…' : '') : '—'}</td>
+        <td>${editBtn}</td>
       </tr>`;
     }).join('');
 
@@ -1013,8 +1028,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderTablaDeducibles(registros) {
     const tbody = document.getElementById('tabla-deducibles');
+    if (esAdmin) document.getElementById('th-edit-ded').textContent = 'Editar';
     if (!registros.length) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Sin registros</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${esAdmin ? 11 : 10}" style="text-align:center;">Sin registros</td></tr>`;
       return;
     }
     tbody.innerHTML = registros.map(r => {
@@ -1024,6 +1040,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const accion = pendiente
         ? `<button class="btn btn-obs" onclick="registrarDevolucion(${r.id})">Registrar Dev.</button>`
         : '—';
+      const editBtn = esAdmin
+        ? `<button class="btn btn-obs" style="font-size:11px;padding:4px 8px;" onclick="editarDeducible(${r.id})">Editar</button>`
+        : '';
       return `<tr>
         <td>${r.ot}</td>
         <td>${r.aseguradora}</td>
@@ -1035,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${r.comprobante_egreso || '—'}</td>
         <td><span class="badge-estado ${badgeClass}">${badgeLabel}</span></td>
         <td>${accion}</td>
+        <td>${editBtn}</td>
       </tr>`;
     }).join('');
   }
@@ -1200,8 +1220,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderTablaFacturasAnuladas(registros) {
     const tbody = document.getElementById('tabla-facturas-anuladas');
+    if (esAdmin) document.getElementById('th-edit-fan').textContent = 'Editar';
     if (!registros.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Sin registros</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${esAdmin ? 10 : 9}" style="text-align:center;">Sin registros</td></tr>`;
       return;
     }
     const anuladas = new Set(_facturasAnuladasData.map(r => r.factura_anulada));
@@ -1215,6 +1236,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const accion = pendiente
         ? `<button class="btn btn-obs" onclick="registrarFacturaNueva(${r.id})">Registrar F. Nueva</button>`
         : '—';
+      const editBtn = esAdmin
+        ? `<button class="btn btn-obs" style="font-size:11px;padding:4px 8px;" onclick="editarFacturaAnulada(${r.id})">Editar</button>`
+        : '';
       return `<tr>
         <td>${r.ot}</td>
         <td>${r.tipo}</td>
@@ -1225,6 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${fnueva}</td>
         <td><span class="badge-estado ${badgeClass}">${badgeLabel}</span></td>
         <td>${accion}</td>
+        <td>${editBtn}</td>
       </tr>`;
     }).join('');
   }
@@ -1345,5 +1370,308 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   cargarFacturasAnuladas();
+
+  // =========================================================
+  // EDITAR — solo admin
+  // =========================================================
+  window.editarCajaChica = async function (id) {
+    const r = _cajachicaData.find(x => x.id === id);
+    if (!r) return;
+    const fechaVal = r.fecha ? r.fecha.split('T')[0] : '';
+    const { value: form } = await Swal.fire({
+      title: 'Editar Gasto - Caja Chica',
+      width: 520,
+      html: `
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input id="ed-cc-fecha" type="date" class="swal2-input" value="${fechaVal}">
+          </div>
+          <div class="form-group">
+            <label>Tipo Documento</label>
+            <select id="ed-cc-tipo-doc" class="swal2-select">
+              <option value="FACTURA" ${r.tipo_doc==='FACTURA'?'selected':''}>Factura</option>
+              <option value="RECIBO" ${r.tipo_doc==='RECIBO'?'selected':''}>Recibo</option>
+              <option value="NOTA DE VENTA" ${r.tipo_doc==='NOTA DE VENTA'?'selected':''}>Nota de Venta</option>
+              <option value="OTRO" ${r.tipo_doc==='OTRO'?'selected':''}>Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>N° Documento</label>
+          <input id="ed-cc-num-doc" class="swal2-input" value="${r.num_documento||''}">
+        </div>
+        <div class="form-group">
+          <label>Proveedor</label>
+          <input id="ed-cc-proveedor" class="swal2-input" value="${r.proveedor||''}">
+        </div>
+        <div class="form-group">
+          <label>Concepto</label>
+          <input id="ed-cc-concepto" class="swal2-input" value="${r.concepto||''}">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo IVA</label>
+            <div style="display:flex;gap:16px;margin-top:6px;">
+              <label><input type="radio" name="ed-cc-iva" value="0" ${r.tipo_iva===0?'checked':''}> 0%</label>
+              <label><input type="radio" name="ed-cc-iva" value="15" ${r.tipo_iva===15?'checked':''}> 15%</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Monto Base ($)</label>
+            <input id="ed-cc-base" type="number" min="0" step="0.01" class="swal2-input" value="${r.monto_base||0}">
+          </div>
+        </div>`,
+      showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const proveedor = document.getElementById('ed-cc-proveedor').value.trim();
+        const concepto  = document.getElementById('ed-cc-concepto').value.trim();
+        const fecha     = document.getElementById('ed-cc-fecha').value;
+        const monto_base = parseFloat(document.getElementById('ed-cc-base').value) || 0;
+        if (!proveedor) { Swal.showValidationMessage('Proveedor es obligatorio'); return false; }
+        if (!concepto)  { Swal.showValidationMessage('Concepto es obligatorio');  return false; }
+        return {
+          fecha, proveedor, concepto, monto_base,
+          tipo_doc: document.getElementById('ed-cc-tipo-doc').value,
+          num_documento: document.getElementById('ed-cc-num-doc').value.trim() || null,
+          tipo_iva: parseInt(document.querySelector('input[name="ed-cc-iva"]:checked').value)
+        };
+      }
+    });
+    if (!form) return;
+    try {
+      const res = await apiFetch(`/finanzas/caja-chica/${id}`, { method: 'PUT', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
+      cargarCajaChica(tipoCajaActual);
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+  };
+
+  window.editarCierre = async function (id) {
+    const r = _cierreData.find(x => x.id === id);
+    if (!r) return;
+    const fechaVal = r.fecha ? r.fecha.split('T')[0] : '';
+    const { value: form } = await Swal.fire({
+      title: 'Editar Cobro - Cierre de Caja',
+      width: 560,
+      html: `
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input id="ed-ci-fecha" type="date" class="swal2-input" value="${fechaVal}">
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <div style="display:flex;gap:16px;margin-top:6px;">
+              <label><input type="radio" name="ed-ci-tipo" value="PARTICULAR" ${r.tipo==='PARTICULAR'?'checked':''}> Particular</label>
+              <label><input type="radio" name="ed-ci-tipo" value="SEGURO" ${r.tipo==='SEGURO'?'checked':''}> Seguro</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Cliente</label>
+          <input id="ed-ci-cliente" class="swal2-input" value="${r.cliente||''}">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valor Deducible ($)</label>
+            <input id="ed-ci-deducible" type="number" min="0" step="0.01" class="swal2-input" value="${r.valor_deducible||0}">
+          </div>
+          <div class="form-group">
+            <label>Valor Asegurado ($)</label>
+            <input id="ed-ci-asegurado" type="number" min="0" step="0.01" class="swal2-input" value="${r.valor_asegurado||0}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Total ($)</label>
+          <input id="ed-ci-total" type="number" min="0" step="0.01" class="swal2-input" value="${r.total||0}">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Corriente ($)</label><input id="ed-ci-ahorros" type="number" min="0" step="0.01" class="swal2-input" value="${r.pago_ahorros||0}"></div>
+          <div class="form-group"><label>Transferencia ($)</label><input id="ed-ci-transfer" type="number" min="0" step="0.01" class="swal2-input" value="${r.pago_transferencia||0}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Cheques ($)</label><input id="ed-ci-cheques" type="number" min="0" step="0.01" class="swal2-input" value="${r.pago_cheques||0}"></div>
+          <div class="form-group"><label>Tarjeta ($)</label><input id="ed-ci-tarjeta" type="number" min="0" step="0.01" class="swal2-input" value="${r.pago_tarjeta||0}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Efectivo ($)</label><input id="ed-ci-efectivo" type="number" min="0" step="0.01" class="swal2-input" value="${r.pago_efectivo||0}"></div>
+          <div class="form-group"><label>N° Factura/OT</label><input id="ed-ci-factura" class="swal2-input" value="${r.factura_num||''}"></div>
+        </div>
+        <div class="form-group">
+          <label>Observaciones</label>
+          <input id="ed-ci-obs" class="swal2-input" value="${r.observaciones||''}">
+        </div>`,
+      showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const cliente = document.getElementById('ed-ci-cliente').value.trim();
+        const total   = document.getElementById('ed-ci-total').value;
+        if (!cliente) { Swal.showValidationMessage('Cliente es obligatorio'); return false; }
+        if (!total)   { Swal.showValidationMessage('Total es obligatorio');   return false; }
+        return {
+          fecha: document.getElementById('ed-ci-fecha').value,
+          tipo: document.querySelector('input[name="ed-ci-tipo"]:checked').value,
+          cliente,
+          total: parseFloat(total),
+          valor_deducible:    parseFloat(document.getElementById('ed-ci-deducible').value)||0,
+          valor_asegurado:    parseFloat(document.getElementById('ed-ci-asegurado').value)||0,
+          pago_ahorros:       parseFloat(document.getElementById('ed-ci-ahorros').value)||0,
+          pago_transferencia: parseFloat(document.getElementById('ed-ci-transfer').value)||0,
+          pago_cheques:       parseFloat(document.getElementById('ed-ci-cheques').value)||0,
+          pago_tarjeta:       parseFloat(document.getElementById('ed-ci-tarjeta').value)||0,
+          pago_efectivo:      parseFloat(document.getElementById('ed-ci-efectivo').value)||0,
+          factura_num:        document.getElementById('ed-ci-factura').value.trim()||null,
+          observaciones:      document.getElementById('ed-ci-obs').value.trim()||null
+        };
+      }
+    });
+    if (!form) return;
+    try {
+      const res = await apiFetch(`/finanzas/cierre-caja/${id}`, { method: 'PUT', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
+      cargarCierreCaja(document.getElementById('input-mes').value);
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+  };
+
+  window.editarDeducible = async function (id) {
+    const r = _deduciblesData.find(x => x.id === id);
+    if (!r) return;
+    const fechaVal = r.fecha_cobro ? r.fecha_cobro.split('T')[0] : '';
+    const { value: form } = await Swal.fire({
+      title: 'Editar Deducible',
+      width: 520,
+      html: `
+        <div class="form-row">
+          <div class="form-group">
+            <label>OT</label>
+            <input id="ed-ded-ot" class="swal2-input" value="${r.ot||''}">
+          </div>
+          <div class="form-group">
+            <label>Aseguradora</label>
+            <input id="ed-ded-aseg" class="swal2-input" value="${r.aseguradora||''}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha Cobro</label>
+            <input id="ed-ded-fecha" type="date" class="swal2-input" value="${fechaVal}">
+          </div>
+          <div class="form-group">
+            <label>Modo Pago</label>
+            <select id="ed-ded-modo" class="swal2-input">
+              <option value="TARJETA" ${r.modo_pago==='TARJETA'?'selected':''}>Tarjeta</option>
+              <option value="TRANSFERENCIA" ${r.modo_pago==='TRANSFERENCIA'?'selected':''}>Transferencia</option>
+              <option value="DEPOSITO" ${r.modo_pago==='DEPOSITO'?'selected':''}>Depósito</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Comp. Ingreso</label>
+            <input id="ed-ded-comp" class="swal2-input" value="${r.comprobante_ingreso||''}">
+          </div>
+          <div class="form-group">
+            <label>Valor ($)</label>
+            <input id="ed-ded-valor" type="number" min="0" step="0.01" class="swal2-input" value="${r.valor||0}">
+          </div>
+        </div>`,
+      showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const ot   = document.getElementById('ed-ded-ot').value.trim();
+        const aseg = document.getElementById('ed-ded-aseg').value.trim();
+        if (!ot)   { Swal.showValidationMessage('OT es obligatorio');          return false; }
+        if (!aseg) { Swal.showValidationMessage('Aseguradora es obligatoria'); return false; }
+        return {
+          ot, aseguradora: aseg,
+          fecha_cobro:          document.getElementById('ed-ded-fecha').value,
+          modo_pago:            document.getElementById('ed-ded-modo').value,
+          comprobante_ingreso:  document.getElementById('ed-ded-comp').value.trim()||null,
+          valor:                parseFloat(document.getElementById('ed-ded-valor').value)||0
+        };
+      }
+    });
+    if (!form) return;
+    try {
+      const res = await apiFetch(`/finanzas/deducibles/${id}`, { method: 'PUT', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
+      cargarDeducibles();
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+  };
+
+  window.editarFacturaAnulada = async function (id) {
+    const r = _facturasAnuladasData.find(x => x.id === id);
+    if (!r) return;
+    const { value: form } = await Swal.fire({
+      title: 'Editar Factura Anulada',
+      width: 540,
+      html: `
+        <div class="form-row">
+          <div class="form-group">
+            <label>OT</label>
+            <input id="ed-fan-ot" class="swal2-input" value="${r.ot||''}">
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <div style="display:flex;gap:16px;margin-top:6px;">
+              <label><input type="radio" name="ed-fan-tipo" value="PARTICULAR" ${r.tipo==='PARTICULAR'?'checked':''}> Particular</label>
+              <label><input type="radio" name="ed-fan-tipo" value="SEGURO" ${r.tipo==='SEGURO'?'checked':''}> Seguro</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente</label>
+            <input id="ed-fan-cliente" class="swal2-input" value="${r.cliente||''}">
+          </div>
+          <div class="form-group">
+            <label>Placa</label>
+            <input id="ed-fan-placa" class="swal2-input" value="${r.placa||''}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° Factura Anulada</label>
+            <input id="ed-fan-factura" class="swal2-input" value="${r.factura_anulada||''}">
+          </div>
+          <div class="form-group">
+            <label>Motivo</label>
+            <input id="ed-fan-motivo" class="swal2-input" value="${r.motivo||''}">
+          </div>
+        </div>
+        <div class="form-group" style="width:100%;margin-top:8px;">
+          <label>Observaciones</label>
+          <input id="ed-fan-obs" class="swal2-input" value="${r.observaciones||''}">
+        </div>`,
+      showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const ot             = document.getElementById('ed-fan-ot').value.trim();
+        const cliente        = document.getElementById('ed-fan-cliente').value.trim();
+        const factura_anulada = document.getElementById('ed-fan-factura').value.trim();
+        if (!ot)             { Swal.showValidationMessage('OT es obligatorio');              return false; }
+        if (!cliente)        { Swal.showValidationMessage('Cliente es obligatorio');         return false; }
+        if (!factura_anulada){ Swal.showValidationMessage('Factura anulada es obligatoria'); return false; }
+        return {
+          ot, cliente, factura_anulada,
+          tipo:         document.querySelector('input[name="ed-fan-tipo"]:checked').value,
+          placa:        document.getElementById('ed-fan-placa').value.trim()||null,
+          motivo:       document.getElementById('ed-fan-motivo').value.trim()||null,
+          observaciones:document.getElementById('ed-fan-obs').value.trim()||null
+        };
+      }
+    });
+    if (!form) return;
+    try {
+      const res = await apiFetch(`/finanzas/facturas-anuladas/${id}`, { method: 'PUT', body: JSON.stringify(form) });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error');
+      await Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
+      cargarFacturasAnuladas();
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+  };
 
 });
