@@ -11,27 +11,70 @@
         <div style="overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px;cursor:grab;" id="lightbox-container">
           <img src="${url}" id="lightbox-img" style="max-width:100%;max-height:82vh;transition:transform 0.2s;border-radius:6px;" draggable="false">
         </div>
-        <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
           <button type="button" class="btn-obs" onclick="lbZoom(1.3)" style="padding:6px 14px;">+ Zoom</button>
           <button type="button" class="btn-obs" onclick="lbZoom(0.7)" style="padding:6px 14px;">- Zoom</button>
           <button type="button" class="btn-obs" onclick="lbZoom(0)" style="padding:6px 14px;">Reset</button>
+          <button type="button" class="btn-obs" onclick="lbRotar()" style="padding:6px 14px;">&#x21BB; Rotar</button>
+          <button type="button" id="btn-guardar-rotacion" class="btn-obs" onclick="lbGuardarRotacion()" style="padding:6px 14px;background:#16a34a;color:#fff;display:none;">Guardar rotacion</button>
         </div>`,
       width: '90%',
       showConfirmButton: true,
       confirmButtonText: 'Cerrar',
       didOpen: () => {
         let scale = 1, posX = 0, posY = 0, isDragging = false, startX, startY;
+        let rotacion = 0;
         const img = document.getElementById('lightbox-img');
         const container = document.getElementById('lightbox-container');
+        const btnGuardar = document.getElementById('btn-guardar-rotacion');
+
+        function aplicarTransform() {
+          img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px) rotate(${rotacion}deg)`;
+        }
 
         window.lbZoom = function (factor) {
           if (factor === 0) { scale = 1; posX = 0; posY = 0; }
           else { scale = Math.max(0.5, Math.min(5, scale * factor)); }
-          img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px)`;
+          aplicarTransform();
+        };
+
+        window.lbRotar = function () {
+          rotacion = (rotacion + 90) % 360;
+          aplicarTransform();
+          btnGuardar.style.display = rotacion === 0 ? 'none' : 'inline-block';
+        };
+
+        window.lbGuardarRotacion = async function () {
+          btnGuardar.disabled = true;
+          btnGuardar.textContent = 'Guardando...';
+          try {
+            const res = await apiFetch('/cotizaciones/fotos/rotar', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: url, grados: rotacion })
+            });
+            const data = await safeJson(res);
+            if (!res.ok) throw new Error(data?.error);
+            rotacion = 0;
+            aplicarTransform();
+            btnGuardar.style.display = 'none';
+            // Forzar recarga de la imagen (cache bust)
+            const bust = '?t=' + Date.now();
+            img.src = url + bust;
+            // Actualizar thumbnails en la pagina
+            document.querySelectorAll(`img[src="${url}"]`).forEach(i => { i.src = url + bust; });
+            Swal.showValidationMessage('<span style="color:#16a34a;">Rotacion guardada correctamente</span>');
+            setTimeout(() => { const vm = document.querySelector('.swal2-validation-message'); if (vm) vm.style.display = 'none'; }, 2000);
+          } catch (err) {
+            Swal.showValidationMessage('Error guardando rotacion: ' + err.message);
+          } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = 'Guardar rotacion';
+          }
         };
 
         container.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; container.style.cursor = 'grabbing'; });
-        container.addEventListener('mousemove', (e) => { if (!isDragging) return; posX = e.clientX - startX; posY = e.clientY - startY; img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px)`; });
+        container.addEventListener('mousemove', (e) => { if (!isDragging) return; posX = e.clientX - startX; posY = e.clientY - startY; aplicarTransform(); });
         container.addEventListener('mouseup', () => { isDragging = false; container.style.cursor = 'grab'; });
         container.addEventListener('mouseleave', () => { isDragging = false; container.style.cursor = 'grab'; });
         container.addEventListener('wheel', (e) => { e.preventDefault(); lbZoom(e.deltaY < 0 ? 1.15 : 0.87); }, { passive: false });
@@ -43,7 +86,7 @@
           if (e.touches.length === 2) { lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
         });
         container.addEventListener('touchmove', (e) => {
-          if (e.touches.length === 1 && isDragging) { posX = e.touches[0].clientX - startX; posY = e.touches[0].clientY - startY; img.style.transform = `scale(${scale}) translate(${posX}px, ${posY}px)`; }
+          if (e.touches.length === 1 && isDragging) { posX = e.touches[0].clientX - startX; posY = e.touches[0].clientY - startY; aplicarTransform(); }
           if (e.touches.length === 2) { const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); if (lastDist) lbZoom(dist / lastDist); lastDist = dist; }
         });
         container.addEventListener('touchend', () => { isDragging = false; lastDist = 0; });
