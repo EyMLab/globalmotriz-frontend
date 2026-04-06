@@ -5,7 +5,8 @@
   // =====================================================
   // LIGHTBOX CON ZOOM
   // =====================================================
-  window.abrirFotoCot = function (url) {
+  window.abrirFotoCot = function (originalUrl) {
+    let url = originalUrl;
     Swal.fire({
       html: `
         <div style="overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px;cursor:grab;" id="lightbox-container">
@@ -55,14 +56,18 @@
             });
             const data = await safeJson(res);
             if (!res.ok) throw new Error(data?.error);
+            const nuevaUrl = data.nueva_url;
             rotacion = 0;
             aplicarTransform();
             btnGuardar.style.display = 'none';
-            // Forzar recarga de la imagen (cache bust)
-            const bust = '?t=' + Date.now();
-            img.src = url + bust;
-            // Actualizar thumbnails en la pagina
-            document.querySelectorAll(`img[src="${url}"]`).forEach(i => { i.src = url + bust; });
+            // Cargar la nueva URL (archivo diferente, sin cache)
+            img.src = nuevaUrl;
+            // Actualizar thumbnails en la pagina que tenian la URL vieja
+            document.querySelectorAll(`img`).forEach(i => {
+              if (i.src === url || i.src.startsWith(url + '?')) i.src = nuevaUrl;
+            });
+            // Actualizar la url de referencia del lightbox para futuras rotaciones
+            url = nuevaUrl;
             Swal.showValidationMessage('<span style="color:#16a34a;">Rotacion guardada correctamente</span>');
             setTimeout(() => { const vm = document.querySelector('.swal2-validation-message'); if (vm) vm.style.display = 'none'; }, 2000);
           } catch (err) {
