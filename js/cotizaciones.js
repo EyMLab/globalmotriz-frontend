@@ -824,9 +824,14 @@
 
     for (let o = 0; o < 3; o++) {
       const opc = opciones[o] || {};
+      const provId = opc.proveedor_id ? String(opc.proveedor_id) : '';
+      // Marcar el proveedor guardado como selected
+      const provOptionsWithSel = provId
+        ? provOptions.replace(`value="${provId}"`, `value="${provId}" selected`)
+        : provOptions;
       cells += `
         <td><select data-item="${idx}" data-opc="${o}" data-field="proveedor" class="ws-prov">
-          <option value="">-</option>${provOptions}
+          <option value="">-</option>${provOptionsWithSel}
         </select>
         <button type="button" style="font-size:10px;margin-top:2px;background:none;border:none;color:var(--primary);cursor:pointer;" onclick="COT.quickAddProveedor(this)">+ Nuevo</button>
         </td>
@@ -975,33 +980,22 @@
     const obs = document.getElementById('ws-obs-bodega')?.value?.trim() || '';
 
     try {
+      const res = await apiFetch(`/cotizaciones/solicitudes/${solicitudId}/cotizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, observaciones_bodega: obs, borrador: !finalizar })
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error);
+
       if (finalizar) {
-        // Enviar cotizacion completa (bulk)
-        const res = await apiFetch(`/cotizaciones/solicitudes/${solicitudId}/cotizar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, observaciones_bodega: obs })
-        });
-        const data = await safeJson(res);
-        if (!res.ok) throw new Error(data?.error);
         Swal.fire('Cotizacion enviada', 'El asesor sera notificado.', 'success');
         cargarPendientesCotizar();
         document.getElementById('workspace-container').innerHTML = '';
       } else {
-        // Guardar borrador: enviar como bulk sin cambiar estado
-        // Primero borrar items existentes y recrear
-        // Usamos el endpoint item por item
-        // Mas simple: enviar bulk pero con un endpoint de save draft
-        // Por ahora usamos el mismo endpoint pero con estado manual
-        // Save items one by one
-        for (const item of items) {
-          await apiFetch(`/cotizaciones/solicitudes/${solicitudId}/items`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre_repuesto: item.nombre_repuesto, cantidad: item.cantidad })
-          });
-        }
-        Swal.fire('Borrador guardado', 'Los items se guardaron.', 'success');
+        Swal.fire('Borrador guardado', 'Todos los datos se guardaron correctamente.', 'success');
+        // Recargar workspace para reflejar datos guardados con IDs de DB
+        abrirWorkspace(solicitudId);
       }
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
