@@ -1041,35 +1041,64 @@
   // TAB 3: POR RECIBIR
   // =====================================================
   async function cargarPorRecibir() {
-    const tbody = document.getElementById('tablaPorRecibir');
-    if (!tbody) return;
+    const container = document.getElementById('listaPorRecibir');
+    if (!container) return;
     try {
       const res = await apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=Por Recibir');
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error);
 
-      const items = data.items || [];
-      if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="7">No hay solicitudes por recibir</td></tr>';
+      const solicitudes = data.items || [];
+      if (!solicitudes.length) {
+        container.innerHTML = '<p style="color:#64748b;padding:20px;text-align:center;">No hay solicitudes por recibir.</p>';
         return;
       }
 
-      tbody.innerHTML = items.map(s => `
-        <tr>
-          <td>${s.id}</td>
-          <td><strong>${s.placa}</strong></td>
-          <td><span class="badge ${s.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${s.tipo_cliente}</span></td>
-          <td>${s.aseguradora || '-'}</td>
-          <td>${s.cotizado_por || '-'}</td>
-          <td>${s.fecha_cotizacion || '-'}</td>
-          <td>
-            <button class="btn-ver-detalle" onclick="COT.verDetalle(${s.id})">Ver</button>
-            <button class="btn-aprobar" onclick="COT.marcarRecibida(${s.id})" style="margin-left:4px;">Recibida</button>
-          </td>
-        </tr>
-      `).join('');
+      // Cargar detalle de cada solicitud para obtener items ganadores
+      const detalles = await Promise.all(solicitudes.map(async s => {
+        try {
+          const r = await apiFetch(`/cotizaciones/solicitudes/${s.id}`);
+          const d = await safeJson(r);
+          return { ...s, items: d.items || [], total: d.total_ganadores || 0 };
+        } catch { return { ...s, items: [], total: 0 }; }
+      }));
+
+      container.innerHTML = detalles.map(s => {
+        const itemsHTML = s.items.filter(it => it.ganador_opcion_id).map(it => {
+          const ganador = it.opciones.find(o => o.id === it.ganador_opcion_id);
+          return `<div class="pr-item">
+            <label class="pr-check-label">
+              <input type="checkbox" class="pr-check" data-sol="${s.id}" data-item="${it.id}">
+              <span class="pr-item-info">
+                <strong>${it.nombre_repuesto}</strong> x${it.cantidad}
+                ${ganador ? ` — ${ganador.proveedor_nombre || 'Proveedor'} · $${Number(ganador.precio_unitario).toFixed(2)} · ${ganador.tipo}` : ''}
+              </span>
+            </label>
+          </div>`;
+        }).join('');
+
+        return `<div class="pr-card" id="pr-card-${s.id}">
+          <div class="pr-card-header">
+            <div class="pr-card-info">
+              <span class="pr-placa">${s.placa}</span>
+              <span class="badge ${s.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${s.tipo_cliente}</span>
+              ${s.aseguradora ? `<span style="color:#475569;font-size:12px;">${s.aseguradora}</span>` : ''}
+              <span style="color:#64748b;font-size:12px;">Cotizado por: ${s.cotizado_por || '-'}</span>
+            </div>
+            <div class="pr-card-actions">
+              <span class="pr-total">Total: $${Number(s.total).toFixed(2)}</span>
+              <button class="btn-ver-detalle" onclick="COT.verDetalle(${s.id})">Ver detalle</button>
+              <button class="btn-aprobar" onclick="COT.marcarRecibida(${s.id})">Marcar Recibida</button>
+            </div>
+          </div>
+          <div class="pr-items-list">
+            ${itemsHTML || '<p style="color:#94a3b8;font-size:13px;margin:0;">Sin items ganadores</p>'}
+          </div>
+        </div>`;
+      }).join('');
+
     } catch (err) {
-      tbody.innerHTML = '<tr><td colspan="7" style="color:#dc2626;">Error cargando datos</td></tr>';
+      container.innerHTML = '<p style="color:#dc2626;padding:20px;">Error cargando datos</p>';
     }
   }
 
@@ -1077,7 +1106,7 @@
     const { isConfirmed } = await Swal.fire({
       icon: 'question',
       title: 'Marcar como Recibida',
-      text: 'Confirma que los repuestos fueron recibidos fisicamente.',
+      text: 'Confirma que todos los repuestos fueron recibidos fisicamente.',
       showCancelButton: true,
       confirmButtonText: 'Si, recibida'
     });
