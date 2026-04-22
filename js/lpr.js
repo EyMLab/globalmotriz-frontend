@@ -231,6 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const cont = document.getElementById("kanban-container");
     cont.innerHTML = "";
 
+    // Ordenar vehículos de cada estación: más antiguo (más segundos) arriba, más reciente abajo
+    data.estaciones.forEach(est => {
+      est.vehiculos.sort((a, b) => (b.segundos_total || 0) - (a.segundos_total || 0));
+    });
+
     const visibles = data.estaciones.filter(est =>
       !ESTACIONES_OCULTAS.includes(est.estacion.toUpperCase())
     );
