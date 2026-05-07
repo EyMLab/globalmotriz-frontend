@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (window.location.pathname.includes("compras")) pagina = "Compras";
     else if (window.location.pathname.includes("cotizaciones")) pagina = "Cotizaciones";
     else if (window.location.pathname.includes("lpr")) pagina = "Taller";
-    else if (window.location.pathname.includes("cumpleanos")) pagina = "Cumpleanos";
+    else if (window.location.pathname.includes("cumpleanos")) pagina = "Cumpleaños";
     else if (window.location.pathname.includes("rrhh")) pagina = "RRHH";
     else if (window.location.pathname.includes("asistencia")) pagina = "Asistencia";
 
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Asistente contable solo puede ver Finanzas, RRHH y Cumpleanos
-    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleanos') {
+    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños') {
       window.location.href = 'finanzas.html';
       return;
     }
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceCumpleanos = ['admin', 'control', 'asistente_contable'].includes(rol)
-      ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleanos' ? 'active' : ''}">Cumpleaños</a>`
+      ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleaños' ? 'active' : ''}">Cumpleaños</a>`
       : "";
 
     const enlaceFacturas = ['admin', 'control'].includes(rol)
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${enlaceLPR}
           ${(enlaceAsistencia || enlaceRRHH || enlaceCumpleanos) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleanos'].includes(pagina) ? 'active' : ''}">RRHH <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleaños'].includes(pagina) ? 'active' : ''}">RRHH <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceAsistencia}
               ${enlaceRRHH}
