@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let empleados = [];
   let rolUsuario = '';
 
+  function formatFecha(f) {
+    if (!f) return '-';
+    const s = f.substring(0, 10);
+    const [y, m, d] = s.split('-');
+    return `${parseInt(d)}/${parseInt(m)}/${y}`;
+  }
+
   if (!getToken()) { redirectLogin(); return; }
 
   apiFetch('/auth/me')
@@ -30,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Info Empleados
   // ===============================
   function cargarEmpleados() {
-    const cols = rolUsuario === 'admin' ? 7 : 6;
+    const cols = rolUsuario === 'admin' ? 9 : 8;
     tablaInfo.innerHTML = `<tr><td colspan="${cols}">Cargando...</td></tr>`;
     apiFetch('/empleados')
       .then(res => res.json())
@@ -39,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderInfoEmpleados();
       })
       .catch(() => {
-        tablaInfo.innerHTML = `<tr><td colspan="7">Error al cargar empleados</td></tr>`;
+        tablaInfo.innerHTML = `<tr><td colspan="${cols}">Error al cargar empleados</td></tr>`;
       });
   }
 
@@ -55,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     }
 
-    const cols = rolUsuario === 'admin' ? 7 : 6;
+    const cols = rolUsuario === 'admin' ? 9 : 8;
     if (!lista.length) {
       tablaInfo.innerHTML = `<tr><td colspan="${cols}">No se encontraron empleados</td></tr>`;
       return;
@@ -63,9 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lista.forEach(e => {
       const tr = document.createElement('tr');
-      const fechaNac = e.fecha_nacimiento
-        ? new Date(e.fecha_nacimiento).toLocaleDateString('es-EC')
-        : '-';
+      const fechaNac = formatFecha(e.fecha_nacimiento);
+      const fechaIng = formatFecha(e.fecha_ingreso);
 
       const btnEditar = rolUsuario === 'admin'
         ? `<td class="user-actions"><button class="btn-obs" onclick="editarInfoEmpleado(${e.id})">Editar</button></td>`
@@ -75,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${e.nombre} ${e.apellido}</td>
         <td>${e.cedula || '-'}</td>
         <td>${fechaNac}</td>
+        <td>${fechaIng}</td>
         <td><span class="badge-localidad badge-${(e.localidad || 'MATRIZ').toLowerCase()}">${e.localidad || 'MATRIZ'}</span></td>
         <td>${e.cargo}</td>
         <td><span class="badge ${e.activo ? 'badge-ok' : 'badge-off'}">${e.activo ? 'Activo' : 'Inactivo'}</span></td>
@@ -191,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!emp) return;
 
     const fechaNacVal = emp.fecha_nacimiento ? emp.fecha_nacimiento.substring(0, 10) : '';
+    const fechaIngVal = emp.fecha_ingreso ? emp.fecha_ingreso.substring(0, 10) : '';
 
     Swal.fire({
       title: `Editar - ${emp.nombre} ${emp.apellido}`,
@@ -198,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <input id="rrhh-cedula" class="swal2-input" value="${emp.cedula || ''}" placeholder="Cedula">
         <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
         <input id="rrhh-fechanac" type="date" class="swal2-input" value="${fechaNacVal}">
+        <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de ingreso</label>
+        <input id="rrhh-fechaing" type="date" class="swal2-input" value="${fechaIngVal}">
         <select id="rrhh-localidad" class="swal2-select" style="margin-top:8px;">
           <option value="MATRIZ" ${emp.localidad === 'MATRIZ' ? 'selected' : ''}>MATRIZ</option>
           <option value="SUCURSAL" ${emp.localidad === 'SUCURSAL' ? 'selected' : ''}>SUCURSAL</option>
@@ -209,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           cedula: document.getElementById('rrhh-cedula').value.trim() || null,
           fecha_nacimiento: document.getElementById('rrhh-fechanac').value || null,
+          fecha_ingreso: document.getElementById('rrhh-fechaing').value || null,
           localidad: document.getElementById('rrhh-localidad').value
         };
       }

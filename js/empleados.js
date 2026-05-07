@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-eliminar" onclick="eliminarEmpleado(${e.id})">Eliminar</button>`;
 
       const fechaNac = e.fecha_nacimiento
-        ? new Date(e.fecha_nacimiento).toLocaleDateString('es-EC')
+        ? (() => { const [y,m,d] = e.fecha_nacimiento.substring(0,10).split('-'); return `${parseInt(d)}/${parseInt(m)}/${y}`; })()
         : '-';
 
       tr.innerHTML = `
@@ -112,6 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <input id="emp-tag" class="swal2-input" placeholder="UID del TAG">
         <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
         <input id="emp-fechanac" type="date" class="swal2-input">
+        <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de ingreso</label>
+        <input id="emp-fechaing" type="date" class="swal2-input">
         <select id="emp-localidad" class="swal2-select" style="margin-top:8px;">
           <option value="MATRIZ">MATRIZ</option>
           <option value="SUCURSAL">SUCURSAL</option>
@@ -126,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tag_uid = document.getElementById('emp-tag').value.trim();
         const cedula = document.getElementById('emp-cedula').value.trim();
         const fecha_nacimiento = document.getElementById('emp-fechanac').value;
+        const fecha_ingreso = document.getElementById('emp-fechaing').value;
         const localidad = document.getElementById('emp-localidad').value;
 
         if (!nombre || !apellido || !cargo || !tag_uid) {
@@ -133,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return false;
         }
 
-        return { nombre, apellido, cargo, tag_uid, cedula: cedula || null, fecha_nacimiento: fecha_nacimiento || null, localidad };
+        return { nombre, apellido, cargo, tag_uid, cedula: cedula || null, fecha_nacimiento: fecha_nacimiento || null, fecha_ingreso: fecha_ingreso || null, localidad };
       }
     }).then(r => {
       if (!r.isConfirmed) return;
@@ -162,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!emp) return;
 
     const fechaNacVal = emp.fecha_nacimiento ? emp.fecha_nacimiento.substring(0, 10) : '';
+    const fechaIngVal = emp.fecha_ingreso ? emp.fecha_ingreso.substring(0, 10) : '';
     Swal.fire({
       title: 'Editar empleado',
       html: `
@@ -172,6 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <input id="emp-tag" class="swal2-input" value="${emp.tag_uid}">
         <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
         <input id="emp-fechanac" type="date" class="swal2-input" value="${fechaNacVal}">
+        <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de ingreso</label>
+        <input id="emp-fechaing" type="date" class="swal2-input" value="${fechaIngVal}">
         <select id="emp-localidad" class="swal2-select" style="margin-top:8px;">
           <option value="MATRIZ" ${emp.localidad === 'MATRIZ' ? 'selected' : ''}>MATRIZ</option>
           <option value="SUCURSAL" ${emp.localidad === 'SUCURSAL' ? 'selected' : ''}>SUCURSAL</option>
@@ -187,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
           cargo: document.getElementById('emp-cargo').value.trim(),
           tag_uid: document.getElementById('emp-tag').value.trim(),
           fecha_nacimiento: document.getElementById('emp-fechanac').value || null,
+          fecha_ingreso: document.getElementById('emp-fechaing').value || null,
           localidad: document.getElementById('emp-localidad').value
         };
       }
