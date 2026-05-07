@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const data = await safeJson(res);
   if (data.rol !== 'admin') {
-    window.location.href = 'dashboard.html';
+    Swal.fire('Acceso denegado', 'Solo admin puede ver asistencia', 'error');
+    window.location.href = data.rol === 'asistente_contable' ? 'finanzas.html' : 'dashboard.html';
     return;
   }
 
