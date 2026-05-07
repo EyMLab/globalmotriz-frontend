@@ -40,13 +40,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const cols = rolUsuario === 'admin' ? 9 : 8;
     tablaInfo.innerHTML = `<tr><td colspan="${cols}">Cargando...</td></tr>`;
     apiFetch('/empleados')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Status ' + res.status);
+        return res.json();
+      })
       .then(data => {
         empleados = data;
         renderInfoEmpleados();
       })
-      .catch(() => {
-        tablaInfo.innerHTML = `<tr><td colspan="${cols}">Error al cargar empleados</td></tr>`;
+      .catch(err => {
+        console.error('Error cargando empleados:', err);
+        tablaInfo.innerHTML = `<tr><td colspan="${cols}">Error al cargar empleados: ${err.message}</td></tr>`;
       });
   }
 

@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!res || !res.ok) { redirectLogin(); return; }
 
   const data = await safeJson(res);
-  if (!['admin', 'control'].includes(data.rol)) {
+  if (data.rol !== 'admin') {
     window.location.href = 'dashboard.html';
     return;
   }
