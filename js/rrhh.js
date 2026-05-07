@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const celFecha = m.celebracion
-        ? new Date(m.celebracion.fecha_celebracion).toLocaleDateString('es-EC')
+        ? formatFecha(m.celebracion.fecha_celebracion)
         : 'No definida';
       const celNotas = m.celebracion && m.celebracion.notas ? m.celebracion.notas : '';
 
