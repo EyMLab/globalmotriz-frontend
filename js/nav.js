@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (window.location.pathname.includes("compras")) pagina = "Compras";
     else if (window.location.pathname.includes("cotizaciones")) pagina = "Cotizaciones";
     else if (window.location.pathname.includes("lpr")) pagina = "Taller";
+    else if (window.location.pathname.includes("rrhh")) pagina = "RRHH";
+    else if (window.location.pathname.includes("asistencia")) pagina = "Asistencia";
 
     // Seguro solo puede ver Taller
     if (rol === 'seguro' && pagina !== 'Taller') {
@@ -38,8 +40,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Asistente contable solo puede ver Finanzas
-    if (rol === 'asistente_contable' && pagina !== 'Finanzas') {
+    // Asistente contable solo puede ver Finanzas y RRHH
+    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH') {
       window.location.href = 'finanzas.html';
       return;
     }
@@ -71,12 +73,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
       : "";
 
+    const enlaceAsistencia = ['admin', 'control'].includes(rol)
+      ? `<a href="asistencia.html" class="${pagina === 'Asistencia' ? 'active' : ''}">Asistencia</a>`
+      : "";
+
     const enlaceFacturas = ['admin', 'control'].includes(rol)
       ? `<a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>`
       : "";
 
     const enlaceFinanzas = ['admin', 'control', 'asistente_contable'].includes(rol)
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
+      : "";
+
+    const enlaceRRHH = ['admin', 'control', 'asistente_contable'].includes(rol)
+      ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">RRHH</a>`
       : "";
 
     // ============================================
@@ -109,12 +119,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>` : ''}
           ${enlaceLPR}
+          ${enlaceAsistencia}
           ${enlaceFinanzas}
+          ${enlaceRRHH}
           ${enlaceUsuarios}
         </nav>
 
         <div class="nav-right">
-          ${['admin', 'control', 'bodega', 'asesor'].includes(rol) ? `
+          ${['admin', 'control', 'bodega', 'asesor', 'asistente_contable'].includes(rol) ? `
           <div style="position:relative;display:inline-block;" id="notif-bell-container">
             <button class="notif-bell" id="btn-notif-bell" title="Notificaciones">&#128276;
               <span class="notif-badge" id="notif-count" style="display:none;">0</span>
@@ -141,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
     // Notificaciones (campanita)
     // ============================================
-    if (['admin', 'control', 'bodega', 'asesor'].includes(rol)) {
+    if (['admin', 'control', 'bodega', 'asesor', 'asistente_contable'].includes(rol)) {
       initNotificaciones();
     }
 
@@ -226,10 +238,13 @@ function initNotificaciones() {
     }
   });
 
-  // Marcar todas leidas
+  // Marcar todas leidas (ambos módulos)
   document.getElementById('btn-leer-todas')?.addEventListener('click', async () => {
     try {
-      await apiFetch('/cotizaciones/notificaciones/leer-todas', { method: 'PATCH' });
+      await Promise.all([
+        apiFetch('/cotizaciones/notificaciones/leer-todas', { method: 'PATCH' }),
+        apiFetch('/rrhh/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {})
+      ]);
       cargarNotificaciones();
       actualizarContadorNotif();
     } catch (e) { /* ignore */ }
@@ -242,14 +257,23 @@ function initNotificaciones() {
 
 async function actualizarContadorNotif() {
   try {
-    const res = await apiFetch('/cotizaciones/notificaciones/count');
-    if (!res.ok) return;
-    const data = await safeJson(res);
+    const [resCot, resRrhh] = await Promise.all([
+      apiFetch('/cotizaciones/notificaciones/count'),
+      apiFetch('/rrhh/notificaciones/count').catch(() => null)
+    ]);
     const countEl = document.getElementById('notif-count');
     if (!countEl) return;
-    const n = data.no_leidas || 0;
-    countEl.textContent = n;
-    countEl.style.display = n > 0 ? 'flex' : 'none';
+    let total = 0;
+    if (resCot && resCot.ok) {
+      const d = await safeJson(resCot);
+      total += d.no_leidas || 0;
+    }
+    if (resRrhh && resRrhh.ok) {
+      const d2 = await safeJson(resRrhh);
+      total += d2.no_leidas || 0;
+    }
+    countEl.textContent = total;
+    countEl.style.display = total > 0 ? 'flex' : 'none';
   } catch (e) { /* ignore */ }
 }
 
@@ -257,35 +281,69 @@ async function cargarNotificaciones() {
   const list = document.getElementById('notif-list');
   if (!list) return;
   try {
-    const res = await apiFetch('/cotizaciones/notificaciones?limit=15');
-    const data = await safeJson(res);
-    if (!res.ok || !data.items?.length) {
+    const [resCot, resRrhh] = await Promise.all([
+      apiFetch('/cotizaciones/notificaciones?limit=15'),
+      apiFetch('/rrhh/notificaciones?limit=15').catch(() => null)
+    ]);
+
+    let todas = [];
+
+    if (resCot && resCot.ok) {
+      const dataCot = await safeJson(resCot);
+      if (dataCot.items) {
+        todas = todas.concat(dataCot.items.map(n => ({ ...n, modulo: 'cotizaciones' })));
+      }
+    }
+
+    if (resRrhh && resRrhh.ok) {
+      const dataRrhh = await safeJson(resRrhh);
+      if (dataRrhh.items) {
+        todas = todas.concat(dataRrhh.items.map(n => ({ ...n, modulo: n.modulo || 'rrhh' })));
+      }
+    }
+
+    if (!todas.length) {
       list.innerHTML = '<div class="notif-empty">Sin notificaciones</div>';
       return;
     }
-    list.innerHTML = data.items.map(n => `
-      <div class="notif-item ${n.leida ? '' : 'no-leida'}" onclick="clickNotificacion(${n.id}, ${n.solicitud_id}, ${n.leida})">
-        <div>${n.mensaje}</div>
+
+    todas.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+    list.innerHTML = todas.slice(0, 20).map(n => {
+      const moduloTag = n.modulo === 'rrhh' ? '<span class="notif-tag notif-tag-rrhh">RRHH</span> ' : '';
+      return `<div class="notif-item ${n.leida ? '' : 'no-leida'}" onclick="clickNotificacion(${n.id}, ${n.solicitud_id || 'null'}, ${n.leida}, '${n.modulo}')">
+        <div>${moduloTag}${n.mensaje}</div>
         <div class="notif-fecha">${n.fecha}</div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   } catch (e) {
     list.innerHTML = '<div class="notif-empty">Error cargando</div>';
   }
 }
 
-async function clickNotificacion(id, solicitudId, leida) {
+async function clickNotificacion(id, solicitudId, leida, modulo) {
   if (!leida) {
     try {
-      await apiFetch(`/cotizaciones/notificaciones/${id}/leer`, { method: 'PATCH' });
+      const endpoint = modulo === 'rrhh'
+        ? `/rrhh/notificaciones/${id}/leer`
+        : `/cotizaciones/notificaciones/${id}/leer`;
+      await apiFetch(endpoint, { method: 'PATCH' });
       actualizarContadorNotif();
     } catch (e) { /* ignore */ }
   }
-  // Navegar a cotizaciones si no estamos ahi
+
+  if (modulo === 'rrhh') {
+    if (!window.location.pathname.includes('rrhh')) {
+      window.location.href = 'rrhh.html';
+    } else {
+      document.getElementById('notif-dropdown')?.classList.remove('open');
+    }
+    return;
+  }
+
   if (!window.location.pathname.includes('cotizaciones')) {
     window.location.href = `cotizaciones.html`;
   } else {
-    // Si ya estamos, abrir detalle
     if (typeof COT !== 'undefined' && COT.verDetalle) {
       COT.verDetalle(solicitudId);
       document.getElementById('notif-dropdown')?.classList.remove('open');

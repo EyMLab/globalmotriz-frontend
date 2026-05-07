@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asistencia del Personal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+
+    <div class="filtros">
+
+      <div class="filtro-grupo">
+        <label for="filtro-empleado">Empleado:</label>
+        <select id="filtro-empleado">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="filtro-grupo">
+        <label for="filtro-tipo">Tipo:</label>
+        <select id="filtro-tipo">
+          <option value="">Todos</option>
+          <option value="entrada">Entrada</option>
+          <option value="salida">Salida</option>
+        </select>
+      </div>
+
+      <div class="filtro-grupo">
+        <label for="filtro-localidad">Localidad:</label>
+        <select id="filtro-localidad">
+          <option value="">Todas</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+
+      <div class="filtro-grupo">
+        <label for="fecha-desde">Desde:</label>
+        <input type="date" id="fecha-desde">
+      </div>
+
+      <div class="filtro-grupo">
+        <label for="fecha-hasta">Hasta:</label>
+        <input type="date" id="fecha-hasta">
+      </div>
+
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Empleado</th>
+          <th>Localidad</th>
+          <th>Tipo</th>
+          <th>Fecha / Hora</th>
+          <th>Foto</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-asistencia"></tbody>
+    </table>
+
+    <div class="pagination-controls">
+      <button id="btn-prev">Anterior</button>
+      <span id="page-info">Página 1</span>
+      <button id="btn-next">Siguiente</button>
+    </div>
+
+  </div>
+
+  <!-- Modal foto -->
+  <div id="modal-foto-asistencia" class="modal" style="display:none;">
+    <div class="zoom-container">
+      <span class="cerrar" id="btn-cerrar-modal">&times;</span>
+      <img class="modal-contenido" id="foto-modal-img" alt="Evidencia de asistencia">
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/asistencia.js"></script>
+</body>
+</html>

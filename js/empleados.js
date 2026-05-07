@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cargar empleados
   // ===============================
   function cargarEmpleados() {
-    tablaEmpleados.innerHTML = `<tr><td colspan="6">Cargando...</td></tr>`;
+    tablaEmpleados.innerHTML = `<tr><td colspan="8">Cargando...</td></tr>`;
 
     apiFetch('/empleados')
       .then(res => res.json())
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderEmpleados();
       })
       .catch(() => {
-        tablaEmpleados.innerHTML = `<tr><td colspan="6">Error al cargar empleados</td></tr>`;
+        tablaEmpleados.innerHTML = `<tr><td colspan="8">Error al cargar empleados</td></tr>`;
       });
   }
 
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tablaEmpleados.innerHTML = '';
 
     if (!empleados.length) {
-      tablaEmpleados.innerHTML = `<tr><td colspan="6">No hay empleados</td></tr>`;
+      tablaEmpleados.innerHTML = `<tr><td colspan="8">No hay empleados</td></tr>`;
       return;
     }
 
@@ -75,10 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
           <button class="btn-eliminar" onclick="eliminarEmpleado(${e.id})">Eliminar</button>`;
 
+      const fechaNac = e.fecha_nacimiento
+        ? new Date(e.fecha_nacimiento).toLocaleDateString('es-EC')
+        : '-';
+
       tr.innerHTML = `
         <td>${e.id}</td>
         <td>${e.nombre} ${e.apellido}</td>
+        <td>${e.cedula || '-'}</td>
         <td>${e.cargo}</td>
+        <td>${e.localidad || 'MATRIZ'}</td>
         <td>${e.tag_uid}</td>
         <td>
           <span class="badge ${e.activo ? 'badge-ok' : 'badge-off'}">
@@ -101,8 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
       html: `
         <input id="emp-nombre" class="swal2-input" placeholder="Nombre">
         <input id="emp-apellido" class="swal2-input" placeholder="Apellido">
+        <input id="emp-cedula" class="swal2-input" placeholder="Cédula (opcional)">
         <input id="emp-cargo" class="swal2-input" placeholder="Cargo">
         <input id="emp-tag" class="swal2-input" placeholder="UID del TAG">
+        <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
+        <input id="emp-fechanac" type="date" class="swal2-input">
+        <select id="emp-localidad" class="swal2-select" style="margin-top:8px;">
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
       `,
       showCancelButton: true,
       confirmButtonText: 'Guardar',
@@ -111,13 +124,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const apellido = document.getElementById('emp-apellido').value.trim();
         const cargo = document.getElementById('emp-cargo').value.trim();
         const tag_uid = document.getElementById('emp-tag').value.trim();
+        const cedula = document.getElementById('emp-cedula').value.trim();
+        const fecha_nacimiento = document.getElementById('emp-fechanac').value;
+        const localidad = document.getElementById('emp-localidad').value;
 
         if (!nombre || !apellido || !cargo || !tag_uid) {
-          Swal.showValidationMessage('Todos los campos son obligatorios');
+          Swal.showValidationMessage('Nombre, apellido, cargo y TAG son obligatorios');
           return false;
         }
 
-        return { nombre, apellido, cargo, tag_uid };
+        return { nombre, apellido, cargo, tag_uid, cedula: cedula || null, fecha_nacimiento: fecha_nacimiento || null, localidad };
       }
     }).then(r => {
       if (!r.isConfirmed) return;
@@ -145,13 +161,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const emp = empleados.find(e => e.id === id);
     if (!emp) return;
 
+    const fechaNacVal = emp.fecha_nacimiento ? emp.fecha_nacimiento.substring(0, 10) : '';
     Swal.fire({
       title: 'Editar empleado',
       html: `
         <input id="emp-nombre" class="swal2-input" value="${emp.nombre}">
         <input id="emp-apellido" class="swal2-input" value="${emp.apellido}">
+        <input id="emp-cedula" class="swal2-input" value="${emp.cedula || ''}" placeholder="Cédula (opcional)">
         <input id="emp-cargo" class="swal2-input" value="${emp.cargo}">
         <input id="emp-tag" class="swal2-input" value="${emp.tag_uid}">
+        <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
+        <input id="emp-fechanac" type="date" class="swal2-input" value="${fechaNacVal}">
+        <select id="emp-localidad" class="swal2-select" style="margin-top:8px;">
+          <option value="MATRIZ" ${emp.localidad === 'MATRIZ' ? 'selected' : ''}>MATRIZ</option>
+          <option value="SUCURSAL" ${emp.localidad === 'SUCURSAL' ? 'selected' : ''}>SUCURSAL</option>
+        </select>
       `,
       showCancelButton: true,
       confirmButtonText: 'Guardar',
@@ -159,8 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           nombre: document.getElementById('emp-nombre').value.trim(),
           apellido: document.getElementById('emp-apellido').value.trim(),
+          cedula: document.getElementById('emp-cedula').value.trim() || null,
           cargo: document.getElementById('emp-cargo').value.trim(),
-          tag_uid: document.getElementById('emp-tag').value.trim()
+          tag_uid: document.getElementById('emp-tag').value.trim(),
+          fecha_nacimiento: document.getElementById('emp-fechanac').value || null,
+          localidad: document.getElementById('emp-localidad').value
         };
       }
     }).then(r => {
