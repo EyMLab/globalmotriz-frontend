@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceCumpleanos = ['admin', 'control', 'asistente_contable'].includes(rol)
-      ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleanos' ? 'active' : ''}">Cumpleanos</a>`
+      ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleanos' ? 'active' : ''}">Cumpleaños</a>`
       : "";
 
     const enlaceFacturas = ['admin', 'control'].includes(rol)
