@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceRRHH = ['admin', 'control', 'asistente_contable'].includes(rol)
-      ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">Cumpleanos</a>`
+      ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">Empleados</a>`
       : "";
 
     const enlaceFacturas = ['admin', 'control'].includes(rol)
