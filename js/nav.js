@@ -85,9 +85,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 
-    const enlaceRRHH = ['admin', 'control', 'asistente_contable'].includes(rol)
-      ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">RRHH</a>`
-      : "";
 
     // ============================================
     // Renderizado del navbar
@@ -119,9 +116,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>` : ''}
           ${enlaceLPR}
-          ${enlaceAsistencia}
+          ${enlaceAsistencia ? `
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn ${pagina === 'Asistencia' ? 'active' : ''}">RRHH <span class="nav-arrow">&#9662;</span></button>
+            <div class="nav-dropdown-menu">
+              ${enlaceAsistencia}
+            </div>
+          </div>` : ''}
           ${enlaceFinanzas}
-          ${enlaceRRHH}
           ${enlaceUsuarios}
         </nav>
 
