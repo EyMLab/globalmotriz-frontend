@@ -100,6 +100,19 @@
   };
 
   // =====================================================
+  // HELPERS
+  // =====================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // =====================================================
   // ESTADO GLOBAL
   // =====================================================
   const state = {
@@ -491,7 +504,7 @@
               const esGanador = opc.id === item.ganador_opcion_id;
               const bg = esGanador ? 'background:#ecfdf5;' : (!opc.disponible ? 'background:#fef2f2;' : '');
               celdas += `<td style="${bg}">
-                <strong>${opc.proveedor_nombre || 'N/A'}</strong><br>
+                <strong>${escapeHtml(opc.proveedor_nombre) || 'N/A'}</strong><br>
                 $${Number(opc.precio_unitario).toFixed(2)}<br>
                 <span class="${opc.tipo === 'Original' ? 'tipo-original' : 'tipo-alterno'}">${opc.tipo}</span>
                 ${esGanador ? '<br><strong style="color:#059669;">GANADOR</strong>' : ''}
@@ -501,7 +514,7 @@
               celdas += '<td style="color:#cbd5e1;">-</td>';
             }
           }
-          tablaHTML += `<tr><td style="text-align:left;font-weight:500;">${item.nombre_repuesto}</td><td>${item.cantidad}</td>${celdas}</tr>`;
+          tablaHTML += `<tr><td style="text-align:left;font-weight:500;">${escapeHtml(item.nombre_repuesto)}</td><td>${item.cantidad}</td>${celdas}</tr>`;
         });
 
         tablaHTML += `<tr class="total-row"><td colspan="2" style="text-align:right;">TOTAL GANADORES:</td><td colspan="3" style="text-align:left;font-size:16px;">$${Number(total).toFixed(2)}</td></tr>`;
@@ -512,10 +525,10 @@
       let obsHTML = '';
       if (sol.observaciones_aprobacion) {
         const cls = sol.estado === 'Rechazada' ? 'obs-rechazo' : 'obs-aprobacion';
-        obsHTML += `<div class="${cls}" style="margin-top:10px;"><strong>Observaciones del asesor:</strong> ${sol.observaciones_aprobacion}</div>`;
+        obsHTML += `<div class="${cls}" style="margin-top:10px;"><strong>Observaciones del asesor:</strong> ${escapeHtml(sol.observaciones_aprobacion)}</div>`;
       }
       if (sol.observaciones_bodega) {
-        obsHTML += `<div style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;font-size:13px;color:#0c4a6e;"><strong>Observaciones de bodega:</strong> ${sol.observaciones_bodega}</div>`;
+        obsHTML += `<div style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;font-size:13px;color:#0c4a6e;"><strong>Observaciones de bodega:</strong> ${escapeHtml(sol.observaciones_bodega)}</div>`;
       }
 
       // Fotos
@@ -559,20 +572,20 @@
             <!-- Fotos arriba -->
             ${(sol.foto_matricula_url || sol.foto_proforma_url) ? `
             <div style="display:flex;gap:12px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
-              ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">MATRICULA</div><img src="${sol.foto_matricula_url}" style="height:90px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_matricula_url}')"></div>` : ''}
-              ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">PROFORMA</div><img src="${sol.foto_proforma_url}" style="height:90px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${sol.foto_proforma_url}')"></div>` : ''}
+              ${sol.foto_matricula_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">MATRICULA</div><img src="${escapeHtml(sol.foto_matricula_url)}" style="height:90px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${escapeHtml(sol.foto_matricula_url)}')"></div>` : ''}
+              ${sol.foto_proforma_url ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:3px;">PROFORMA</div><img src="${escapeHtml(sol.foto_proforma_url)}" style="height:90px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="abrirFotoCot('${escapeHtml(sol.foto_proforma_url)}')"></div>` : ''}
             </div>` : ''}
             <!-- Info en linea -->
             <div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
-              <span><strong>Placa:</strong> ${sol.placa}</span>
-              <span><strong>Tipo:</strong> <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${sol.tipo_cliente}</span></span>
-              <span><strong>Aseguradora:</strong> ${sol.aseguradora_nombre || '-'}</span>
+              <span><strong>Placa:</strong> ${escapeHtml(sol.placa)}</span>
+              <span><strong>Tipo:</strong> <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${escapeHtml(sol.tipo_cliente)}</span></span>
+              <span><strong>Aseguradora:</strong> ${escapeHtml(sol.aseguradora_nombre) || '-'}</span>
               <span><strong>Estado:</strong> ${badgeEstado(sol.estado)}</span>
-              <span><strong>Creado:</strong> ${sol.creado_por} <span style="color:#94a3b8;">(${sol.fecha_creacion_fmt || '-'})</span></span>
-              ${sol.cotizado_por ? `<span><strong>Cotizado:</strong> ${sol.cotizado_por} <span style="color:#94a3b8;">(${sol.fecha_cotizacion_fmt || '-'})</span></span>` : ''}
-              ${sol.aprobado_por ? `<span><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'}:</strong> ${sol.aprobado_por} <span style="color:#94a3b8;">(${sol.fecha_aprobacion_fmt || '-'})</span></span>` : ''}
+              <span><strong>Creado:</strong> ${escapeHtml(sol.creado_por)} <span style="color:#94a3b8;">(${sol.fecha_creacion_fmt || '-'})</span></span>
+              ${sol.cotizado_por ? `<span><strong>Cotizado:</strong> ${escapeHtml(sol.cotizado_por)} <span style="color:#94a3b8;">(${sol.fecha_cotizacion_fmt || '-'})</span></span>` : ''}
+              ${sol.aprobado_por ? `<span><strong>${sol.estado === 'Rechazada' ? 'Rechazado' : 'Aprobado'}:</strong> ${escapeHtml(sol.aprobado_por)} <span style="color:#94a3b8;">(${sol.fecha_aprobacion_fmt || '-'})</span></span>` : ''}
             </div>
-            ${sol.notas_asesor ? `<div style="margin-bottom:10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;"><strong>Notas del asesor:</strong> ${sol.notas_asesor}</div>` : ''}
+            ${sol.notas_asesor ? `<div style="margin-bottom:10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;"><strong>Notas del asesor:</strong> ${escapeHtml(sol.notas_asesor)}</div>` : ''}
             ${obsHTML}
             <!-- Tabla comparativa -->
             <div style="overflow-x:auto;">
@@ -666,13 +679,13 @@
     workspace.innerHTML = '';
 
     try {
-      const res = await apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=Pendiente');
-      const res2 = await apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=En Cotizacion');
-      const res3 = await apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=Rechazada');
+      const [res, res2, res3] = await Promise.all([
+        apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=Pendiente'),
+        apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=En Cotizacion'),
+        apiFetch('/cotizaciones/solicitudes?pageSize=50&estado=Rechazada')
+      ]);
 
-      const d1 = await safeJson(res);
-      const d2 = await safeJson(res2);
-      const d3 = await safeJson(res3);
+      const [d1, d2, d3] = await Promise.all([safeJson(res), safeJson(res2), safeJson(res3)]);
 
       const todas = [...(d1?.items || []), ...(d2?.items || []), ...(d3?.items || [])];
 
@@ -721,7 +734,7 @@
       // Observaciones de rechazo si las hay
       let obsHTML = '';
       if (sol.observaciones_aprobacion && sol.estado === 'Rechazada') {
-        obsHTML = `<div class="obs-rechazo"><strong>Observaciones del asesor (rechazo):</strong> ${sol.observaciones_aprobacion}</div>`;
+        obsHTML = `<div class="obs-rechazo"><strong>Observaciones del asesor (rechazo):</strong> ${escapeHtml(sol.observaciones_aprobacion)}</div>`;
       }
 
       // Construir items iniciales o vacios
@@ -731,18 +744,18 @@
         <div class="workspace">
           <div class="workspace-header">
             <div class="info">
-              <h3>Cotizar - Placa: ${sol.placa}</h3>
-              <p>Tipo: <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${sol.tipo_cliente}</span>
-                 ${sol.aseguradora_nombre ? ` | Aseguradora: <strong>${sol.aseguradora_nombre}</strong>` : ''}
+              <h3>Cotizar - Placa: ${escapeHtml(sol.placa)}</h3>
+              <p>Tipo: <span class="badge ${sol.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${escapeHtml(sol.tipo_cliente)}</span>
+                 ${sol.aseguradora_nombre ? ` | Aseguradora: <strong>${escapeHtml(sol.aseguradora_nombre)}</strong>` : ''}
               </p>
-              ${sol.notas_asesor ? `<p>Notas del asesor: ${sol.notas_asesor}</p>` : ''}
+              ${sol.notas_asesor ? `<p>Notas del asesor: ${escapeHtml(sol.notas_asesor)}</p>` : ''}
             </div>
             <div style="display:flex;gap:8px;">
               ${sol.foto_matricula_url
-                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${sol.foto_matricula_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_matricula_url}')" title="Click para agrandar"></div>`
+                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${escapeHtml(sol.foto_matricula_url)}" class="proforma-thumb" onclick="abrirFotoCot('${escapeHtml(sol.foto_matricula_url)}')" title="Click para agrandar"></div>`
                 : ''}
               ${sol.foto_proforma_url
-                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${sol.foto_proforma_url}" class="proforma-thumb" onclick="abrirFotoCot('${sol.foto_proforma_url}')" title="Click para agrandar"></div>`
+                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${escapeHtml(sol.foto_proforma_url)}" class="proforma-thumb" onclick="abrirFotoCot('${escapeHtml(sol.foto_proforma_url)}')" title="Click para agrandar"></div>`
                 : ''}
               ${!sol.foto_matricula_url && !sol.foto_proforma_url ? '<div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">Sin fotos</div>' : ''}
             </div>
@@ -1070,8 +1083,8 @@
             <label class="pr-check-label">
               <input type="checkbox" class="pr-check" data-sol="${s.id}" data-item="${it.id}">
               <span class="pr-item-info">
-                <strong>${it.nombre_repuesto}</strong> x${it.cantidad}
-                ${ganador ? ` — ${ganador.proveedor_nombre || 'Proveedor'} · $${Number(ganador.precio_unitario).toFixed(2)} · ${ganador.tipo}` : ''}
+                <strong>${escapeHtml(it.nombre_repuesto)}</strong> x${it.cantidad}
+                ${ganador ? ` — ${escapeHtml(ganador.proveedor_nombre) || 'Proveedor'} · $${Number(ganador.precio_unitario).toFixed(2)} · ${escapeHtml(ganador.tipo)}` : ''}
               </span>
             </label>
           </div>`;
@@ -1082,8 +1095,8 @@
             <div class="pr-card-info">
               <span class="pr-placa">${s.placa}</span>
               <span class="badge ${s.tipo_cliente === 'Aseguradora' ? 'tipo-aseguradora' : 'tipo-particular'}">${s.tipo_cliente}</span>
-              ${s.aseguradora ? `<span style="color:#475569;font-size:12px;">${s.aseguradora}</span>` : ''}
-              <span style="color:#64748b;font-size:12px;">Cotizado por: ${s.cotizado_por || '-'}</span>
+              ${s.aseguradora ? `<span style="color:#475569;font-size:12px;">${escapeHtml(s.aseguradora)}</span>` : ''}
+              <span style="color:#64748b;font-size:12px;">Cotizado por: ${escapeHtml(s.cotizado_por) || '-'}</span>
             </div>
             <div class="pr-card-actions">
               <span class="pr-total">Total: $${Number(s.total).toFixed(2)}</span>
