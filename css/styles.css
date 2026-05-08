@@ -833,7 +833,7 @@ table.usuarios-table td {
 }
 
 /* El ancho lo controla cada Swal.fire() individualmente via width: */
-.swal2-popup:not(:has(.form-group)):not(:has(.form-row)):not(:has(.tabla-recepcion)):not(:has(.foto-evidencia)):not(:has(.tabla-cotizacion)):not(:has(.detalle-solicitud)) {
+.swal2-popup:not(:has(.form-group)):not(:has(.form-row)):not(:has(.tabla-recepcion)):not(:has(.foto-evidencia)):not(:has(.tabla-cotizacion)):not(:has(.detalle-solicitud)):not(:has(.borrador-split)) {
   width: 380px !important;
 }
 
@@ -849,6 +849,11 @@ table.usuarios-table td {
 
 .swal2-popup:has(.tabla-cotizacion),
 .swal2-popup:has(.detalle-solicitud) {
+  max-width: 95vw !important;
+}
+
+.swal2-popup:has(.borrador-split) {
+  width: 95vw !important;
   max-width: 95vw !important;
 }
 
