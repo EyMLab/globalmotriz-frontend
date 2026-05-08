@@ -1245,6 +1245,13 @@
         showConfirmButton: true,
         confirmButtonText: 'Cerrar',
         didOpen: () => {
+          // Forzar ancho del popup (SweetAlert inline styles)
+          const popup = Swal.getPopup();
+          if (popup) {
+            popup.style.width = '95vw';
+            popup.style.maxWidth = '95vw';
+          }
+
           renderBorradorItems(itemsData);
 
           document.getElementById('btn-add-borrador').addEventListener('click', addBorradorRow);
