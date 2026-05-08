@@ -1430,77 +1430,151 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = doc.internal.pageSize.getWidth();
-    const margin = 14;
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 16;
+    const contentW = pageW - margin * 2;
+    const brandColor = [43, 122, 158];
 
-    // Logo
+    // --- HEADER: logo + datos empresa ---
     const logo = await cargarLogoBase64();
-    let headerY = 14;
+    const logoSize = 22;
     if (logo) {
-      doc.addImage(logo, 'PNG', margin, headerY, 35, 18);
-      headerY = 36;
+      doc.addImage(logo, 'PNG', margin, 10, logoSize, logoSize);
     }
 
-    doc.setFontSize(18);
-    doc.text('Solicitud de Cotizacion', margin, headerY);
+    const infoX = logo ? margin + logoSize + 6 : margin;
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...brandColor);
+    doc.text('GLOBAL MOTRIZ S.A.', infoX, 19);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(120);
+    doc.text('Tu taller de confianza', infoX, 25);
 
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Placa: ${sol.placa}`, margin, headerY + 10);
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, margin, headerY + 16);
-    doc.text(`Solicitud #${sol.id}`, margin, headerY + 22);
+    // Linea separadora
+    const lineY = 36;
+    doc.setDrawColor(...brandColor);
+    doc.setLineWidth(0.8);
+    doc.line(margin, lineY, pageW - margin, lineY);
+
+    // --- TITULO ---
+    doc.setFontSize(15);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(40);
+    doc.text('SOLICITUD DE COTIZACION', margin, lineY + 10);
+
+    // --- DATOS en recuadro ---
+    const boxY = lineY + 15;
+    doc.setFillColor(245, 247, 250);
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, boxY, contentW, 20, 2, 2, 'FD');
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(60);
+    doc.text('Placa:', margin + 6, boxY + 8);
+    doc.text('Fecha:', margin + 6, boxY + 15);
+    doc.text('Ref:', contentW / 2 + margin, boxY + 8);
+
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(30);
+    doc.text(sol.placa, margin + 22, boxY + 8);
+    doc.text(new Date().toLocaleDateString('es-EC'), margin + 22, boxY + 15);
+    doc.text(`#${sol.id}`, contentW / 2 + margin + 12, boxY + 8);
 
     if (sol.foto_matricula_url) {
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      doc.text('* Foto de matricula adjunta en la ultima hoja', margin, headerY + 30);
+      doc.setFontSize(8);
+      doc.setTextColor(140);
+      doc.setFont(undefined, 'italic');
+      doc.text('* Foto de matricula adjunta en la ultima pagina', contentW / 2 + margin, boxY + 15);
+      doc.setFont(undefined, 'normal');
     }
-    doc.setTextColor(0);
 
-    const tableStartY = headerY + (sol.foto_matricula_url ? 38 : 32);
+    // --- TABLA ---
+    const tableY = boxY + 28;
     doc.setFontSize(10);
-    doc.text('Por favor cotizar los siguientes repuestos:', margin, tableStartY);
+    doc.setTextColor(60);
+    doc.text('Por favor cotizar los siguientes repuestos:', margin, tableY);
 
     const tableData = items.map((item, idx) => [idx + 1, item.nombre_repuesto, item.cantidad]);
 
     doc.autoTable({
-      startY: tableStartY + 6,
+      startY: tableY + 4,
       head: [['#', 'Repuesto / Descripcion', 'Cantidad']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [43, 122, 158], fontSize: 10 },
-      bodyStyles: { fontSize: 11 },
-      styles: { cellPadding: 4 },
+      margin: { left: margin, right: margin },
+      headStyles: {
+        fillColor: brandColor,
+        fontSize: 10,
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      bodyStyles: { fontSize: 11, textColor: [30, 30, 30] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { cellPadding: 5, lineColor: [200, 200, 200], lineWidth: 0.3 },
       columnStyles: {
         0: { cellWidth: 15, halign: 'center' },
-        1: { cellWidth: 140 },
+        1: { cellWidth: contentW - 40 },
         2: { cellWidth: 25, halign: 'center' }
       }
     });
 
-    // Foto de matricula en pagina aparte
+    // --- FOOTER ---
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.3);
+    doc.line(margin, pageH - 16, pageW - margin, pageH - 16);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('Global Motriz S.A. — Documento generado automaticamente', margin, pageH - 11);
+    doc.text(`Pagina 1${sol.foto_matricula_url ? ' de 2' : ' de 1'}`, pageW - margin, pageH - 11, { align: 'right' });
+
+    // --- PAGINA 2: Foto de matricula ---
     if (sol.foto_matricula_url) {
       try {
         const imgData = await loadImageAsBase64(sol.foto_matricula_url);
         if (imgData) {
           doc.addPage();
-          const pageH = doc.internal.pageSize.getHeight();
-          const usableW = pageW - margin * 2;
-          const usableH = pageH - 40;
 
-          doc.setFontSize(14);
-          doc.setTextColor(0);
-          doc.text(`Matricula - ${sol.placa}`, margin, 20);
+          // Header mini en pagina 2
+          doc.setDrawColor(...brandColor);
+          doc.setLineWidth(0.8);
+          doc.line(margin, 14, pageW - margin, 14);
+          doc.setFontSize(13);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(...brandColor);
+          doc.text(`MATRICULA — ${sol.placa}`, margin, 11);
 
+          // Foto centrada al maximo
+          const usableW = contentW;
+          const usableH = pageH - 50;
           const ratio = Math.min(usableW / imgData.w, usableH / imgData.h);
           const imgW = imgData.w * ratio;
           const imgH = imgData.h * ratio;
           const x = margin + (usableW - imgW) / 2;
-          doc.addImage(imgData.data, 'JPEG', x, 28, imgW, imgH);
+          const y = 20 + (usableH - imgH) / 2;
+
+          // Marco sutil alrededor de la foto
+          doc.setDrawColor(200);
+          doc.setLineWidth(0.3);
+          doc.rect(x - 1, y - 1, imgW + 2, imgH + 2);
+          doc.addImage(imgData.data, 'JPEG', x, y, imgW, imgH);
+
+          // Footer pagina 2
+          doc.setDrawColor(200);
+          doc.line(margin, pageH - 16, pageW - margin, pageH - 16);
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.setFont(undefined, 'normal');
+          doc.text('Global Motriz S.A. — Documento generado automaticamente', margin, pageH - 11);
+          doc.text('Pagina 2 de 2', pageW - margin, pageH - 11, { align: 'right' });
         }
       } catch (e) { /* foto no disponible */ }
     }
 
-    doc.save(`Borrador_Repuestos_${sol.placa}_${sol.id}.pdf`);
+    doc.save(`Cotizacion_Repuestos_${sol.placa}_${sol.id}.pdf`);
   }
 
   function initBorradorFotoZoom() {
