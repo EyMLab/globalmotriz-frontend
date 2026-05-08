@@ -1213,7 +1213,8 @@
 
       await Swal.fire({
         title: `Borrador de Repuestos - ${escapeHtml(sol.placa)}`,
-        width: '95%',
+        width: '95vw',
+        customClass: { popup: 'borrador-popup' },
         html: `
           <div class="borrador-split">
             <div class="borrador-left">
