@@ -1425,25 +1425,6 @@
     doc.text(`Solicitud #${sol.id}`, 14, 48);
     doc.setTextColor(0);
 
-    // Foto de matricula al lado del encabezado
-    if (sol.foto_matricula_url) {
-      try {
-        const imgData = await loadImageAsBase64(sol.foto_matricula_url);
-        if (imgData) {
-          const maxH = 35;
-          const maxW = 50;
-          const ratio = Math.min(maxW / imgData.w, maxH / imgData.h);
-          const imgW = imgData.w * ratio;
-          const imgH = imgData.h * ratio;
-          doc.addImage(imgData.data, 'JPEG', pageW - imgW - 14, 14, imgW, imgH);
-          doc.setFontSize(8);
-          doc.setTextColor(150);
-          doc.text('Matricula', pageW - imgW - 14, 12);
-          doc.setTextColor(0);
-        }
-      } catch (e) { /* foto no disponible, continuar sin ella */ }
-    }
-
     doc.setFontSize(10);
     doc.text('Por favor cotizar los siguientes repuestos:', 14, 58);
 
@@ -1463,6 +1444,30 @@
         2: { cellWidth: 25, halign: 'center' }
       }
     });
+
+    // Foto de matricula en pagina aparte
+    if (sol.foto_matricula_url) {
+      try {
+        const imgData = await loadImageAsBase64(sol.foto_matricula_url);
+        if (imgData) {
+          doc.addPage();
+          const pageH = doc.internal.pageSize.getHeight();
+          const margin = 14;
+          const usableW = pageW - margin * 2;
+          const usableH = pageH - 50;
+
+          doc.setFontSize(14);
+          doc.setTextColor(0);
+          doc.text(`Matricula - ${sol.placa}`, margin, 20);
+
+          const ratio = Math.min(usableW / imgData.w, usableH / imgData.h);
+          const imgW = imgData.w * ratio;
+          const imgH = imgData.h * ratio;
+          const x = margin + (usableW - imgW) / 2;
+          doc.addImage(imgData.data, 'JPEG', x, 30, imgW, imgH);
+        }
+      } catch (e) { /* foto no disponible */ }
+    }
 
     doc.save(`Borrador_Repuestos_${sol.placa}_${sol.id}.pdf`);
   }
