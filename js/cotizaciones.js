@@ -1446,7 +1446,7 @@
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(...brandColor);
-    doc.text('GLOBAL MOTRIZ S.A.', infoX, 19);
+    doc.text('GLOBAL MOTRIZ SA', infoX, 19);
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(120);
@@ -1528,7 +1528,7 @@
     doc.line(margin, pageH - 16, pageW - margin, pageH - 16);
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text('Global Motriz S.A. — Documento generado automaticamente', margin, pageH - 11);
+    doc.text('Global Motriz SA — Documento generado automaticamente', margin, pageH - 11);
     doc.text(`Pagina 1${sol.foto_matricula_url ? ' de 2' : ' de 1'}`, pageW - margin, pageH - 11, { align: 'right' });
 
     // --- PAGINA 2: Foto de matricula ---
@@ -1568,7 +1568,7 @@
           doc.setFontSize(8);
           doc.setTextColor(150);
           doc.setFont(undefined, 'normal');
-          doc.text('Global Motriz S.A. — Documento generado automaticamente', margin, pageH - 11);
+          doc.text('Global Motriz SA — Documento generado automaticamente', margin, pageH - 11);
           doc.text('Pagina 2 de 2', pageW - margin, pageH - 11, { align: 'right' });
         }
       } catch (e) { /* foto no disponible */ }
