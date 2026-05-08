@@ -1380,20 +1380,27 @@
     }
   }
 
-  function loadImageAsBase64(url) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        resolve({ data: canvas.toDataURL('image/jpeg', 0.85), w: img.naturalWidth, h: img.naturalHeight });
-      };
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
+  async function loadImageAsBase64(gcsUrl) {
+    try {
+      const res = await apiFetch(`/cotizaciones/fotos/proxy?url=${encodeURIComponent(gcsUrl)}`);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+      // Obtener dimensiones
+      const dims = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 400, h: 300 });
+        img.src = dataUrl;
+      });
+      return { data: dataUrl, w: dims.w, h: dims.h };
+    } catch (e) {
+      return null;
+    }
   }
 
   async function exportarPDFBorrador(sol) {
