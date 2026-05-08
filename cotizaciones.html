@@ -346,21 +346,30 @@
     }
 
     /* ====== BORRADOR MODAL ====== */
-    .swal2-popup.swal2-modal.borrador-popup {
+    .borrador-popup {
       width: 95vw !important;
-      max-width: 1400px !important;
+      max-width: 95vw !important;
     }
-    .swal2-popup.borrador-popup .swal2-html-container {
+    .borrador-popup .swal2-html-container {
       max-height: none !important;
       overflow: visible !important;
       margin: 0 !important;
-      padding: 0 10px !important;
+      padding: 0 16px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
     .borrador-split {
       display: flex;
-      gap: 20px;
+      gap: 24px;
       height: 72vh;
       text-align: left;
+      width: 100%;
+    }
+    .borrador-left {
+      flex: 1 1 50%;
+    }
+    .borrador-right {
+      flex: 1 1 50%;
     }
     .borrador-left {
       flex: 1;
