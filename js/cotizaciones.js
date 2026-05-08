@@ -1403,6 +1403,23 @@
     }
   }
 
+  function cargarLogoBase64() {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch (e) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'img/logo.png';
+    });
+  }
+
   async function exportarPDFBorrador(sol) {
     const items = getBorradorItemsFromDOM();
     if (!items.length) {
@@ -1413,25 +1430,40 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = doc.internal.pageSize.getWidth();
+    const margin = 14;
+
+    // Logo
+    const logo = await cargarLogoBase64();
+    let headerY = 14;
+    if (logo) {
+      doc.addImage(logo, 'PNG', margin, headerY, 35, 18);
+      headerY = 36;
+    }
 
     doc.setFontSize(18);
-    doc.text('Solicitud de Cotizacion', 14, 20);
+    doc.text('Solicitud de Cotizacion', margin, headerY);
 
     doc.setFontSize(11);
     doc.setTextColor(100);
-    doc.text(`Placa: ${sol.placa}`, 14, 30);
-    doc.text(`Tipo: ${sol.tipo_cliente}${sol.aseguradora_nombre ? ' | Aseguradora: ' + sol.aseguradora_nombre : ''}`, 14, 36);
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, 14, 42);
-    doc.text(`Solicitud #${sol.id}`, 14, 48);
+    doc.text(`Placa: ${sol.placa}`, margin, headerY + 10);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, margin, headerY + 16);
+    doc.text(`Solicitud #${sol.id}`, margin, headerY + 22);
+
+    if (sol.foto_matricula_url) {
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text('* Foto de matricula adjunta en la ultima hoja', margin, headerY + 30);
+    }
     doc.setTextColor(0);
 
+    const tableStartY = headerY + (sol.foto_matricula_url ? 38 : 32);
     doc.setFontSize(10);
-    doc.text('Por favor cotizar los siguientes repuestos:', 14, 58);
+    doc.text('Por favor cotizar los siguientes repuestos:', margin, tableStartY);
 
     const tableData = items.map((item, idx) => [idx + 1, item.nombre_repuesto, item.cantidad]);
 
     doc.autoTable({
-      startY: 64,
+      startY: tableStartY + 6,
       head: [['#', 'Repuesto / Descripcion', 'Cantidad']],
       body: tableData,
       theme: 'grid',
@@ -1452,9 +1484,8 @@
         if (imgData) {
           doc.addPage();
           const pageH = doc.internal.pageSize.getHeight();
-          const margin = 14;
           const usableW = pageW - margin * 2;
-          const usableH = pageH - 50;
+          const usableH = pageH - 40;
 
           doc.setFontSize(14);
           doc.setTextColor(0);
@@ -1464,7 +1495,7 @@
           const imgW = imgData.w * ratio;
           const imgH = imgData.h * ratio;
           const x = margin + (usableW - imgW) / 2;
-          doc.addImage(imgData.data, 'JPEG', x, 30, imgW, imgH);
+          doc.addImage(imgData.data, 'JPEG', x, 28, imgW, imgH);
         }
       } catch (e) { /* foto no disponible */ }
     }
