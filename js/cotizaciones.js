@@ -1380,7 +1380,23 @@
     }
   }
 
-  function exportarPDFBorrador(sol) {
+  function loadImageAsBase64(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve({ data: canvas.toDataURL('image/jpeg', 0.85), w: img.naturalWidth, h: img.naturalHeight });
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  async function exportarPDFBorrador(sol) {
     const items = getBorradorItemsFromDOM();
     if (!items.length) {
       Swal.showValidationMessage('No hay repuestos para exportar');
@@ -1389,6 +1405,7 @@
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = doc.internal.pageSize.getWidth();
 
     doc.setFontSize(18);
     doc.text('Solicitud de Cotizacion', 14, 20);
@@ -1400,6 +1417,25 @@
     doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, 14, 42);
     doc.text(`Solicitud #${sol.id}`, 14, 48);
     doc.setTextColor(0);
+
+    // Foto de matricula al lado del encabezado
+    if (sol.foto_matricula_url) {
+      try {
+        const imgData = await loadImageAsBase64(sol.foto_matricula_url);
+        if (imgData) {
+          const maxH = 35;
+          const maxW = 50;
+          const ratio = Math.min(maxW / imgData.w, maxH / imgData.h);
+          const imgW = imgData.w * ratio;
+          const imgH = imgData.h * ratio;
+          doc.addImage(imgData.data, 'JPEG', pageW - imgW - 14, 14, imgW, imgH);
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text('Matricula', pageW - imgW - 14, 12);
+          doc.setTextColor(0);
+        }
+      } catch (e) { /* foto no disponible, continuar sin ella */ }
+    }
 
     doc.setFontSize(10);
     doc.text('Por favor cotizar los siguientes repuestos:', 14, 58);
@@ -1420,14 +1456,6 @@
         2: { cellWidth: 25, halign: 'center' }
       }
     });
-
-    // Espacio para observaciones al final
-    const finalY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Observaciones: _______________________________________________________________', 14, finalY);
-    doc.text('Tiempo de entrega: ___________________________________________________________', 14, finalY + 10);
-    doc.text('Forma de pago: ______________________________________________________________', 14, finalY + 20);
 
     doc.save(`Borrador_Repuestos_${sol.placa}_${sol.id}.pdf`);
   }
