@@ -154,6 +154,15 @@
       document.getElementById('tab-btn-cotizar').style.display = 'none';
       document.getElementById('tab-btn-recibir').style.display = 'none';
     }
+
+    // Bodega entra directo al tab Cotizar
+    if (state.esBodega) {
+      document.querySelector('.tab-btn.active')?.classList.remove('active');
+      document.querySelector('.tab-panel.active')?.classList.remove('active');
+      document.getElementById('tab-btn-cotizar')?.classList.add('active');
+      document.getElementById('panel-cotizar')?.classList.add('active');
+      cargarPendientesCotizar();
+    }
   });
 
   // =====================================================
