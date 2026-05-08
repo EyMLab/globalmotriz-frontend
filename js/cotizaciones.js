@@ -1450,7 +1450,6 @@
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(120);
-    doc.text('Tu taller de confianza', infoX, 25);
 
     // Linea separadora
     const lineY = 36;
