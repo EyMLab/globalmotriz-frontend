@@ -709,7 +709,10 @@
                 <td>${badgeEstado(s.estado)}</td>
                 <td>${s.creado_por}</td>
                 <td>${s.fecha_creacion || '-'}</td>
-                <td><button class="btn-cotizar" onclick="COT.abrirWorkspace(${s.id})">Cotizar</button></td>
+                <td>
+                  <button class="btn-obs" onclick="COT.abrirBorrador(${s.id})" style="margin-right:4px;padding:5px 10px;font-size:12px;">Borrador</button>
+                  <button class="btn-cotizar" onclick="COT.abrirWorkspace(${s.id})">Cotizar</button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -1179,6 +1182,316 @@
   }
 
   // =====================================================
+  // BORRADOR DE REPUESTOS (split-screen con proforma)
+  // =====================================================
+  const borradorZoom = { scale: 1, posX: 0, posY: 0 };
+
+  async function abrirBorrador(solicitudId) {
+    try {
+      const res = await apiFetch(`/cotizaciones/solicitudes/${solicitudId}`);
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error);
+
+      const sol = data.solicitud;
+      const existingItems = data.items;
+      const itemsData = existingItems.length > 0
+        ? existingItems.map(i => ({ nombre: i.nombre_repuesto, cantidad: i.cantidad }))
+        : [{ nombre: '', cantidad: 1 }];
+
+      const tieneProforma = !!sol.foto_proforma_url;
+      const tieneMatricula = !!sol.foto_matricula_url;
+      const fotoInicial = sol.foto_proforma_url || sol.foto_matricula_url;
+
+      let fotoTabsHTML = '';
+      if (tieneProforma && tieneMatricula) {
+        fotoTabsHTML = `
+          <div style="display:flex;gap:4px;padding:8px 8px 0;">
+            <button type="button" class="borrador-foto-tab active" data-url="${escapeHtml(sol.foto_proforma_url)}">Proforma</button>
+            <button type="button" class="borrador-foto-tab" data-url="${escapeHtml(sol.foto_matricula_url)}">Matricula</button>
+          </div>`;
+      }
+
+      await Swal.fire({
+        title: `Borrador de Repuestos - ${escapeHtml(sol.placa)}`,
+        width: '95%',
+        html: `
+          <div class="borrador-split">
+            <div class="borrador-left">
+              <div class="borrador-info">
+                <span><strong>Tipo:</strong> ${escapeHtml(sol.tipo_cliente)}</span>
+                ${sol.aseguradora_nombre ? `<span><strong>Aseguradora:</strong> ${escapeHtml(sol.aseguradora_nombre)}</span>` : ''}
+                ${sol.notas_asesor ? `<span><strong>Notas:</strong> ${escapeHtml(sol.notas_asesor)}</span>` : ''}
+              </div>
+              <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;">Repuestos</div>
+              <div id="borrador-items"></div>
+              <button type="button" class="btn-add-item" id="btn-add-borrador">+ Agregar Repuesto</button>
+              <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn-aprobar" id="btn-save-borrador">Guardar Borrador</button>
+                <button type="button" class="btn-pdf" id="btn-pdf-borrador">Descargar PDF para Proveedores</button>
+              </div>
+            </div>
+            <div class="borrador-right">
+              ${fotoTabsHTML}
+              ${fotoInicial
+                ? `<div id="borrador-foto-container" style="flex:1;overflow:hidden;cursor:grab;display:flex;align-items:center;justify-content:center;position:relative;">
+                    <img src="${escapeHtml(fotoInicial)}" id="borrador-foto" style="max-width:100%;max-height:100%;transition:transform 0.15s;user-select:none;" draggable="false">
+                   </div>
+                   <div style="text-align:center;padding:4px;font-size:11px;color:#94a3b8;">Scroll para zoom · Arrastra para mover · Doble clic para reset</div>`
+                : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:14px;">Sin fotos disponibles</div>'
+              }
+            </div>
+          </div>`,
+        showConfirmButton: true,
+        confirmButtonText: 'Cerrar',
+        didOpen: () => {
+          renderBorradorItems(itemsData);
+
+          document.getElementById('btn-add-borrador').addEventListener('click', addBorradorRow);
+
+          document.getElementById('btn-save-borrador').addEventListener('click', () => {
+            guardarBorradorItems(solicitudId);
+          });
+
+          document.getElementById('btn-pdf-borrador').addEventListener('click', () => {
+            exportarPDFBorrador(sol);
+          });
+
+          // Tabs para cambiar foto
+          document.querySelectorAll('.borrador-foto-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+              document.querySelectorAll('.borrador-foto-tab').forEach(t => t.classList.remove('active'));
+              tab.classList.add('active');
+              const img = document.getElementById('borrador-foto');
+              if (img) {
+                img.src = tab.dataset.url;
+                img.style.transform = '';
+              }
+              borradorZoom.scale = 1;
+              borradorZoom.posX = 0;
+              borradorZoom.posY = 0;
+            });
+          });
+
+          if (fotoInicial) initBorradorFotoZoom();
+        }
+      });
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  }
+
+  function renderBorradorItems(itemsData) {
+    const container = document.getElementById('borrador-items');
+    if (!container) return;
+    container.innerHTML = '';
+    itemsData.forEach(item => addBorradorRow(item));
+    // Focus en el primer input vacio
+    const firstEmpty = container.querySelector('.borrador-nombre[value=""]') || container.querySelector('.borrador-nombre');
+    if (firstEmpty) firstEmpty.focus();
+  }
+
+  function addBorradorRow(item) {
+    const container = document.getElementById('borrador-items');
+    if (!container) return;
+    const idx = container.querySelectorAll('.borrador-row').length;
+    const nombre = (item && item.nombre) ? item.nombre : '';
+    const cantidad = (item && item.cantidad) ? item.cantidad : 1;
+
+    const row = document.createElement('div');
+    row.className = 'borrador-row';
+    row.innerHTML = `
+      <span class="borrador-idx">${idx + 1}.</span>
+      <input type="text" class="borrador-nombre" value="${escapeHtml(nombre)}" placeholder="Nombre del repuesto">
+      <input type="number" class="borrador-cant" value="${cantidad}" min="1">
+      <button type="button" class="btn-remove-item" title="Eliminar">&times;</button>
+    `;
+
+    row.querySelector('.btn-remove-item').addEventListener('click', () => {
+      row.remove();
+      reindexBorrador();
+    });
+
+    // Enter en nombre agrega nueva fila
+    row.querySelector('.borrador-nombre').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addBorradorRow();
+        const allRows = container.querySelectorAll('.borrador-row');
+        const last = allRows[allRows.length - 1];
+        if (last) last.querySelector('.borrador-nombre').focus();
+      }
+    });
+
+    container.appendChild(row);
+    reindexBorrador();
+  }
+
+  function reindexBorrador() {
+    const rows = document.querySelectorAll('#borrador-items .borrador-row');
+    rows.forEach((row, idx) => {
+      const span = row.querySelector('.borrador-idx');
+      if (span) span.textContent = `${idx + 1}.`;
+    });
+  }
+
+  function getBorradorItemsFromDOM() {
+    const rows = document.querySelectorAll('#borrador-items .borrador-row');
+    const items = [];
+    rows.forEach(row => {
+      const nombre = row.querySelector('.borrador-nombre')?.value?.trim();
+      if (!nombre) return;
+      const cantidad = parseInt(row.querySelector('.borrador-cant')?.value) || 1;
+      items.push({ nombre_repuesto: nombre, cantidad, opciones: [] });
+    });
+    return items;
+  }
+
+  async function guardarBorradorItems(solicitudId) {
+    const items = getBorradorItemsFromDOM();
+    if (!items.length) {
+      Swal.showValidationMessage('Debe agregar al menos un repuesto');
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`/cotizaciones/solicitudes/${solicitudId}/cotizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, borrador: true })
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error);
+
+      Swal.showValidationMessage('<span style="color:#16a34a;">Borrador guardado correctamente</span>');
+      setTimeout(() => {
+        const vm = document.querySelector('.swal2-validation-message');
+        if (vm) vm.style.display = 'none';
+      }, 2500);
+    } catch (err) {
+      Swal.showValidationMessage('Error: ' + err.message);
+    }
+  }
+
+  function exportarPDFBorrador(sol) {
+    const items = getBorradorItemsFromDOM();
+    if (!items.length) {
+      Swal.showValidationMessage('No hay repuestos para exportar');
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+    doc.setFontSize(18);
+    doc.text('Solicitud de Cotizacion', 14, 20);
+
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Placa: ${sol.placa}`, 14, 30);
+    doc.text(`Tipo: ${sol.tipo_cliente}${sol.aseguradora_nombre ? ' | Aseguradora: ' + sol.aseguradora_nombre : ''}`, 14, 36);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-EC')}`, 14, 42);
+    doc.text(`Solicitud #${sol.id}`, 14, 48);
+    doc.setTextColor(0);
+
+    doc.setFontSize(10);
+    doc.text('Por favor cotizar los siguientes repuestos:', 14, 58);
+
+    const tableData = items.map((item, idx) => [idx + 1, item.nombre_repuesto, item.cantidad]);
+
+    doc.autoTable({
+      startY: 64,
+      head: [['#', 'Repuesto / Descripcion', 'Cantidad']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [43, 122, 158], fontSize: 10 },
+      bodyStyles: { fontSize: 11 },
+      styles: { cellPadding: 4 },
+      columnStyles: {
+        0: { cellWidth: 15, halign: 'center' },
+        1: { cellWidth: 140 },
+        2: { cellWidth: 25, halign: 'center' }
+      }
+    });
+
+    // Espacio para observaciones al final
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Observaciones: _______________________________________________________________', 14, finalY);
+    doc.text('Tiempo de entrega: ___________________________________________________________', 14, finalY + 10);
+    doc.text('Forma de pago: ______________________________________________________________', 14, finalY + 20);
+
+    doc.save(`Borrador_Repuestos_${sol.placa}_${sol.id}.pdf`);
+  }
+
+  function initBorradorFotoZoom() {
+    const container = document.getElementById('borrador-foto-container');
+    const img = document.getElementById('borrador-foto');
+    if (!container || !img) return;
+
+    let isDragging = false, startX, startY;
+    const z = borradorZoom;
+    z.scale = 1; z.posX = 0; z.posY = 0;
+
+    function applyTransform() {
+      img.style.transform = `scale(${z.scale}) translate(${z.posX}px, ${z.posY}px)`;
+    }
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      z.scale = Math.max(0.5, Math.min(8, z.scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+      applyTransform();
+    }, { passive: false });
+
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - z.posX;
+      startY = e.clientY - z.posY;
+      container.style.cursor = 'grabbing';
+    });
+    container.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      z.posX = e.clientX - startX;
+      z.posY = e.clientY - startY;
+      applyTransform();
+    });
+    container.addEventListener('mouseup', () => { isDragging = false; container.style.cursor = 'grab'; });
+    container.addEventListener('mouseleave', () => { isDragging = false; container.style.cursor = 'grab'; });
+
+    container.addEventListener('dblclick', () => {
+      z.scale = 1; z.posX = 0; z.posY = 0;
+      applyTransform();
+    });
+
+    // Touch: drag + pinch zoom
+    let lastDist = 0;
+    container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - z.posX;
+        startY = e.touches[0].clientY - z.posY;
+      }
+      if (e.touches.length === 2) {
+        lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      }
+    });
+    container.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 1 && isDragging) {
+        z.posX = e.touches[0].clientX - startX;
+        z.posY = e.touches[0].clientY - startY;
+        applyTransform();
+      }
+      if (e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (lastDist) { z.scale = Math.max(0.5, Math.min(8, z.scale * (dist / lastDist))); applyTransform(); }
+        lastDist = dist;
+      }
+    }, { passive: false });
+    container.addEventListener('touchend', () => { isDragging = false; lastDist = 0; });
+  }
+
+  // =====================================================
   // EXPOSE GLOBAL (para onclick en HTML)
   // =====================================================
   window.COT = {
@@ -1188,7 +1501,9 @@
     abrirWorkspace,
     removeItem,
     quickAddProveedor,
-    marcarRecibida
+    marcarRecibida,
+    abrirBorrador,
+    reindexBorrador
   };
 
 })();
