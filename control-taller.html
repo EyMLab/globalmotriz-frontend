@@ -305,6 +305,63 @@
     .fin-item .fin-num { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
     .fin-item .fin-lbl { font-size: 11px; color: var(--text-light); margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
 
+    /* ── Multi-select ──────────────────────────────── */
+    .ms-wrap { position: relative; min-width: 140px; }
+    .ms-btn {
+      width: 100%; height: 36px;
+      padding: 0 26px 0 10px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
+      font-size: 13px;
+      background: var(--white);
+      color: var(--text);
+      font-family: var(--font-main);
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+      box-sizing: border-box;
+    }
+    .ms-btn::after { content:"▾"; position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-light); }
+    .ms-btn:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(43,122,158,.12); }
+    .ms-btn.ms-has-sel { border-color: var(--primary); color: var(--primary-dark); font-weight:600; }
+    .ms-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0;
+      min-width: 100%; max-width: 340px; max-height: 230px;
+      overflow-y: auto;
+      background: var(--white);
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      z-index: 999;
+      display: none;
+    }
+    .ms-dropdown.open { display: block; }
+    .ms-actions {
+      display: flex; gap: 8px; padding: 6px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: #f8fafc;
+      position: sticky; top: 0;
+    }
+    .ms-actions button {
+      border: none; background: none;
+      color: var(--primary); cursor: pointer;
+      font-size: 11px; font-weight: 600; padding: 0;
+      font-family: var(--font-main);
+    }
+    .ms-actions button:hover { text-decoration: underline; }
+    .ms-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px; cursor: pointer;
+      font-size: 13px; color: var(--text);
+      white-space: nowrap;
+    }
+    .ms-item:hover { background: #f0f7fb; }
+    .ms-item input[type="checkbox"] { margin:0; cursor:pointer; accent-color:var(--primary); flex-shrink:0; }
+    .ms-empty { padding:12px; text-align:center; color:var(--text-light); font-size:12px; }
+
     /* ── Selector resumen ───────────────────────── */
     .resumen-toolbar {
       display: flex;
@@ -478,15 +535,15 @@
       </div>
       <div class="fg">
         <label>Estado</label>
-        <select id="f-estado"><option value="">Todos</option></select>
+        <div class="ms-wrap" id="f-estado"></div>
       </div>
       <div class="fg">
         <label>Aseguradora</label>
-        <select id="f-aseguradora"><option value="">Todas</option></select>
+        <div class="ms-wrap" id="f-aseguradora" style="min-width:180px;"></div>
       </div>
       <div class="fg">
         <label>Proceso OT</label>
-        <select id="f-proceso"><option value="">Todos</option></select>
+        <div class="ms-wrap" id="f-proceso"></div>
       </div>
       <div class="fg">
         <label>Placa</label>
@@ -560,15 +617,15 @@
       </div>
       <div class="fg">
         <label>Estado</label>
-        <select id="d-estado"><option value="">Todos</option></select>
+        <div class="ms-wrap" id="d-estado"></div>
       </div>
       <div class="fg">
         <label>Aseguradora</label>
-        <select id="d-aseguradora"><option value="">Todas</option></select>
+        <div class="ms-wrap" id="d-aseguradora" style="min-width:180px;"></div>
       </div>
       <div class="fg">
         <label>Proceso OT</label>
-        <select id="d-proceso"><option value="">Todos</option></select>
+        <div class="ms-wrap" id="d-proceso"></div>
       </div>
       <div class="fg">
         <label>Desde</label>

@@ -16,6 +16,66 @@ const PALETTE = [
   "#dc2626","#ea580c","#d97706","#65a30d","#16a34a",
 ];
 
+// ── Estado de card activa (compartido por DASH, CT y Resumen) ──
+let _cardActiva = null;   // "ABIERTO" | "SVC" | "DEDUCIBLE" | null | etc.
+
+// ── Instancias MultiSelect (módulo global) ──────────
+let msOrdEstado, msOrdAseg, msOrdProceso;
+let msDashEstado, msDashAseg, msDashProceso;
+
+// ── Clase MultiSelect (dropdown con checkboxes) ──────
+class MultiSelect {
+  constructor(wrapperId, { placeholder = "Todos" } = {}) {
+    this.wrap = document.getElementById(wrapperId);
+    if (!this.wrap) return;
+    this.placeholder = placeholder;
+    this.selected    = new Set();
+    this.wrap.innerHTML = `
+      <button type="button" class="ms-btn">${placeholder}</button>
+      <div class="ms-dropdown">
+        <div class="ms-actions">
+          <button type="button" class="ms-all">Todos</button>
+          <button type="button" class="ms-none">Limpiar</button>
+        </div>
+        <div class="ms-items"></div>
+      </div>`;
+    this.btn      = this.wrap.querySelector(".ms-btn");
+    this.dropdown = this.wrap.querySelector(".ms-dropdown");
+    this.itemsEl  = this.wrap.querySelector(".ms-items");
+    this.btn.addEventListener("click", e => { e.stopPropagation(); this.toggle(); });
+    this.wrap.querySelector(".ms-all").addEventListener("click",  e => { e.stopPropagation(); this.selectAll(); });
+    this.wrap.querySelector(".ms-none").addEventListener("click", e => { e.stopPropagation(); this.clear(); });
+    document.addEventListener("click", e => { if (!this.wrap.contains(e.target)) this.close(); });
+  }
+  populate(items) {
+    if (!this.itemsEl) return;
+    this.selected = new Set([...this.selected].filter(v => items.includes(v)));
+    this.itemsEl.innerHTML = items.length
+      ? items.map(v => `<label class="ms-item"><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${this.selected.has(v) ? "checked" : ""}> ${v}</label>`).join("")
+      : `<div class="ms-empty">Sin opciones</div>`;
+    this.itemsEl.querySelectorAll("input").forEach(cb => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) this.selected.add(cb.value);
+        else            this.selected.delete(cb.value);
+        this.updateBtn();
+      });
+    });
+    this.updateBtn();
+  }
+  updateBtn() {
+    if (!this.btn) return;
+    const n = this.selected.size;
+    if (n === 0) { this.btn.textContent = this.placeholder; this.btn.classList.remove("ms-has-sel"); }
+    else if (n === 1) { const v = [...this.selected][0]; this.btn.textContent = v.length > 22 ? v.slice(0,22)+"…" : v; this.btn.classList.add("ms-has-sel"); }
+    else { this.btn.textContent = `${n} seleccionados`; this.btn.classList.add("ms-has-sel"); }
+  }
+  selectAll() { this.itemsEl?.querySelectorAll("input").forEach(cb => { cb.checked = true; this.selected.add(cb.value); }); this.updateBtn(); }
+  clear()     { this.selected.clear(); this.itemsEl?.querySelectorAll("input").forEach(cb => cb.checked = false); this.updateBtn(); }
+  toggle()    { this.dropdown?.classList.toggle("open"); }
+  close()     { this.dropdown?.classList.remove("open"); }
+  getValues() { return [...this.selected]; }
+}
+
 // ── Módulo Dashboard ──────────────────────────────
 const DASH = (() => {
   const charts = {};   // instancias Chart.js guardadas por id
@@ -238,15 +298,22 @@ const DASH = (() => {
   // ── Cargar datos ─────────────────────────────────
   async function cargar() {
     const params = new URLSearchParams();
-    const vals = {
-      localidad:   document.getElementById("d-localidad")?.value,
-      estado:      document.getElementById("d-estado")?.value,
-      aseguradora: document.getElementById("d-aseguradora")?.value,
-      proceso_ot:  document.getElementById("d-proceso")?.value,
-      fecha_desde: document.getElementById("d-desde")?.value,
-      fecha_hasta: document.getElementById("d-hasta")?.value,
-    };
-    Object.entries(vals).forEach(([k, v]) => { if (v) params.set(k, v); });
+    // Filtros de texto/fecha
+    const localidad  = document.getElementById("d-localidad")?.value;
+    const fechaDesde = document.getElementById("d-desde")?.value;
+    const fechaHasta = document.getElementById("d-hasta")?.value;
+    if (localidad)  params.set("localidad",   localidad);
+    if (fechaDesde) params.set("fecha_desde", fechaDesde);
+    if (fechaHasta) params.set("fecha_hasta", fechaHasta);
+    // Multi-selects
+    const estados  = msDashEstado?.getValues()  || [];
+    const aseg     = msDashAseg?.getValues()    || [];
+    const procesos = msDashProceso?.getValues() || [];
+    if (estados.length)  params.set("estados_multi",     estados.join(","));
+    if (aseg.length)     params.set("aseguradoras_multi", aseg.join(","));
+    if (procesos.length) params.set("procesos_multi",    procesos.join(","));
+    // Card activa
+    if (_cardActiva && _cardActiva !== "TOTAL") params.set("card", _cardActiva);
 
     // Mostrar loading en las tarjetas
     document.getElementById("dash-fin-grid").innerHTML =
@@ -258,33 +325,25 @@ const DASH = (() => {
     render(d);
   }
 
-  // ── Poblar selects del dashboard con los mismos datos de filtros ──
+  // ── Poblar MultiSelects del dashboard con los mismos datos de filtros ──
   function sincFiltros(filtrosData) {
     if (!filtrosData) return;
-    const selE = document.getElementById("d-estado");
-    const selA = document.getElementById("d-aseguradora");
-    const selP = document.getElementById("d-proceso");
-    if (!selE) return;
-    const prevE = selE.value, prevA = selA.value, prevP = selP.value;
-    selE.innerHTML = `<option value="">Todos</option>` + (filtrosData.estados || []).map(e => `<option value="${e}">${e}</option>`).join("");
-    selA.innerHTML = `<option value="">Todas</option>` + (filtrosData.aseguradoras || []).filter(Boolean).map(a => `<option value="${a}">${a}</option>`).join("");
-    selP.innerHTML = `<option value="">Todos</option>` + (filtrosData.procesos || []).filter(Boolean).map(p => `<option value="${p}">${p}</option>`).join("");
-    if (prevE) selE.value = prevE;
-    if (prevA) selA.value = prevA;
-    if (prevP) selP.value = prevP;
+    msDashEstado?.populate(filtrosData.estados     || []);
+    msDashAseg?.populate((filtrosData.aseguradoras || []).filter(Boolean));
+    msDashProceso?.populate((filtrosData.procesos  || []).filter(Boolean));
   }
 
   function init() {
     document.getElementById("btn-dash-aplicar")?.addEventListener("click", cargar);
     document.getElementById("btn-dash-limpiar")?.addEventListener("click", () => {
-      ["d-localidad","d-estado","d-aseguradora","d-proceso","d-desde","d-hasta"]
-        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      const loc = document.getElementById("d-localidad"); if (loc) loc.value = "";
+      const dsd = document.getElementById("d-desde");     if (dsd) dsd.value = "";
+      const hst = document.getElementById("d-hasta");     if (hst) hst.value = "";
+      msDashEstado?.clear(); msDashAseg?.clear(); msDashProceso?.clear();
       cargar();
     });
-    // Auto-aplicar al cambiar cualquier select
-    ["d-localidad","d-estado","d-aseguradora","d-proceso"].forEach(id => {
-      document.getElementById(id)?.addEventListener("change", cargar);
-    });
+    // Auto-aplicar al cambiar localidad
+    document.getElementById("d-localidad")?.addEventListener("change", cargar);
   }
 
   return { cargar, sincFiltros, init };
@@ -297,7 +356,7 @@ const CT = (() => {
   const LIMITE      = 100;
   let totalPaginas  = 1;
   let filtrosActivos = {};   // filtros de la barra
-  let cardActiva    = null;  // card seleccionada: "ABIERTO", "SVC", etc.
+  // _cardActiva → _cardActiva (módulo global, compartida con DASH)
 
   // ── Helpers ───────────────────────────────────────
   function fmtFecha(iso) {
@@ -357,50 +416,66 @@ const CT = (() => {
     const contenedor = document.getElementById("cards-estado");
     const todas = contenedor.querySelectorAll(".estado-card");
 
-    if (cardActiva === card) {
+    if (_cardActiva === card) {
       // Deseleccionar: quitar filtro de card
-      cardActiva = null;
+      _cardActiva = null;
       todas.forEach(b => b.classList.remove("card-activa"));
       contenedor.classList.remove("cards-con-activa");
     } else {
-      cardActiva = card;
+      _cardActiva = card;
       todas.forEach(b => b.classList.remove("card-activa"));
       const btn = contenedor.querySelector(`[data-card="${card}"]`);
       if (btn) btn.classList.add("card-activa");
       contenedor.classList.add("cards-con-activa");
     }
 
-    // Si hay una card activa, limpiar los filtros manuales de estado/proceso
-    if (cardActiva) {
-      document.getElementById("f-estado").value  = "";
-      document.getElementById("f-proceso").value = "";
+    // Si hay una card activa, limpiar los multi-selects de estado/proceso
+    if (_cardActiva) {
+      msOrdEstado?.clear();
+      msOrdProceso?.clear();
     }
 
-    cargarOrdenes(1);
+    // Recargar la pestaña que esté visible en ese momento
+    const tabActiva = document.querySelector(".taller-tab.active")?.dataset.tab;
+    if (tabActiva === "dashboard") {
+      DASH.cargar();
+    } else if (tabActiva === "resumen") {
+      cargarResumen();
+    } else {
+      cargarOrdenes(1);
+    }
   }
 
   // ── Construir params de query para /taller/ordenes ─
   function buildParams(page) {
-    const p = { page, limit: LIMITE };
+    const p = new URLSearchParams({ page, limit: LIMITE });
 
     // Filtro de card
-    if (cardActiva && cardActiva !== "TOTAL") p.card = cardActiva;
+    if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
 
-    // Filtros manuales (solo los que no se solapan con la card)
+    // Filtros fijos (no dependen de card)
     const f = filtrosActivos;
-    if (f.localidad)   p.localidad   = f.localidad;
-    if (f.aseguradora) p.aseguradora = f.aseguradora;
-    if (f.placa)       p.placa       = f.placa;
-    if (f.cliente)     p.cliente     = f.cliente;
-    if (f.fecha_desde) p.fecha_desde = f.fecha_desde;
-    if (f.fecha_hasta) p.fecha_hasta = f.fecha_hasta;
-    // estado y proceso_ot manuales solo si no hay card activa
-    if (!cardActiva) {
-      if (f.estado)    p.estado    = f.estado;
-      if (f.proceso_ot) p.proceso_ot = f.proceso_ot;
+    if (f.localidad)   p.set("localidad",   f.localidad);
+    if (f.placa)       p.set("placa",       f.placa);
+    if (f.cliente)     p.set("cliente",     f.cliente);
+    if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
+    if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
+
+    // Multi-selects (solo si no hay card activa)
+    if (!_cardActiva) {
+      const estados  = msOrdEstado?.getValues()  || [];
+      const aseg     = msOrdAseg?.getValues()    || [];
+      const procesos = msOrdProceso?.getValues() || [];
+      if (estados.length)  p.set("estados_multi",     estados.join(","));
+      if (aseg.length)     p.set("aseguradoras_multi", aseg.join(","));
+      if (procesos.length) p.set("procesos_multi",    procesos.join(","));
+    } else {
+      // Con card activa solo pasa aseguradora (no estado/proceso)
+      const aseg = msOrdAseg?.getValues() || [];
+      if (aseg.length) p.set("aseguradoras_multi", aseg.join(","));
     }
 
-    return new URLSearchParams(p).toString();
+    return p.toString();
   }
 
   // ── Cargar órdenes ────────────────────────────────
@@ -456,18 +531,10 @@ const CT = (() => {
     if (!res || !res.ok) return null;
     const data = await safeJson(res);
 
-    const selEstado  = document.getElementById("f-estado");
-    const selAseg    = document.getElementById("f-aseguradora");
-    const selProceso = document.getElementById("f-proceso");
-    const prevE = selEstado.value, prevA = selAseg.value, prevP = selProceso.value;
-
-    selEstado.innerHTML  = `<option value="">Todos</option>`  + (data.estados  || []).map(e => `<option value="${e}">${e}</option>`).join("");
-    selAseg.innerHTML    = `<option value="">Todas</option>`  + (data.aseguradoras || []).filter(Boolean).map(a => `<option value="${a}">${a}</option>`).join("");
-    selProceso.innerHTML = `<option value="">Todos</option>`  + (data.procesos || []).filter(Boolean).map(p => `<option value="${p}">${p}</option>`).join("");
-
-    if (prevE) selEstado.value = prevE;
-    if (prevA) selAseg.value   = prevA;
-    if (prevP) selProceso.value = prevP;
+    // Poblar MultiSelects de órdenes
+    msOrdEstado?.populate(data.estados || []);
+    msOrdAseg?.populate((data.aseguradoras || []).filter(Boolean));
+    msOrdProceso?.populate((data.procesos  || []).filter(Boolean));
 
     // Sincronizar con filtros del dashboard
     DASH.sincFiltros(data);
@@ -505,7 +572,7 @@ const CT = (() => {
     await cargarCards(localidad);
 
     // Limpiar card activa y recargar
-    cardActiva = null;
+    _cardActiva = null;
     document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
     document.getElementById("cards-estado").classList.remove("cards-con-activa");
     filtrosActivos = { localidad };
@@ -567,8 +634,10 @@ const CT = (() => {
   // ── Tab Resumen ───────────────────────────────────
   async function cargarResumen() {
     const localidad = document.getElementById("res-localidad").value;
-    const qs = localidad ? `?localidad=${localidad}` : "";
-    const res = await apiFetch(`/taller/resumen${qs}`);
+    const p = new URLSearchParams();
+    if (localidad) p.set("localidad", localidad);
+    if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    const res = await apiFetch(`/taller/resumen?${p}`);
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo cargar el resumen.", "error"); return; }
     const d = await safeJson(res);
 
@@ -647,16 +716,13 @@ const CT = (() => {
 
     // Filtros manuales
     document.getElementById("btn-filtrar").addEventListener("click", () => {
-      // Si hay card activa, desactivarla al aplicar filtros manuales
-      cardActiva = null;
+      // Desactivar card al aplicar filtros manuales
+      _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
 
       filtrosActivos = {
         localidad:   document.getElementById("f-localidad").value,
-        estado:      document.getElementById("f-estado").value,
-        aseguradora: document.getElementById("f-aseguradora").value,
-        proceso_ot:  document.getElementById("f-proceso").value,
         placa:       document.getElementById("f-placa").value.trim(),
         cliente:     document.getElementById("f-cliente").value.trim(),
         fecha_desde: document.getElementById("f-desde").value,
@@ -668,11 +734,12 @@ const CT = (() => {
 
     document.getElementById("btn-limpiar").addEventListener("click", () => {
       filtrosActivos = {};
-      cardActiva = null;
+      _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
-      ["f-localidad","f-estado","f-aseguradora","f-proceso"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("f-localidad").value = "";
       ["f-placa","f-cliente","f-desde","f-hasta"].forEach(id => document.getElementById(id).value = "");
+      msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
       cargarOrdenes(1);
     });
 
@@ -694,6 +761,14 @@ const CT = (() => {
 
     // Init dashboard
     DASH.init();
+
+    // Inicializar MultiSelects (después de que el DOM existe)
+    msOrdEstado  = new MultiSelect("f-estado",      { placeholder: "Todos" });
+    msOrdAseg    = new MultiSelect("f-aseguradora", { placeholder: "Todas" });
+    msOrdProceso = new MultiSelect("f-proceso",     { placeholder: "Todos" });
+    msDashEstado  = new MultiSelect("d-estado",      { placeholder: "Todos" });
+    msDashAseg    = new MultiSelect("d-aseguradora", { placeholder: "Todas" });
+    msDashProceso = new MultiSelect("d-proceso",     { placeholder: "Todos" });
 
     // Carga inicial
     cargarFiltros().then(data => DASH.sincFiltros(data));
