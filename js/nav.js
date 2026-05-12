@@ -1,3 +1,6 @@
+// Rol del usuario actual — se asigna al cargar el nav y lo usan las funciones de notificaciones
+let _navRol = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   const navContainer = document.getElementById('nav-container');
 
@@ -16,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const data = await safeJson(res);
     const rol = data.rol;
+    _navRol = rol; // guardamos para las funciones de notificaciones
 
     // ============================================
     // Detectar página actual
@@ -268,11 +272,15 @@ function initNotificaciones() {
   setInterval(actualizarContadorNotif, 60000);
 }
 
+const ROLES_RRHH_NOTIF = ['admin', 'asistente_contable'];
+
 async function actualizarContadorNotif() {
   try {
     const [resCot, resRrhh] = await Promise.all([
       apiFetch('/cotizaciones/notificaciones/count'),
-      apiFetch('/rrhh/notificaciones/count').catch(() => null)
+      ROLES_RRHH_NOTIF.includes(_navRol)
+        ? apiFetch('/rrhh/notificaciones/count').catch(() => null)
+        : Promise.resolve(null)
     ]);
     const countEl = document.getElementById('notif-count');
     if (!countEl) return;
@@ -296,7 +304,9 @@ async function cargarNotificaciones() {
   try {
     const [resCot, resRrhh] = await Promise.all([
       apiFetch('/cotizaciones/notificaciones?limit=15'),
-      apiFetch('/rrhh/notificaciones?limit=15').catch(() => null)
+      ROLES_RRHH_NOTIF.includes(_navRol)
+        ? apiFetch('/rrhh/notificaciones?limit=15').catch(() => null)
+        : Promise.resolve(null)
     ]);
 
     let todas = [];
