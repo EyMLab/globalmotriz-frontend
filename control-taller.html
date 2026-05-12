@@ -12,76 +12,87 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .estado-card {
       flex: 1;
-      min-width: 130px;
-      border-radius: 10px;
-      padding: 14px 18px;
+      min-width: 120px;
+      border-radius: var(--r-lg);
+      padding: 16px 18px;
       text-align: center;
       font-weight: 700;
-      box-shadow: 0 2px 6px rgba(0,0,0,.10);
+      box-shadow: var(--shadow-card);
+      border: 1px solid transparent;
     }
-    .estado-card .ec-num  { font-size: 28px; line-height: 1; }
-    .estado-card .ec-lbl  { font-size: 12px; text-transform: uppercase; margin-top: 4px; opacity:.85; }
-    .ec-abierto   { background:#ffd6d6; color:#7a0000; }
-    .ec-terminado { background:#fffea0; color:#5a4d00; }
-    .ec-facturado { background:#c6f0c6; color:#1a5f1a; }
-    .ec-anulado   { background:#e6ccff; color:#3d0070; }
-    .ec-total     { background:#e8f0fe; color:#1a3a7a; }
+    .estado-card .ec-num { font-size: 30px; line-height: 1; }
+    .estado-card .ec-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-top: 5px; opacity: .8; font-weight: 600; }
+    .ec-abierto   { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .ec-terminado { background: #fef9c3; color: #713f12; border-color: #fef08a; }
+    .ec-facturado { background: #dcfce7; color: #14532d; border-color: #bbf7d0; }
+    .ec-anulado   { background: #ede9fe; color: #4c1d95; border-color: #ddd6fe; }
+    .ec-total     { background: var(--white); color: var(--primary-dark); border-color: var(--border-subtle); }
 
     /* ── Sección importar ───────────────────────── */
     .import-box {
-      background: #f8faff;
-      border: 1px solid #dbe4ff;
-      border-radius: 10px;
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
       padding: 16px 20px;
       display: flex;
       align-items: center;
       gap: 14px;
       flex-wrap: wrap;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
     }
-    .import-box label { font-weight: 600; font-size: 14px; white-space: nowrap; }
+    .import-box label {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      white-space: nowrap;
+    }
     .import-box select,
     .import-box input[type="file"] {
-      padding: 7px 10px;
-      border: 1px solid #c5cfe8;
-      border-radius: 6px;
+      padding: 7px 12px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
       font-size: 14px;
-      background: #fff;
+      background: var(--white);
+      color: var(--text);
+      font-family: var(--font-main);
     }
+    .import-box select:focus { outline: none; border-color: var(--primary); }
     .import-info {
       font-size: 12px;
-      color: #555;
+      color: var(--text-light);
       flex: 1;
-      min-width: 180px;
+      min-width: 200px;
     }
 
     /* ── Tabs ───────────────────────────────────── */
     .taller-tabs {
       display: flex;
       gap: 4px;
-      border-bottom: 2px solid #dbe4ff;
-      margin-bottom: 16px;
+      border-bottom: 2px solid var(--border-subtle);
+      margin-bottom: 18px;
     }
     .taller-tab {
-      padding: 9px 22px;
+      padding: 10px 24px;
       border: none;
       background: none;
       font-size: 14px;
       font-weight: 600;
-      color: #555;
+      color: var(--text-light);
       cursor: pointer;
       border-bottom: 3px solid transparent;
       margin-bottom: -2px;
       transition: all .15s;
+      font-family: var(--font-main);
     }
-    .taller-tab.active {
-      color: #1a3a7a;
-      border-bottom-color: #1a3a7a;
-    }
+    .taller-tab:hover { color: var(--primary); }
+    .taller-tab.active { color: var(--primary-dark); border-bottom-color: var(--primary); }
     .taller-tab-panel { display: none; }
     .taller-tab-panel.active { display: block; }
 
@@ -90,84 +101,121 @@
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      align-items: center;
-      background: #f0f4ff;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
+      align-items: flex-end;
+      background: var(--white);
+      border-radius: var(--r-lg);
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-subtle);
+    }
+    .filtros-taller .fg {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .filtros-taller .fg label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .4px;
     }
     .filtros-taller select,
     .filtros-taller input {
-      padding: 6px 10px;
-      border: 1px solid #c5cfe8;
-      border-radius: 6px;
+      padding: 7px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
       font-size: 13px;
-      background: #fff;
+      background: var(--white);
+      color: var(--text);
+      font-family: var(--font-main);
+      height: 36px;
+      box-sizing: border-box;
     }
-    .filtros-taller input[type="text"] { width: 130px; }
-    .filtros-taller input[type="date"] { width: 140px; }
+    .filtros-taller select:focus,
+    .filtros-taller input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,122,158,.12); }
+    .filtros-taller input[type="text"]  { width: 120px; }
+    .filtros-taller input[type="date"]  { width: 138px; }
+    .filtros-btn-row { display: flex; gap: 8px; align-items: flex-end; }
 
     /* ── Tabla ──────────────────────────────────── */
-    .tabla-taller-wrap { overflow-x: auto; }
+    .tabla-taller-wrap {
+      overflow-x: auto;
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-subtle);
+    }
     .tabla-taller {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
     .tabla-taller th {
-      background: #1a3a7a;
+      background: var(--primary-dark);
       color: #fff;
-      padding: 8px 10px;
+      padding: 10px 12px;
       text-align: left;
       font-weight: 600;
       white-space: nowrap;
-      position: sticky;
-      top: 0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
     }
     .tabla-taller td {
-      padding: 7px 10px;
-      border-bottom: 1px solid #e8edf5;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
       white-space: nowrap;
+      color: var(--text);
     }
+    .tabla-taller tbody tr:last-child td { border-bottom: none; }
+    .tabla-taller tbody tr:hover { filter: brightness(.96); }
+
     /* Colores por estado */
-    .tr-abierto   { background: #ffd6d6; }
-    .tr-terminado { background: #fffea0; }
-    .tr-facturado { background: #c6f0c6; }
-    .tr-anulado   { background: #e6ccff; }
-    /* Procesos especiales — borde izquierdo */
-    .tr-anular    { border-left: 4px solid #e68a00; }
-    .tr-svc       { border-left: 4px solid #0080cc; }
-    .tr-deducible { border-left: 4px solid #6b0099; }
+    .tr-abierto   { background: #fee2e2; }
+    .tr-terminado { background: #fef9c3; }
+    .tr-facturado { background: #dcfce7; }
+    .tr-anulado   { background: #ede9fe; }
+    /* Borde izquierdo para procesos especiales */
+    .tr-anular    { border-left: 4px solid #d97706; }
+    .tr-svc       { border-left: 4px solid var(--primary); }
+    .tr-deducible { border-left: 4px solid #7c3aed; }
 
     .btn-editar {
       background: none;
-      border: 1px solid #888;
-      border-radius: 4px;
-      padding: 2px 8px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-sm);
+      padding: 3px 9px;
       cursor: pointer;
       font-size: 12px;
-      color: #444;
+      color: var(--text-light);
+      transition: all .15s;
     }
-    .btn-editar:hover { background: #e8edf5; }
+    .btn-editar:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     /* ── Paginación ─────────────────────────────── */
     .pag-controls {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 12px;
+      margin-top: 14px;
       justify-content: center;
     }
     .pag-controls button {
-      padding: 6px 16px;
-      border: 1px solid #c5cfe8;
-      border-radius: 6px;
-      background: #fff;
+      padding: 7px 18px;
+      border: 1.5px solid var(--primary);
+      border-radius: var(--r-input);
+      background: transparent;
+      color: var(--primary);
       cursor: pointer;
       font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-main);
+      transition: all .2s;
     }
-    .pag-controls button:disabled { opacity: .4; cursor: default; }
-    .pag-info { font-size: 13px; color: #444; }
+    .pag-controls button:hover:not(:disabled) { background: var(--primary); color: #fff; }
+    .pag-controls button:disabled { opacity: .35; cursor: default; border-color: var(--gray-e0); color: var(--text-light); }
+    .pag-info { font-size: 13px; color: var(--text-light); }
 
     /* ── Resumen ────────────────────────────────── */
     .resumen-grid {
@@ -176,17 +224,21 @@
       gap: 18px;
     }
     .resumen-card {
-      background: #fff;
-      border: 1px solid #dbe4ff;
-      border-radius: 10px;
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
       overflow: hidden;
+      box-shadow: var(--shadow-card);
     }
     .resumen-card h3 {
-      background: #1a3a7a;
+      background: var(--primary-dark);
       color: #fff;
       margin: 0;
-      padding: 10px 16px;
-      font-size: 14px;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
     }
     .resumen-card table {
       width: 100%;
@@ -194,20 +246,25 @@
       font-size: 13px;
     }
     .resumen-card th {
-      background: #e8f0fe;
-      padding: 6px 10px;
+      background: #f0f7fb;
+      padding: 8px 12px;
       text-align: left;
       font-weight: 600;
-      color: #1a3a7a;
+      color: var(--primary-dark);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
     }
     .resumen-card td {
-      padding: 5px 10px;
-      border-bottom: 1px solid #f0f4ff;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text);
     }
     .resumen-card tr:last-child td { border-bottom: none; }
-    .num-right { text-align: right; }
+    .resumen-card tbody tr:hover td { background: var(--row-hover); }
+    .num-right { text-align: right; font-variant-numeric: tabular-nums; }
 
-    /* fin financiero */
+    /* ── Totales financieros ─────────────────────── */
     .fin-grid {
       display: flex;
       gap: 10px;
@@ -217,13 +274,36 @@
     .fin-item {
       flex: 1;
       min-width: 140px;
-      background: #f0f4ff;
-      border-radius: 8px;
-      padding: 12px 16px;
+      background: #f0f7fb;
+      border-radius: var(--r-md);
+      padding: 14px 16px;
       text-align: center;
+      border: 1px solid var(--border-subtle);
     }
-    .fin-item .fin-num { font-size: 18px; font-weight: 700; color: #1a3a7a; }
-    .fin-item .fin-lbl { font-size: 11px; color: #555; margin-top: 4px; text-transform: uppercase; }
+    .fin-item .fin-num { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
+    .fin-item .fin-lbl { font-size: 11px; color: var(--text-light); margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
+
+    /* ── Selector resumen ───────────────────────── */
+    .resumen-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: 14px 18px;
+      box-shadow: var(--shadow-card);
+    }
+    .resumen-toolbar select {
+      padding: 7px 12px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
+      font-size: 14px;
+      background: var(--white);
+      color: var(--text);
+      font-family: var(--font-main);
+    }
   </style>
 </head>
 <body>
@@ -234,19 +314,25 @@
 
   <!-- ── Importar reporte ───────────────────────── -->
   <div class="import-box">
-    <label>Localidad:</label>
+    <label>Localidad</label>
     <select id="sel-localidad">
       <option value="MATRIZ">MATRIZ</option>
       <option value="SUCURSAL">SUCURSAL</option>
     </select>
-    <label>Reporte Excel:</label>
+    <label>Reporte Excel</label>
     <input type="file" id="inp-reporte" accept=".xlsx,.xls" />
     <button class="btn-primary" id="btn-importar">⬆ Importar</button>
     <div class="import-info" id="import-info">—</div>
   </div>
 
   <!-- ── Tarjetas resumen rápido ───────────────── -->
-  <div class="taller-estados" id="cards-estado"></div>
+  <div class="taller-estados" id="cards-estado">
+    <div class="estado-card ec-abierto"><div class="ec-num">—</div><div class="ec-lbl">Abierto</div></div>
+    <div class="estado-card ec-terminado"><div class="ec-num">—</div><div class="ec-lbl">Terminado</div></div>
+    <div class="estado-card ec-facturado"><div class="ec-num">—</div><div class="ec-lbl">Facturado</div></div>
+    <div class="estado-card ec-anulado"><div class="ec-num">—</div><div class="ec-lbl">Anulado</div></div>
+    <div class="estado-card ec-total"><div class="ec-num">—</div><div class="ec-lbl">Total</div></div>
+  </div>
 
   <!-- ── Tabs ─────────────────────────────────── -->
   <div class="taller-tabs">
@@ -259,26 +345,46 @@
 
     <!-- Filtros -->
     <div class="filtros-taller">
-      <select id="f-localidad">
-        <option value="">Todas las localidades</option>
-        <option value="MATRIZ">MATRIZ</option>
-        <option value="SUCURSAL">SUCURSAL</option>
-      </select>
-      <select id="f-estado">
-        <option value="">Todos los estados</option>
-      </select>
-      <select id="f-aseguradora">
-        <option value="">Todas las aseguradoras</option>
-      </select>
-      <select id="f-proceso">
-        <option value="">Todos los procesos</option>
-      </select>
-      <input type="text" id="f-placa"   placeholder="Placa..." />
-      <input type="text" id="f-cliente" placeholder="Cliente..." />
-      <input type="date" id="f-desde"   title="Desde (ingreso)" />
-      <input type="date" id="f-hasta"   title="Hasta (ingreso)" />
-      <button class="btn-primary" id="btn-filtrar">Buscar</button>
-      <button class="btn-secondary" id="btn-limpiar">Limpiar</button>
+      <div class="fg">
+        <label>Localidad</label>
+        <select id="f-localidad">
+          <option value="">Todas</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Estado</label>
+        <select id="f-estado"><option value="">Todos</option></select>
+      </div>
+      <div class="fg">
+        <label>Aseguradora</label>
+        <select id="f-aseguradora"><option value="">Todas</option></select>
+      </div>
+      <div class="fg">
+        <label>Proceso OT</label>
+        <select id="f-proceso"><option value="">Todos</option></select>
+      </div>
+      <div class="fg">
+        <label>Placa</label>
+        <input type="text" id="f-placa" placeholder="Buscar placa..." />
+      </div>
+      <div class="fg">
+        <label>Cliente</label>
+        <input type="text" id="f-cliente" placeholder="Buscar cliente..." />
+      </div>
+      <div class="fg">
+        <label>Desde</label>
+        <input type="date" id="f-desde" />
+      </div>
+      <div class="fg">
+        <label>Hasta</label>
+        <input type="date" id="f-hasta" />
+      </div>
+      <div class="filtros-btn-row">
+        <button class="btn-primary" id="btn-filtrar">Buscar</button>
+        <button class="btn-primary" id="btn-limpiar" style="border-color:var(--text-light);color:var(--text-light);">Limpiar</button>
+      </div>
     </div>
 
     <!-- Tabla -->
@@ -286,24 +392,24 @@
       <table class="tabla-taller">
         <thead>
           <tr>
-            <th>N° ORDEN</th>
-            <th>LOCALIDAD</th>
-            <th>ESTADO</th>
-            <th>PROCESO OT</th>
-            <th>F. INGRESO</th>
-            <th>F. SALIDA</th>
-            <th>F. SALIDA ENV.</th>
-            <th>PLACA</th>
-            <th>CLIENTE</th>
-            <th>ASEGURADORA</th>
-            <th>USUARIO</th>
-            <th class="num-right">V. TOTAL</th>
-            <th>OBSERVACIÓN</th>
+            <th>N° Orden</th>
+            <th>Localidad</th>
+            <th>Estado</th>
+            <th>Proceso OT</th>
+            <th>F. Ingreso</th>
+            <th>F. Salida</th>
+            <th>F. Salida Env.</th>
+            <th>Placa</th>
+            <th>Cliente</th>
+            <th>Aseguradora</th>
+            <th>Usuario</th>
+            <th class="num-right">V. Total</th>
+            <th>Observación</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="tbody-ordenes">
-          <tr><td colspan="14" style="text-align:center;padding:30px;color:#888;">Cargando...</td></tr>
+          <tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text-light);">Cargando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -319,51 +425,58 @@
   <!-- ═══════════════════════ TAB RESUMEN ══════════════════════ -->
   <div class="taller-tab-panel" id="panel-resumen">
 
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
-      <select id="res-localidad" style="padding:7px 10px;border:1px solid #c5cfe8;border-radius:6px;font-size:14px;">
+    <div class="resumen-toolbar">
+      <label style="font-weight:600;font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Localidad</label>
+      <select id="res-localidad">
         <option value="">Todas las localidades</option>
         <option value="MATRIZ">MATRIZ</option>
         <option value="SUCURSAL">SUCURSAL</option>
       </select>
-      <button class="btn-primary" id="btn-cargar-resumen">Actualizar resumen</button>
+      <button class="btn-primary" id="btn-cargar-resumen">Actualizar</button>
     </div>
 
     <!-- Totales financieros -->
-    <div class="resumen-card" style="margin-bottom:18px;" id="card-financiero">
+    <div class="resumen-card" style="margin-bottom:18px;">
       <h3>Totales Financieros</h3>
-      <div class="fin-grid" id="fin-grid">—</div>
+      <div class="fin-grid" id="fin-grid">
+        <div class="fin-item"><div class="fin-num">—</div><div class="fin-lbl">Valor Total</div></div>
+      </div>
     </div>
 
     <div class="resumen-grid">
       <div class="resumen-card">
         <h3>Por Estado</h3>
-        <table><thead><tr><th>Estado</th><th class="num-right">Cantidad</th><th class="num-right">%</th></tr></thead>
-        <tbody id="res-estado"></tbody></table>
+        <table>
+          <thead><tr><th>Estado</th><th class="num-right">Cantidad</th><th class="num-right">%</th></tr></thead>
+          <tbody id="res-estado"><tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+        </table>
       </div>
       <div class="resumen-card">
         <h3>Por Proceso OT</h3>
-        <table><thead><tr><th>Proceso</th><th class="num-right">Cantidad</th></tr></thead>
-        <tbody id="res-proceso"></tbody></table>
+        <table>
+          <thead><tr><th>Proceso</th><th class="num-right">Cantidad</th></tr></thead>
+          <tbody id="res-proceso"><tr><td colspan="2" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+        </table>
       </div>
       <div class="resumen-card" style="grid-column:1/-1;">
         <h3>Por Aseguradora</h3>
         <table>
           <thead><tr><th>Aseguradora</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
-          <tbody id="res-aseg"></tbody>
+          <tbody id="res-aseg"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
       <div class="resumen-card" style="grid-column:1/-1;">
         <h3>Por Usuario</h3>
         <table>
           <thead><tr><th>Usuario</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
-          <tbody id="res-usuario"></tbody>
+          <tbody id="res-usuario"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
       <div class="resumen-card" style="grid-column:1/-1;">
         <h3>Por Mes de Ingreso</h3>
         <table>
           <thead><tr><th>Mes</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
-          <tbody id="res-mes"></tbody>
+          <tbody id="res-mes"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
     </div>
