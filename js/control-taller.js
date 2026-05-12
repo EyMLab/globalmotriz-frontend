@@ -2,6 +2,294 @@
 // control-taller.js — Módulo Control Taller (OT)
 // =====================================================
 
+// ── Paleta de colores global ──────────────────────
+const CHART_COLORS = {
+  ABIERTO:   { bg: "rgba(254,162,162,.85)",  border: "#ef4444" },
+  TERMINADO: { bg: "rgba(253,230,138,.85)",  border: "#f59e0b" },
+  FACTURADO: { bg: "rgba(134,239,172,.85)",  border: "#22c55e" },
+  ANULADO:   { bg: "rgba(196,181,253,.85)",  border: "#8b5cf6" },
+};
+const PALETTE = [
+  "#2B7A9E","#4DB8D8","#5BC0BE","#1E5570","#06b6d4",
+  "#0891b2","#0284c7","#0369a1","#1d4ed8","#4f46e5",
+  "#7c3aed","#9333ea","#c026d3","#db2777","#e11d48",
+  "#dc2626","#ea580c","#d97706","#65a30d","#16a34a",
+];
+
+// ── Módulo Dashboard ──────────────────────────────
+const DASH = (() => {
+  const charts = {};   // instancias Chart.js guardadas por id
+
+  function fmtMes(yyyymm) {
+    if (!yyyymm) return "—";
+    const [y, m] = yyyymm.split("-");
+    const meses = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    return `${meses[parseInt(m)]} ${y.slice(2)}`;
+  }
+  function fmtMoney(val) {
+    const n = parseFloat(val) || 0;
+    return "$" + n.toLocaleString("es-EC", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function destroyChart(id) {
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  }
+
+  // ── Tarjetas financieras ─────────────────────────
+  function renderFinCards(fin) {
+    const items = [
+      { lbl: "Valor Total",     val: fin.valor_total,             color: "#2B7A9E" },
+      { lbl: "Sub Total",       val: fin.sub_total,               color: "#1E5570" },
+      { lbl: "Total Servicios", val: fin.total_servicios,         color: "#5BC0BE" },
+      { lbl: "Serv. Terceros",  val: fin.total_servicios_terce,   color: "#4DB8D8" },
+      { lbl: "Total Repuestos", val: fin.total_repuestos,         color: "#06b6d4" },
+    ];
+    document.getElementById("dash-fin-grid").innerHTML = items.map(it => `
+      <div class="dash-fin-card" style="border-top-color:${it.color}">
+        <div class="dfn" style="color:${it.color}">${fmtMoney(it.val)}</div>
+        <div class="dfl">${it.lbl}</div>
+      </div>`).join("");
+  }
+
+  // ── Donut: por estado ────────────────────────────
+  function renderEstado(porEstado) {
+    destroyChart("chart-estado");
+    const ctx = document.getElementById("chart-estado").getContext("2d");
+    const labels = porEstado.map(r => r.estado);
+    const data   = porEstado.map(r => r.cantidad);
+    const bgs    = labels.map(l => CHART_COLORS[l]?.bg   || "rgba(150,150,150,.6)");
+    const bords  = labels.map(l => CHART_COLORS[l]?.border || "#999");
+    charts["chart-estado"] = new Chart(ctx, {
+      type: "doughnut",
+      data: { labels, datasets: [{ data, backgroundColor: bgs, borderColor: bords, borderWidth: 2 }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom", labels: { font: { size: 12 }, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${porEstado[ctx.dataIndex]?.pct}%)` } },
+        },
+      },
+    });
+  }
+
+  // ── Barras horizontales genéricas ────────────────
+  function renderHBar({ id, labels, datasets, unit = "" }) {
+    destroyChart(id);
+    const ctx = document.getElementById(id)?.getContext("2d");
+    if (!ctx) return;
+    charts[id] = new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        plugins: {
+          legend: { display: datasets.length > 1, position: "bottom", labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const v = ctx.raw;
+                return unit === "$"
+                  ? ` ${ctx.dataset.label || ""}: $${Number(v).toLocaleString("es-EC",{minimumFractionDigits:2,maximumFractionDigits:2})}`
+                  : ` ${ctx.dataset.label || ""}: ${v}`;
+              }
+            }
+          },
+        },
+        scales: {
+          x: { beginAtZero: true, ticks: { font: { size: 11 } } },
+          y: { ticks: { font: { size: 11 }, autoSkip: false } },
+        },
+      },
+    });
+  }
+
+  // ── Barras verticales genéricas ──────────────────
+  function renderVBar({ id, labels, datasets, unit = "", stacked = false }) {
+    destroyChart(id);
+    const ctx = document.getElementById(id)?.getContext("2d");
+    if (!ctx) return;
+    charts[id] = new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: datasets.length > 1, position: "bottom", labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => unit === "$"
+                ? ` ${ctx.dataset.label}: $${Number(ctx.raw).toLocaleString("es-EC",{minimumFractionDigits:0,maximumFractionDigits:0})}`
+                : ` ${ctx.dataset.label}: ${ctx.raw}`,
+            }
+          },
+        },
+        scales: {
+          x: { stacked, ticks: { font: { size: 10 }, maxRotation: 45 } },
+          y: { stacked, beginAtZero: true, ticks: { font: { size: 11 } } },
+        },
+      },
+    });
+  }
+
+  // ── Línea ─────────────────────────────────────────
+  function renderLine({ id, labels, datasets }) {
+    destroyChart(id);
+    const ctx = document.getElementById(id)?.getContext("2d");
+    if (!ctx) return;
+    charts[id] = new Chart(ctx, {
+      type: "line",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: "bottom", labels: { font: { size: 11 }, padding: 10 } } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+          y: { beginAtZero: true, ticks: { font: { size: 11 } } },
+        },
+      },
+    });
+  }
+
+  // ── Renderizar todo con datos del resumen ─────────
+  function render(d) {
+    // Financiero
+    renderFinCards(d.totales_financieros || {});
+
+    // Estado donut
+    renderEstado(d.por_estado || []);
+
+    // Aseguradoras — cantidad (stacked por estado, top 15)
+    const asegTop = (d.por_aseguradora || []).slice(0, 15);
+    const asegLabels = asegTop.map(r => r.aseguradora.length > 25
+      ? r.aseguradora.slice(0, 25) + "…" : r.aseguradora);
+    renderHBar({
+      id: "chart-aseg-count",
+      labels: asegLabels,
+      datasets: [
+        { label: "ABIERTO",   data: asegTop.map(r => +r.abierto   || 0), backgroundColor: CHART_COLORS.ABIERTO.bg,   borderColor: CHART_COLORS.ABIERTO.border,   borderWidth: 1 },
+        { label: "TERMINADO", data: asegTop.map(r => +r.terminado || 0), backgroundColor: CHART_COLORS.TERMINADO.bg, borderColor: CHART_COLORS.TERMINADO.border, borderWidth: 1 },
+        { label: "FACTURADO", data: asegTop.map(r => +r.facturado || 0), backgroundColor: CHART_COLORS.FACTURADO.bg, borderColor: CHART_COLORS.FACTURADO.border, borderWidth: 1 },
+        { label: "ANULADO",   data: asegTop.map(r => +r.anulado   || 0), backgroundColor: CHART_COLORS.ANULADO.bg,   borderColor: CHART_COLORS.ANULADO.border,   borderWidth: 1 },
+      ],
+    });
+
+    // Aseguradoras — valor total
+    renderHBar({
+      id: "chart-aseg-valor",
+      labels: asegLabels,
+      datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
+        backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
+      unit: "$",
+    });
+
+    // Por usuario (top 12)
+    const usrTop = (d.por_usuario || []).slice(0, 12);
+    const usrLabels = usrTop.map(r => {
+      const partes = (r.usuario || "").split(" ");
+      return partes.length >= 2 ? `${partes[0]} ${partes[1]}` : r.usuario;
+    });
+    renderHBar({
+      id: "chart-usuario",
+      labels: usrLabels,
+      datasets: [
+        { label: "ABIERTO",   data: usrTop.map(r => +r.abierto   || 0), backgroundColor: CHART_COLORS.ABIERTO.bg,   borderColor: CHART_COLORS.ABIERTO.border,   borderWidth: 1 },
+        { label: "TERMINADO", data: usrTop.map(r => +r.terminado || 0), backgroundColor: CHART_COLORS.TERMINADO.bg, borderColor: CHART_COLORS.TERMINADO.border, borderWidth: 1 },
+        { label: "FACTURADO", data: usrTop.map(r => +r.facturado || 0), backgroundColor: CHART_COLORS.FACTURADO.bg, borderColor: CHART_COLORS.FACTURADO.border, borderWidth: 1 },
+      ],
+    });
+
+    // Por mes (stacked, últimos 18, invertir para cronológico)
+    const meses = [...(d.por_mes || [])].reverse().slice(-18);
+    const mesLabels = meses.map(r => fmtMes(r.mes));
+    renderVBar({
+      id: "chart-mes",
+      labels: mesLabels,
+      stacked: true,
+      datasets: [
+        { label: "ABIERTO",   data: meses.map(r => +r.abierto   || 0), backgroundColor: CHART_COLORS.ABIERTO.bg,   borderColor: CHART_COLORS.ABIERTO.border,   borderWidth: 1 },
+        { label: "TERMINADO", data: meses.map(r => +r.terminado || 0), backgroundColor: CHART_COLORS.TERMINADO.bg, borderColor: CHART_COLORS.TERMINADO.border, borderWidth: 1 },
+        { label: "FACTURADO", data: meses.map(r => +r.facturado || 0), backgroundColor: CHART_COLORS.FACTURADO.bg, borderColor: CHART_COLORS.FACTURADO.border, borderWidth: 1 },
+        { label: "ANULADO",   data: meses.map(r => +r.anulado   || 0), backgroundColor: CHART_COLORS.ANULADO.bg,   borderColor: CHART_COLORS.ANULADO.border,   borderWidth: 1 },
+      ],
+    });
+
+    // Valor mensual (línea)
+    renderLine({
+      id: "chart-mes-valor",
+      labels: mesLabels,
+      datasets: [{
+        label: "Valor Total",
+        data: meses.map(r => parseFloat(r.valor_total) || 0),
+        borderColor: "#2B7A9E", backgroundColor: "rgba(43,122,158,.15)",
+        fill: true, tension: .35, pointRadius: 3,
+      }],
+    });
+
+    // Por proceso OT
+    const procTop = (d.por_proceso || []).slice(0, 12);
+    renderHBar({
+      id: "chart-proceso",
+      labels: procTop.map(r => r.proceso_ot),
+      datasets: [{ label: "Órdenes", data: procTop.map(r => +r.cantidad || 0),
+        backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
+    });
+  }
+
+  // ── Cargar datos ─────────────────────────────────
+  async function cargar() {
+    const params = new URLSearchParams();
+    const vals = {
+      localidad:   document.getElementById("d-localidad")?.value,
+      estado:      document.getElementById("d-estado")?.value,
+      aseguradora: document.getElementById("d-aseguradora")?.value,
+      proceso_ot:  document.getElementById("d-proceso")?.value,
+      fecha_desde: document.getElementById("d-desde")?.value,
+      fecha_hasta: document.getElementById("d-hasta")?.value,
+    };
+    Object.entries(vals).forEach(([k, v]) => { if (v) params.set(k, v); });
+
+    // Mostrar loading en las tarjetas
+    document.getElementById("dash-fin-grid").innerHTML =
+      `<div style="padding:20px;color:var(--text-light);font-size:13px;">Cargando...</div>`;
+
+    const res = await apiFetch(`/taller/resumen?${params}`);
+    if (!res || !res.ok) { return; }
+    const d = await safeJson(res);
+    render(d);
+  }
+
+  // ── Poblar selects del dashboard con los mismos datos de filtros ──
+  function sincFiltros(filtrosData) {
+    if (!filtrosData) return;
+    const selE = document.getElementById("d-estado");
+    const selA = document.getElementById("d-aseguradora");
+    const selP = document.getElementById("d-proceso");
+    if (!selE) return;
+    const prevE = selE.value, prevA = selA.value, prevP = selP.value;
+    selE.innerHTML = `<option value="">Todos</option>` + (filtrosData.estados || []).map(e => `<option value="${e}">${e}</option>`).join("");
+    selA.innerHTML = `<option value="">Todas</option>` + (filtrosData.aseguradoras || []).filter(Boolean).map(a => `<option value="${a}">${a}</option>`).join("");
+    selP.innerHTML = `<option value="">Todos</option>` + (filtrosData.procesos || []).filter(Boolean).map(p => `<option value="${p}">${p}</option>`).join("");
+    if (prevE) selE.value = prevE;
+    if (prevA) selA.value = prevA;
+    if (prevP) selP.value = prevP;
+  }
+
+  function init() {
+    document.getElementById("btn-dash-aplicar")?.addEventListener("click", cargar);
+    document.getElementById("btn-dash-limpiar")?.addEventListener("click", () => {
+      ["d-localidad","d-estado","d-aseguradora","d-proceso","d-desde","d-hasta"]
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      cargar();
+    });
+    // Auto-aplicar al cambiar cualquier select
+    ["d-localidad","d-estado","d-aseguradora","d-proceso"].forEach(id => {
+      document.getElementById(id)?.addEventListener("change", cargar);
+    });
+  }
+
+  return { cargar, sincFiltros, init };
+})();
+
 const CT = (() => {
 
   // ── Estado interno ────────────────────────────────
@@ -162,7 +450,7 @@ const CT = (() => {
   async function cargarFiltros(localidad = "") {
     const qs  = localidad ? `?localidad=${localidad}` : "";
     const res = await apiFetch(`/taller/filtros${qs}`);
-    if (!res || !res.ok) return;
+    if (!res || !res.ok) return null;
     const data = await safeJson(res);
 
     const selEstado  = document.getElementById("f-estado");
@@ -177,6 +465,10 @@ const CT = (() => {
     if (prevE) selEstado.value = prevE;
     if (prevA) selAseg.value   = prevA;
     if (prevP) selProceso.value = prevP;
+
+    // Sincronizar con filtros del dashboard
+    DASH.sincFiltros(data);
+    return data;
   }
 
   // ── Importar reporte ──────────────────────────────
@@ -335,7 +627,8 @@ const CT = (() => {
         document.querySelectorAll(".taller-tab-panel").forEach(p => p.classList.remove("active"));
         btn.classList.add("active");
         document.getElementById(`panel-${btn.dataset.tab}`).classList.add("active");
-        if (btn.dataset.tab === "resumen") cargarResumen();
+        if (btn.dataset.tab === "resumen")   cargarResumen();
+        if (btn.dataset.tab === "dashboard") DASH.cargar();
       });
     });
 
@@ -396,8 +689,11 @@ const CT = (() => {
     // Resumen
     document.getElementById("btn-cargar-resumen").addEventListener("click", cargarResumen);
 
+    // Init dashboard
+    DASH.init();
+
     // Carga inicial
-    cargarFiltros();
+    cargarFiltros().then(data => DASH.sincFiltros(data));
     cargarCards();
     cargarOrdenes(1);
   }

@@ -6,6 +6,7 @@
   <title>Control Taller</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     /* ── Tarjetas de estado ─────────────────────── */
     .taller-estados {
@@ -322,6 +323,102 @@
       color: var(--text);
       font-family: var(--font-main);
     }
+
+    /* ── Dashboard ──────────────────────────────── */
+    .dash-filtros {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .dash-filtros .fg label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 5px;
+    }
+    .dash-filtros select,
+    .dash-filtros input {
+      padding: 7px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
+      font-size: 13px;
+      background: var(--white);
+      color: var(--text);
+      font-family: var(--font-main);
+      height: 36px;
+      box-sizing: border-box;
+    }
+    .dash-filtros input[type="text"]  { width: 130px; }
+    .dash-filtros input[type="date"]  { width: 140px; }
+    .dash-filtros select              { min-width: 140px; }
+
+    .dash-fin-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .dash-fin-card {
+      flex: 1;
+      min-width: 140px;
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: 16px 18px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      border-top: 3px solid var(--primary);
+    }
+    .dash-fin-card .dfn { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+    .dash-fin-card .dfl { font-size: 11px; color: var(--text-light); margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .dash-grid-full { grid-column: 1 / -1; }
+    @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+
+    .dash-chart-card {
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+    .dash-chart-card h3 {
+      background: var(--primary-dark);
+      color: #fff;
+      margin: 0;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .dash-chart-body {
+      padding: 16px;
+      position: relative;
+    }
+    .dash-chart-body canvas { max-height: 300px; }
+    .dash-loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -357,7 +454,8 @@
   <!-- ── Tabs ─────────────────────────────────── -->
   <div class="taller-tabs">
     <button class="taller-tab active" data-tab="ordenes">Órdenes</button>
-    <button class="taller-tab"        data-tab="resumen">Resumen</button>
+    <button class="taller-tab"        data-tab="dashboard">Dashboard</button>
+    <button class="taller-tab"        data-tab="resumen">Resumen (tabla)</button>
   </div>
 
   <!-- ═══════════════════════ TAB ÓRDENES ══════════════════════ -->
@@ -441,6 +539,112 @@
       <button id="btn-next" disabled>Siguiente →</button>
     </div>
   </div>
+
+  <!-- ═══════════════════════ TAB DASHBOARD ════════════════════ -->
+  <div class="taller-tab-panel" id="panel-dashboard">
+
+    <!-- Filtros del dashboard -->
+    <div class="dash-filtros">
+      <div class="fg">
+        <label>Localidad</label>
+        <select id="d-localidad">
+          <option value="">Todas</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Estado</label>
+        <select id="d-estado"><option value="">Todos</option></select>
+      </div>
+      <div class="fg">
+        <label>Aseguradora</label>
+        <select id="d-aseguradora"><option value="">Todas</option></select>
+      </div>
+      <div class="fg">
+        <label>Proceso OT</label>
+        <select id="d-proceso"><option value="">Todos</option></select>
+      </div>
+      <div class="fg">
+        <label>Desde</label>
+        <input type="date" id="d-desde" />
+      </div>
+      <div class="fg">
+        <label>Hasta</label>
+        <input type="date" id="d-hasta" />
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button class="btn-primary" id="btn-dash-aplicar">Aplicar</button>
+        <button class="btn-primary" id="btn-dash-limpiar" style="border-color:var(--text-light);color:var(--text-light);">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- Tarjetas financieras -->
+    <div class="dash-fin-grid" id="dash-fin-grid">
+      <div class="dash-fin-card"><div class="dfn">—</div><div class="dfl">Valor Total</div></div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="dash-grid">
+
+      <!-- Donut: por estado -->
+      <div class="dash-chart-card">
+        <h3>Distribución por Estado</h3>
+        <div class="dash-chart-body">
+          <canvas id="chart-estado"></canvas>
+        </div>
+      </div>
+
+      <!-- Barras horizontales: por aseguradora (cantidad) -->
+      <div class="dash-chart-card">
+        <h3>Órdenes por Aseguradora</h3>
+        <div class="dash-chart-body">
+          <canvas id="chart-aseg-count"></canvas>
+        </div>
+      </div>
+
+      <!-- Barras: valor total por aseguradora -->
+      <div class="dash-chart-card">
+        <h3>Valor Total por Aseguradora</h3>
+        <div class="dash-chart-body">
+          <canvas id="chart-aseg-valor"></canvas>
+        </div>
+      </div>
+
+      <!-- Barras horizontales: por usuario -->
+      <div class="dash-chart-card">
+        <h3>Órdenes por Usuario</h3>
+        <div class="dash-chart-body">
+          <canvas id="chart-usuario"></canvas>
+        </div>
+      </div>
+
+      <!-- Barras apiladas: por mes -->
+      <div class="dash-chart-card dash-grid-full">
+        <h3>Órdenes por Mes de Ingreso</h3>
+        <div class="dash-chart-body" style="padding-bottom:20px;">
+          <canvas id="chart-mes" style="max-height:260px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Barras: por proceso OT -->
+      <div class="dash-chart-card">
+        <h3>Órdenes por Proceso OT</h3>
+        <div class="dash-chart-body">
+          <canvas id="chart-proceso"></canvas>
+        </div>
+      </div>
+
+      <!-- Valor por mes -->
+      <div class="dash-chart-card">
+        <h3>Valor Total Mensual</h3>
+        <div class="dash-chart-body">
+          <canvas id="chart-mes-valor"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /dash-grid -->
+  </div><!-- /panel-dashboard -->
 
   <!-- ═══════════════════════ TAB RESUMEN ══════════════════════ -->
   <div class="taller-tab-panel" id="panel-resumen">
