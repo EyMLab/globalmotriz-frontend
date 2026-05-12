@@ -160,6 +160,55 @@
     .filtros-taller input[type="date"]  { width: 138px; }
     .filtros-btn-row { display: flex; gap: 8px; align-items: flex-end; }
 
+    /* ── Toolbar tabla (columnas + exportar) ───────── */
+    .tabla-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .tabla-toolbar-right { margin-left: auto; display:flex; gap:8px; }
+    .btn-sm {
+      padding: 5px 13px;
+      border: 1.5px solid var(--primary);
+      border-radius: var(--r-input);
+      background: transparent;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-main);
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn-sm:hover { background: var(--primary); color:#fff; }
+    .btn-sm.btn-sm-sec { border-color: var(--text-light); color: var(--text-light); }
+    .btn-sm.btn-sm-sec:hover { background: var(--text-light); color:#fff; }
+
+    /* Panel de visibilidad de columnas */
+    .cols-toggle-wrap { position: relative; }
+    .cols-panel {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: var(--white);
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-lg);
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      z-index: 200;
+      padding: 12px 16px;
+      display: none;
+      min-width: 200px;
+    }
+    .cols-panel.open { display: block; }
+    .cols-panel h4 { margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-light); font-weight:700; }
+    .cols-panel label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); padding:4px 0; cursor:pointer; }
+    .cols-panel label input { accent-color:var(--primary); cursor:pointer; }
+    .cols-panel-footer { border-top:1px solid var(--border-subtle); margin-top:10px; padding-top:8px; display:flex; gap:8px; }
+    .cols-panel-footer button { border:none; background:none; font-size:11px; font-weight:600; color:var(--primary); cursor:pointer; font-family:var(--font-main); padding:0; }
+    .cols-panel-footer button:hover { text-decoration:underline; }
+
     /* ── Tabla ──────────────────────────────────── */
     .tabla-taller-wrap {
       overflow-x: auto;
@@ -170,24 +219,42 @@
     .tabla-taller {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12.5px;
     }
     .tabla-taller th {
       background: var(--primary-dark);
       color: #fff;
-      padding: 10px 12px;
+      padding: 8px 10px;
       text-align: left;
       font-weight: 600;
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 11.5px;
       text-transform: uppercase;
       letter-spacing: .4px;
     }
+    /* Sticky primera columna */
+    .tabla-taller th:first-child,
+    .tabla-taller td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+    .tabla-taller th:first-child { z-index: 2; }
+    .tabla-taller td:first-child { background: inherit; }
     .tabla-taller td {
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-bottom: 1px solid var(--border-subtle);
       white-space: nowrap;
       color: var(--text);
+    }
+    /* Columnas con texto largo: truncar con ellipsis */
+    .tabla-taller .tc-cliente,
+    .tabla-taller .tc-aseg,
+    .tabla-taller .tc-obs {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .tabla-taller tbody tr:last-child td { border-bottom: none; }
     .tabla-taller tbody tr:hover { filter: brightness(.96); }
@@ -567,25 +634,45 @@
       </div>
     </div>
 
+    <!-- Toolbar tabla -->
+    <div class="tabla-toolbar">
+      <span style="font-size:12px;color:var(--text-light);" id="tabla-count"></span>
+      <div class="tabla-toolbar-right">
+        <div class="cols-toggle-wrap">
+          <button class="btn-sm btn-sm-sec" id="btn-cols">⚙ Columnas</button>
+          <div class="cols-panel" id="cols-panel">
+            <h4>Mostrar columnas</h4>
+            <div id="cols-checks"></div>
+            <div class="cols-panel-footer">
+              <button id="cols-all">Mostrar todas</button>
+              <button id="cols-default">Restablecer</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn-sm btn-sm-sec" id="btn-export-csv">⬇ CSV</button>
+        <button class="btn-sm" id="btn-export-excel">⬇ Excel</button>
+      </div>
+    </div>
+
     <!-- Tabla -->
     <div class="tabla-taller-wrap">
       <table class="tabla-taller">
         <thead>
           <tr>
-            <th>N° Orden</th>
-            <th>Localidad</th>
-            <th>Estado</th>
-            <th>Proceso OT</th>
-            <th>F. Ingreso</th>
-            <th>F. Salida</th>
-            <th>F. Salida Env.</th>
-            <th>Placa</th>
-            <th>Cliente</th>
-            <th>Aseguradora</th>
-            <th>Usuario</th>
-            <th class="num-right">V. Total</th>
-            <th>Observación</th>
-            <th></th>
+            <th data-col="orden">N° Orden</th>
+            <th data-col="localidad">Localidad</th>
+            <th data-col="estado">Estado</th>
+            <th data-col="proceso">Proceso OT</th>
+            <th data-col="fingreso">F. Ingreso</th>
+            <th data-col="fsalida">F. Salida</th>
+            <th data-col="fsenv">F. Salida Env.</th>
+            <th data-col="placa">Placa</th>
+            <th data-col="cliente">Cliente</th>
+            <th data-col="aseg">Aseguradora</th>
+            <th data-col="usuario">Usuario</th>
+            <th data-col="vtotal" class="num-right">V. Total</th>
+            <th data-col="obs">Observación</th>
+            <th data-col="acciones"></th>
           </tr>
         </thead>
         <tbody id="tbody-ordenes">

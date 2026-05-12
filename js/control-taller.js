@@ -355,8 +355,28 @@ const CT = (() => {
   let paginaActual  = 1;
   const LIMITE      = 100;
   let totalPaginas  = 1;
-  let filtrosActivos = {};   // filtros de la barra
-  // _cardActiva → _cardActiva (módulo global, compartida con DASH)
+  let filtrosActivos = {};
+  // cardActiva → _cardActiva (módulo global, compartida con DASH)
+
+  // ── Definición de columnas ────────────────────────
+  const COLS = [
+    { id:"orden",     label:"N° Orden",       def:true,  sticky:true },
+    { id:"localidad", label:"Localidad",       def:false  },
+    { id:"estado",    label:"Estado",          def:true   },
+    { id:"proceso",   label:"Proceso OT",      def:true   },
+    { id:"fingreso",  label:"F. Ingreso",      def:true   },
+    { id:"fsalida",   label:"F. Salida",       def:false  },
+    { id:"fsenv",     label:"F. Salida Env.",  def:true   },
+    { id:"placa",     label:"Placa",           def:true   },
+    { id:"cliente",   label:"Cliente",         def:true   },
+    { id:"aseg",      label:"Aseguradora",     def:true   },
+    { id:"usuario",   label:"Usuario",         def:false  },
+    { id:"vtotal",    label:"V. Total",        def:true   },
+    { id:"obs",       label:"Observación",     def:false  },
+    { id:"acciones",  label:"Acciones",        def:true,  noToggle:true },
+  ];
+  const colVisible = {};
+  COLS.forEach(c => { colVisible[c.id] = c.def; });
 
   // ── Helpers ───────────────────────────────────────
   function fmtFecha(iso) {
@@ -498,30 +518,36 @@ const CT = (() => {
       tbody.innerHTML = data.ordenes.map(o => {
         const ce = claseEstado(o.estado);
         const cp = claseProceso(o.proceso_ot);
+        const cl = (o.cliente    || "").replace(/"/g,"&quot;");
+        const as = (o.aseguradora|| "").replace(/"/g,"&quot;");
+        const ob = (o.observacion|| "").replace(/"/g,"&quot;");
         return `<tr class="${ce} ${cp}" data-orden="${o.numero_orden}" data-localidad="${o.localidad}">
-          <td><strong>${o.numero_orden}</strong></td>
-          <td>${o.localidad}</td>
-          <td>${o.estado || "—"}</td>
-          <td>${o.proceso_ot || "—"}</td>
-          <td>${fmtFecha(o.fecha_ingreso)}</td>
-          <td>${fmtFecha(o.fecha_salida)}</td>
-          <td class="fecha-salida-env">${fmtFecha(o.fecha_salida_enviada)}</td>
-          <td>${o.placa || "—"}</td>
-          <td>${o.cliente || "—"}</td>
-          <td>${o.aseguradora || "—"}</td>
-          <td>${o.usuario_registro || "—"}</td>
-          <td class="num-right">${fmtMoney(o.valor_total)}</td>
-          <td class="obs-cell">${o.observacion || ""}</td>
-          <td><button class="btn-editar" onclick="CT.editarOrden('${o.numero_orden}','${o.localidad}')">✏</button></td>
+          <td data-col="orden"><strong>${o.numero_orden}</strong></td>
+          <td data-col="localidad">${o.localidad}</td>
+          <td data-col="estado">${o.estado || "—"}</td>
+          <td data-col="proceso">${o.proceso_ot || "—"}</td>
+          <td data-col="fingreso">${fmtFecha(o.fecha_ingreso)}</td>
+          <td data-col="fsalida">${fmtFecha(o.fecha_salida)}</td>
+          <td data-col="fsenv" class="fecha-salida-env">${fmtFecha(o.fecha_salida_enviada)}</td>
+          <td data-col="placa">${o.placa || "—"}</td>
+          <td data-col="cliente" class="tc-cliente" title="${cl}">${o.cliente || "—"}</td>
+          <td data-col="aseg" class="tc-aseg" title="${as}">${o.aseguradora || "—"}</td>
+          <td data-col="usuario">${o.usuario_registro || "—"}</td>
+          <td data-col="vtotal" class="num-right">${fmtMoney(o.valor_total)}</td>
+          <td data-col="obs" class="obs-cell tc-obs" title="${ob}">${o.observacion || ""}</td>
+          <td data-col="acciones"><button class="btn-editar" onclick="CT.editarOrden('${o.numero_orden}','${o.localidad}')">✏</button></td>
         </tr>`;
       }).join("");
     }
 
-    // Paginación
+    // Contador y paginación
+    const countEl = document.getElementById("tabla-count");
+    if (countEl) countEl.textContent = `${data.total} órdenes`;
     document.getElementById("pag-info").textContent =
       `Página ${paginaActual} de ${totalPaginas} (${data.total} órdenes)`;
     document.getElementById("btn-prev").disabled = paginaActual <= 1;
     document.getElementById("btn-next").disabled = paginaActual >= totalPaginas;
+    aplicarColumnas();
   }
 
   // ── Cargar filtros dinámicos ──────────────────────
@@ -629,6 +655,112 @@ const CT = (() => {
       tr.querySelector(".obs-cell").textContent = vals.observacion;
       tr.querySelector(".fecha-salida-env").textContent = fmtFecha(vals.fecha_salida_enviada);
     }
+  }
+
+  // ── Visibilidad de columnas ───────────────────────
+  function aplicarColumnas() {
+    COLS.forEach(col => {
+      const show = colVisible[col.id];
+      document.querySelectorAll(`[data-col="${col.id}"]`).forEach(el => {
+        el.style.display = show ? "" : "none";
+      });
+    });
+  }
+
+  function initColumnToggle() {
+    const checksEl = document.getElementById("cols-checks");
+    if (!checksEl) return;
+    checksEl.innerHTML = COLS.filter(c => !c.noToggle).map(c => `
+      <label>
+        <input type="checkbox" data-colid="${c.id}" ${colVisible[c.id] ? "checked" : ""}>
+        ${c.label}
+      </label>`).join("");
+    checksEl.querySelectorAll("input").forEach(cb => {
+      cb.addEventListener("change", () => {
+        colVisible[cb.dataset.colid] = cb.checked;
+        aplicarColumnas();
+      });
+    });
+    document.getElementById("cols-all")?.addEventListener("click", () => {
+      COLS.filter(c => !c.noToggle).forEach(c => { colVisible[c.id] = true; });
+      checksEl.querySelectorAll("input").forEach(cb => cb.checked = true);
+      aplicarColumnas();
+    });
+    document.getElementById("cols-default")?.addEventListener("click", () => {
+      COLS.filter(c => !c.noToggle).forEach(c => { colVisible[c.id] = c.def; });
+      checksEl.querySelectorAll("input").forEach(cb => {
+        const col = COLS.find(c => c.id === cb.dataset.colid);
+        if (col) cb.checked = col.def;
+      });
+      aplicarColumnas();
+    });
+    const btn = document.getElementById("btn-cols");
+    const panel = document.getElementById("cols-panel");
+    btn?.addEventListener("click", e => { e.stopPropagation(); panel?.classList.toggle("open"); });
+    document.addEventListener("click", e => { if (!panel?.contains(e.target) && e.target !== btn) panel?.classList.remove("open"); });
+  }
+
+  // ── Exportar ──────────────────────────────────────
+  function buildExportParams() {
+    // Mismos parámetros que buildParams pero sin paginación
+    const p = new URLSearchParams();
+    if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    const f = filtrosActivos;
+    if (f.localidad)   p.set("localidad",   f.localidad);
+    if (f.placa)       p.set("placa",       f.placa);
+    if (f.cliente)     p.set("cliente",     f.cliente);
+    if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
+    if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
+    if (!_cardActiva) {
+      const e = msOrdEstado?.getValues()  || [];
+      const a = msOrdAseg?.getValues()    || [];
+      const pr= msOrdProceso?.getValues() || [];
+      if (e.length)  p.set("estados_multi",     e.join(","));
+      if (a.length)  p.set("aseguradoras_multi", a.join(","));
+      if (pr.length) p.set("procesos_multi",    pr.join(","));
+    } else {
+      const a = msOrdAseg?.getValues() || [];
+      if (a.length) p.set("aseguradoras_multi", a.join(","));
+    }
+    return p.toString();
+  }
+
+  async function exportarCSV() {
+    const btn = document.getElementById("btn-export-csv");
+    if (btn) { btn.disabled = true; btn.textContent = "Generando..."; }
+    const res = await apiFetch(`/taller/ordenes?${buildExportParams()}&limit=5000`);
+    if (btn) { btn.disabled = false; btn.textContent = "⬇ CSV"; }
+    if (!res || !res.ok) { Swal.fire("Error", "No se pudo exportar.", "error"); return; }
+    const data = await safeJson(res);
+    const filas = data.ordenes;
+    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","cliente","aseguradora","usuario_registro","total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total","observacion"];
+    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","CLIENTE","ASEGURADORA","USUARIO","TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL","OBSERVACIÓN"];
+    const csv   = [hdr.join(","), ...filas.map(o => cols.map(c => `"${(o[c]??'').toString().replace(/"/g,'""')}"`).join(","))].join("\n");
+    const blob  = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8;" });
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement("a");
+    a.href = url; a.download = `control-taller-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  async function exportarExcel() {
+    const btn = document.getElementById("btn-export-excel");
+    if (btn) { btn.disabled = true; btn.textContent = "Generando..."; }
+    // Llama al endpoint del backend que devuelve el archivo xlsx
+    const token = localStorage.getItem("token");
+    const url = `${window.API_URL || ""}/taller/exportar?${buildExportParams()}`;
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Error del servidor");
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `control-taller-${new Date().toISOString().slice(0,10)}.xlsx`;
+      a.click();
+    } catch (e) {
+      Swal.fire("Error", "No se pudo generar el Excel.", "error");
+    }
+    if (btn) { btn.disabled = false; btn.textContent = "⬇ Excel"; }
   }
 
   // ── Tab Resumen ───────────────────────────────────
@@ -758,6 +890,11 @@ const CT = (() => {
 
     // Resumen
     document.getElementById("btn-cargar-resumen").addEventListener("click", cargarResumen);
+
+    // Columnas y exportar
+    initColumnToggle();
+    document.getElementById("btn-export-csv")?.addEventListener("click", exportarCSV);
+    document.getElementById("btn-export-excel")?.addEventListener("click", exportarExcel);
 
     // Init dashboard
     DASH.init();
