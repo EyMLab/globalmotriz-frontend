@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     else if (window.location.pathname.includes("compras")) pagina = "Compras";
     else if (window.location.pathname.includes("cotizaciones")) pagina = "Cotizaciones";
+    else if (window.location.pathname.includes("control-taller")) pagina = "ControlTaller";
     else if (window.location.pathname.includes("lpr")) pagina = "Taller";
     else if (window.location.pathname.includes("cumpleanos")) pagina = "Cumpleaños";
     else if (window.location.pathname.includes("rrhh")) pagina = "RRHH";
@@ -76,6 +77,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
+      : "";
+
+    const enlaceControlTaller = rol === 'admin'
+      ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Control Taller</a>`
       : "";
 
     const enlaceAsistencia = rol === 'admin'
@@ -128,7 +133,14 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${enlaceCotizaciones}
             </div>
           </div>` : ''}
-          ${enlaceLPR}
+          ${(enlaceLPR || enlaceControlTaller) ? `
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn ${['Taller','ControlTaller'].includes(pagina) ? 'active' : ''}">Taller <span class="nav-arrow">&#9662;</span></button>
+            <div class="nav-dropdown-menu">
+              ${enlaceLPR}
+              ${enlaceControlTaller}
+            </div>
+          </div>` : ''}
           ${(enlaceAsistencia || enlaceRRHH || enlaceCumpleanos) ? `
           <div class="nav-dropdown">
             <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleaños'].includes(pagina) ? 'active' : ''}">RRHH <span class="nav-arrow">&#9662;</span></button>

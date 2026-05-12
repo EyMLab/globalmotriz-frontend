@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control Taller</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* ── Tarjetas de estado ─────────────────────── */
+    .taller-estados {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .estado-card {
+      flex: 1;
+      min-width: 130px;
+      border-radius: 10px;
+      padding: 14px 18px;
+      text-align: center;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,.10);
+    }
+    .estado-card .ec-num  { font-size: 28px; line-height: 1; }
+    .estado-card .ec-lbl  { font-size: 12px; text-transform: uppercase; margin-top: 4px; opacity:.85; }
+    .ec-abierto   { background:#ffd6d6; color:#7a0000; }
+    .ec-terminado { background:#fffea0; color:#5a4d00; }
+    .ec-facturado { background:#c6f0c6; color:#1a5f1a; }
+    .ec-anulado   { background:#e6ccff; color:#3d0070; }
+    .ec-total     { background:#e8f0fe; color:#1a3a7a; }
+
+    /* ── Sección importar ───────────────────────── */
+    .import-box {
+      background: #f8faff;
+      border: 1px solid #dbe4ff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .import-box label { font-weight: 600; font-size: 14px; white-space: nowrap; }
+    .import-box select,
+    .import-box input[type="file"] {
+      padding: 7px 10px;
+      border: 1px solid #c5cfe8;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .import-info {
+      font-size: 12px;
+      color: #555;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    /* ── Tabs ───────────────────────────────────── */
+    .taller-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #dbe4ff;
+      margin-bottom: 16px;
+    }
+    .taller-tab {
+      padding: 9px 22px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all .15s;
+    }
+    .taller-tab.active {
+      color: #1a3a7a;
+      border-bottom-color: #1a3a7a;
+    }
+    .taller-tab-panel { display: none; }
+    .taller-tab-panel.active { display: block; }
+
+    /* ── Filtros ────────────────────────────────── */
+    .filtros-taller {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    .filtros-taller select,
+    .filtros-taller input {
+      padding: 6px 10px;
+      border: 1px solid #c5cfe8;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+    }
+    .filtros-taller input[type="text"] { width: 130px; }
+    .filtros-taller input[type="date"] { width: 140px; }
+
+    /* ── Tabla ──────────────────────────────────── */
+    .tabla-taller-wrap { overflow-x: auto; }
+    .tabla-taller {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .tabla-taller th {
+      background: #1a3a7a;
+      color: #fff;
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+    .tabla-taller td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #e8edf5;
+      white-space: nowrap;
+    }
+    /* Colores por estado */
+    .tr-abierto   { background: #ffd6d6; }
+    .tr-terminado { background: #fffea0; }
+    .tr-facturado { background: #c6f0c6; }
+    .tr-anulado   { background: #e6ccff; }
+    /* Procesos especiales — borde izquierdo */
+    .tr-anular    { border-left: 4px solid #e68a00; }
+    .tr-svc       { border-left: 4px solid #0080cc; }
+    .tr-deducible { border-left: 4px solid #6b0099; }
+
+    .btn-editar {
+      background: none;
+      border: 1px solid #888;
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #444;
+    }
+    .btn-editar:hover { background: #e8edf5; }
+
+    /* ── Paginación ─────────────────────────────── */
+    .pag-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    .pag-controls button {
+      padding: 6px 16px;
+      border: 1px solid #c5cfe8;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .pag-controls button:disabled { opacity: .4; cursor: default; }
+    .pag-info { font-size: 13px; color: #444; }
+
+    /* ── Resumen ────────────────────────────────── */
+    .resumen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 18px;
+    }
+    .resumen-card {
+      background: #fff;
+      border: 1px solid #dbe4ff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .resumen-card h3 {
+      background: #1a3a7a;
+      color: #fff;
+      margin: 0;
+      padding: 10px 16px;
+      font-size: 14px;
+    }
+    .resumen-card table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .resumen-card th {
+      background: #e8f0fe;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      color: #1a3a7a;
+    }
+    .resumen-card td {
+      padding: 5px 10px;
+      border-bottom: 1px solid #f0f4ff;
+    }
+    .resumen-card tr:last-child td { border-bottom: none; }
+    .num-right { text-align: right; }
+
+    /* fin financiero */
+    .fin-grid {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 16px;
+    }
+    .fin-item {
+      flex: 1;
+      min-width: 140px;
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    .fin-item .fin-num { font-size: 18px; font-weight: 700; color: #1a3a7a; }
+    .fin-item .fin-lbl { font-size: 11px; color: #555; margin-top: 4px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+<div id="nav-container"></div>
+
+<div class="dashboard-container">
+
+  <!-- ── Importar reporte ───────────────────────── -->
+  <div class="import-box">
+    <label>Localidad:</label>
+    <select id="sel-localidad">
+      <option value="MATRIZ">MATRIZ</option>
+      <option value="SUCURSAL">SUCURSAL</option>
+    </select>
+    <label>Reporte Excel:</label>
+    <input type="file" id="inp-reporte" accept=".xlsx,.xls" />
+    <button class="btn-primary" id="btn-importar">⬆ Importar</button>
+    <div class="import-info" id="import-info">—</div>
+  </div>
+
+  <!-- ── Tarjetas resumen rápido ───────────────── -->
+  <div class="taller-estados" id="cards-estado"></div>
+
+  <!-- ── Tabs ─────────────────────────────────── -->
+  <div class="taller-tabs">
+    <button class="taller-tab active" data-tab="ordenes">Órdenes</button>
+    <button class="taller-tab"        data-tab="resumen">Resumen</button>
+  </div>
+
+  <!-- ═══════════════════════ TAB ÓRDENES ══════════════════════ -->
+  <div class="taller-tab-panel active" id="panel-ordenes">
+
+    <!-- Filtros -->
+    <div class="filtros-taller">
+      <select id="f-localidad">
+        <option value="">Todas las localidades</option>
+        <option value="MATRIZ">MATRIZ</option>
+        <option value="SUCURSAL">SUCURSAL</option>
+      </select>
+      <select id="f-estado">
+        <option value="">Todos los estados</option>
+      </select>
+      <select id="f-aseguradora">
+        <option value="">Todas las aseguradoras</option>
+      </select>
+      <select id="f-proceso">
+        <option value="">Todos los procesos</option>
+      </select>
+      <input type="text" id="f-placa"   placeholder="Placa..." />
+      <input type="text" id="f-cliente" placeholder="Cliente..." />
+      <input type="date" id="f-desde"   title="Desde (ingreso)" />
+      <input type="date" id="f-hasta"   title="Hasta (ingreso)" />
+      <button class="btn-primary" id="btn-filtrar">Buscar</button>
+      <button class="btn-secondary" id="btn-limpiar">Limpiar</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="tabla-taller-wrap">
+      <table class="tabla-taller">
+        <thead>
+          <tr>
+            <th>N° ORDEN</th>
+            <th>LOCALIDAD</th>
+            <th>ESTADO</th>
+            <th>PROCESO OT</th>
+            <th>F. INGRESO</th>
+            <th>F. SALIDA</th>
+            <th>F. SALIDA ENV.</th>
+            <th>PLACA</th>
+            <th>CLIENTE</th>
+            <th>ASEGURADORA</th>
+            <th>USUARIO</th>
+            <th class="num-right">V. TOTAL</th>
+            <th>OBSERVACIÓN</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-ordenes">
+          <tr><td colspan="14" style="text-align:center;padding:30px;color:#888;">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pag-controls">
+      <button id="btn-prev" disabled>← Anterior</button>
+      <span class="pag-info" id="pag-info">—</span>
+      <button id="btn-next" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TAB RESUMEN ══════════════════════ -->
+  <div class="taller-tab-panel" id="panel-resumen">
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+      <select id="res-localidad" style="padding:7px 10px;border:1px solid #c5cfe8;border-radius:6px;font-size:14px;">
+        <option value="">Todas las localidades</option>
+        <option value="MATRIZ">MATRIZ</option>
+        <option value="SUCURSAL">SUCURSAL</option>
+      </select>
+      <button class="btn-primary" id="btn-cargar-resumen">Actualizar resumen</button>
+    </div>
+
+    <!-- Totales financieros -->
+    <div class="resumen-card" style="margin-bottom:18px;" id="card-financiero">
+      <h3>Totales Financieros</h3>
+      <div class="fin-grid" id="fin-grid">—</div>
+    </div>
+
+    <div class="resumen-grid">
+      <div class="resumen-card">
+        <h3>Por Estado</h3>
+        <table><thead><tr><th>Estado</th><th class="num-right">Cantidad</th><th class="num-right">%</th></tr></thead>
+        <tbody id="res-estado"></tbody></table>
+      </div>
+      <div class="resumen-card">
+        <h3>Por Proceso OT</h3>
+        <table><thead><tr><th>Proceso</th><th class="num-right">Cantidad</th></tr></thead>
+        <tbody id="res-proceso"></tbody></table>
+      </div>
+      <div class="resumen-card" style="grid-column:1/-1;">
+        <h3>Por Aseguradora</h3>
+        <table>
+          <thead><tr><th>Aseguradora</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
+          <tbody id="res-aseg"></tbody>
+        </table>
+      </div>
+      <div class="resumen-card" style="grid-column:1/-1;">
+        <h3>Por Usuario</h3>
+        <table>
+          <thead><tr><th>Usuario</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
+          <tbody id="res-usuario"></tbody>
+        </table>
+      </div>
+      <div class="resumen-card" style="grid-column:1/-1;">
+        <h3>Por Mes de Ingreso</h3>
+        <table>
+          <thead><tr><th>Mes</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
+          <tbody id="res-mes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /panel-resumen -->
+
+</div><!-- /dashboard-container -->
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/control-taller.js"></script>
+</body>
+</html>
