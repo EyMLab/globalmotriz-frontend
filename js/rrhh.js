@@ -1,7 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const tablaInfo = document.getElementById('tabla-info-empleados');
-  const buscador = document.getElementById('buscar-empleado');
+  const tablaInfo        = document.getElementById('tabla-info-empleados');
+  const buscador         = document.getElementById('buscar-empleado');
+  const selLocalidad     = document.getElementById('filtro-localidad-rrhh');
+  const selCargo         = document.getElementById('filtro-cargo-rrhh');
+  const selEstado        = document.getElementById('filtro-estado-rrhh');
 
   let empleados = [];
   let rolUsuario = '';
@@ -34,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Info Empleados
   // ===============================
   function cargarEmpleados() {
-    const cols = rolUsuario === 'admin' ? 9 : 8;
+    const cols = rolUsuario === 'admin' ? 8 : 7;
     tablaInfo.innerHTML = `<tr><td colspan="${cols}">Cargando...</td></tr>`;
     apiFetch('/empleados')
       .then(res => {
@@ -43,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .then(data => {
         empleados = data;
+        poblarFiltroCargo();
         renderInfoEmpleados();
       })
       .catch(err => {
@@ -51,21 +55,51 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  function renderInfoEmpleados(filtro) {
+  // Poblar el select de cargos con los valores únicos de los empleados
+  function poblarFiltroCargo() {
+    if (!selCargo) return;
+    const cargos = [...new Set(empleados.map(e => e.cargo).filter(Boolean))].sort();
+    selCargo.innerHTML = '<option value="">Todos los cargos</option>';
+    cargos.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      selCargo.appendChild(opt);
+    });
+  }
+
+  function renderInfoEmpleados() {
     tablaInfo.innerHTML = '';
-    let lista = empleados.filter(e => e.activo);
 
-    if (filtro) {
-      const f = filtro.toLowerCase();
-      lista = lista.filter(e =>
-        `${e.nombre} ${e.apellido}`.toLowerCase().includes(f) ||
-        (e.cedula && e.cedula.toLowerCase().includes(f))
-      );
-    }
+    const textoBusqueda = buscador ? buscador.value.trim().toLowerCase() : '';
+    const localidadFiltro = selLocalidad ? selLocalidad.value : '';
+    const cargoFiltro     = selCargo    ? selCargo.value    : '';
+    const estadoFiltro    = selEstado   ? selEstado.value   : 'activo';
 
-    const cols = rolUsuario === 'admin' ? 9 : 8;
+    let lista = empleados.filter(e => {
+      // Filtro estado
+      if (estadoFiltro === 'activo'   && !e.activo)  return false;
+      if (estadoFiltro === 'inactivo' &&  e.activo)  return false;
+
+      // Filtro localidad
+      if (localidadFiltro && e.localidad !== localidadFiltro) return false;
+
+      // Filtro cargo
+      if (cargoFiltro && e.cargo !== cargoFiltro) return false;
+
+      // Búsqueda texto
+      if (textoBusqueda) {
+        const nombre = `${e.nombre} ${e.apellido}`.toLowerCase();
+        const cedula = (e.cedula || '').toLowerCase();
+        if (!nombre.includes(textoBusqueda) && !cedula.includes(textoBusqueda)) return false;
+      }
+
+      return true;
+    });
+
+    const cols = rolUsuario === 'admin' ? 8 : 7;
     if (!lista.length) {
-      tablaInfo.innerHTML = `<tr><td colspan="${cols}">No se encontraron empleados</td></tr>`;
+      tablaInfo.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;">No se encontraron empleados</td></tr>`;
       return;
     }
 
@@ -92,13 +126,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ===============================
+  // Event listeners de filtros
+  // ===============================
   if (buscador) {
     let timer;
     buscador.addEventListener('input', () => {
       clearTimeout(timer);
-      timer = setTimeout(() => renderInfoEmpleados(buscador.value.trim()), 300);
+      timer = setTimeout(() => renderInfoEmpleados(), 300);
     });
   }
+
+  [selLocalidad, selCargo, selEstado].forEach(sel => {
+    if (sel) sel.addEventListener('change', () => renderInfoEmpleados());
+  });
 
   // ===============================
   // Editar info empleado
