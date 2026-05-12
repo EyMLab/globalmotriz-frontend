@@ -329,6 +329,7 @@ const CT = (() => {
       case "ANULAR":    return "tr-anular";
       case "S.V.C.":   return "tr-svc";
       case "DEDUCIBLE": return "tr-deducible";
+      case "SANTIAGO":  return "tr-santiago";
       default:          return "";
     }
   }
@@ -346,6 +347,8 @@ const CT = (() => {
     document.getElementById("c-anulado").textContent   = d.anulado    ?? 0;
     document.getElementById("c-svc").textContent       = d.svc        ?? 0;
     document.getElementById("c-poranular").textContent = d.por_anular ?? 0;
+    document.getElementById("c-deducible").textContent = d.deducible  ?? 0;
+    document.getElementById("c-santiago").textContent  = d.santiago   ?? 0;
     document.getElementById("c-total").textContent     = d.total      ?? 0;
   }
 
