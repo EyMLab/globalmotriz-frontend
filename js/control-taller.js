@@ -748,7 +748,7 @@ const CT = (() => {
     if (btn) { btn.disabled = true; btn.textContent = "Generando..."; }
     // Llama al endpoint del backend que devuelve el archivo xlsx
     const token = localStorage.getItem("token");
-    const url = `${window.API_URL || ""}/taller/exportar?${buildExportParams()}`;
+    const url = `${API_BASE_URL}/taller/exportar?${buildExportParams()}`;
     try {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Error del servidor");
