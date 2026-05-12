@@ -258,10 +258,13 @@ function initNotificaciones() {
   // Marcar todas leidas (ambos módulos)
   document.getElementById('btn-leer-todas')?.addEventListener('click', async () => {
     try {
-      await Promise.all([
-        apiFetch('/cotizaciones/notificaciones/leer-todas', { method: 'PATCH' }),
-        apiFetch('/rrhh/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {})
-      ]);
+      const promises = [
+        apiFetch('/cotizaciones/notificaciones/leer-todas', { method: 'PATCH' })
+      ];
+      if (ROLES_RRHH_NOTIF.includes(_navRol)) {
+        promises.push(apiFetch('/rrhh/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {}));
+      }
+      await Promise.all(promises);
       cargarNotificaciones();
       actualizarContadorNotif();
     } catch (e) { /* ignore */ }
