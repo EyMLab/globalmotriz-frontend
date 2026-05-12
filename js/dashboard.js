@@ -94,7 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Solo admin y control pueden ver Facturas
       if (rol !== 'admin' && rol !== 'control') {
-        window.location.href = 'inventario.html';
+        // Cada rol tiene su página de inicio
+        if (rol === 'asistente_contable') {
+          window.location.href = 'finanzas.html';
+        } else if (rol === 'seguro') {
+          window.location.href = 'lpr.html';
+        } else {
+          // bodega, asesor, control, etc.
+          window.location.href = 'inventario.html';
+        }
         return false;
       }
 

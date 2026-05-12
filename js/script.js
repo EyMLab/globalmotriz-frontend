@@ -28,7 +28,14 @@ document.getElementById('login-form').addEventListener('submit', function (e) {
       localStorage.setItem('usuario', data.usuario);
       localStorage.setItem('rol', data.rol);
 
-      window.location.href = data.rol === 'seguro' ? 'lpr.html' : 'dashboard.html';
+      // Redirigir al inicio correcto según rol
+      const destinos = {
+        seguro:             'lpr.html',
+        asistente_contable: 'finanzas.html',
+        bodega:             'inventario.html',
+        asesor:             'inventario.html'
+      };
+      window.location.href = destinos[data.rol] || 'dashboard.html';
     })
     .catch(error => {
       console.error('❌ Error en login:', error);
