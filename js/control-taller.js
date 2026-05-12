@@ -5,16 +5,13 @@
 const CT = (() => {
 
   // ── Estado interno ────────────────────────────────
-  let paginaActual = 1;
-  const LIMITE     = 100;
-  let totalPaginas = 1;
-  let filtrosActivos = {};
+  let paginaActual  = 1;
+  const LIMITE      = 100;
+  let totalPaginas  = 1;
+  let filtrosActivos = {};   // filtros de la barra
+  let cardActiva    = null;  // card seleccionada: "ABIERTO", "SVC", etc.
 
   // ── Helpers ───────────────────────────────────────
-  function fmt(val) {
-    if (val == null || val === "") return "—";
-    return val;
-  }
   function fmtFecha(iso) {
     if (!iso) return "—";
     const [y, m, d] = iso.slice(0, 10).split("-");
@@ -48,77 +45,89 @@ const CT = (() => {
     }
   }
 
-  // ── Tarjetas de estado rápido ─────────────────────
-  function renderCards(porEstado, total) {
-    const mapa = {};
-    porEstado.forEach(r => { mapa[r.estado?.toUpperCase()] = parseInt(r.cantidad); });
+  // ── Cargar conteos de tarjetas ────────────────────
+  async function cargarCards(localidad = "") {
+    const qs  = localidad ? `?localidad=${encodeURIComponent(localidad)}` : "";
+    const res = await apiFetch(`/taller/cards${qs}`);
+    if (!res || !res.ok) return;
+    const d = await safeJson(res);
 
-    const items = [
-      { lbl: "ABIERTO",   cls: "ec-abierto",   key: "ABIERTO"   },
-      { lbl: "TERMINADO", cls: "ec-terminado",  key: "TERMINADO" },
-      { lbl: "FACTURADO", cls: "ec-facturado",  key: "FACTURADO" },
-      { lbl: "ANULADO",   cls: "ec-anulado",    key: "ANULADO"   },
-      { lbl: "TOTAL",     cls: "ec-total",      key: "_total"    },
-    ];
-    document.getElementById("cards-estado").innerHTML = items.map(it => `
-      <div class="estado-card ${it.cls}">
-        <div class="ec-num">${it.key === "_total" ? total : (mapa[it.key] || 0)}</div>
-        <div class="ec-lbl">${it.lbl}</div>
-      </div>`).join("");
+    document.getElementById("c-abierto").textContent   = d.abierto    ?? 0;
+    document.getElementById("c-terminado").textContent = d.terminado  ?? 0;
+    document.getElementById("c-facturado").textContent = d.facturado  ?? 0;
+    document.getElementById("c-anulado").textContent   = d.anulado    ?? 0;
+    document.getElementById("c-svc").textContent       = d.svc        ?? 0;
+    document.getElementById("c-poranular").textContent = d.por_anular ?? 0;
+    document.getElementById("c-total").textContent     = d.total      ?? 0;
   }
 
-  // ── Cargar filtros dinámicos ──────────────────────
-  async function cargarFiltros(localidad = "") {
-    const qs = localidad ? `?localidad=${localidad}` : "";
-    const res = await apiFetch(`/taller/filtros${qs}`);
-    if (!res || !res.ok) return;
-    const data = await safeJson(res);
+  // ── Activar / desactivar tarjeta ──────────────────
+  function activarCard(card) {
+    const contenedor = document.getElementById("cards-estado");
+    const todas = contenedor.querySelectorAll(".estado-card");
 
-    const selEstado  = document.getElementById("f-estado");
-    const selAseg    = document.getElementById("f-aseguradora");
-    const selProceso = document.getElementById("f-proceso");
+    if (cardActiva === card) {
+      // Deseleccionar: quitar filtro de card
+      cardActiva = null;
+      todas.forEach(b => b.classList.remove("card-activa"));
+      contenedor.classList.remove("cards-con-activa");
+    } else {
+      cardActiva = card;
+      todas.forEach(b => b.classList.remove("card-activa"));
+      const btn = contenedor.querySelector(`[data-card="${card}"]`);
+      if (btn) btn.classList.add("card-activa");
+      contenedor.classList.add("cards-con-activa");
+    }
 
-    const prev = {
-      estado:   selEstado.value,
-      aseg:     selAseg.value,
-      proceso:  selProceso.value,
-    };
+    // Si hay una card activa, limpiar los filtros manuales de estado/proceso
+    if (cardActiva) {
+      document.getElementById("f-estado").value  = "";
+      document.getElementById("f-proceso").value = "";
+    }
 
-    selEstado.innerHTML  = `<option value="">Todos los estados</option>`  + (data.estados  || []).map(e => `<option value="${e}">${e}</option>`).join("");
-    selAseg.innerHTML    = `<option value="">Todas las aseguradoras</option>` + (data.aseguradoras || []).filter(a => a).map(a => `<option value="${a}">${a}</option>`).join("");
-    selProceso.innerHTML = `<option value="">Todos los procesos</option>` + (data.procesos || []).filter(p => p).map(p => `<option value="${p}">${p}</option>`).join("");
+    cargarOrdenes(1);
+  }
 
-    if (prev.estado)  selEstado.value  = prev.estado;
-    if (prev.aseg)    selAseg.value    = prev.aseg;
-    if (prev.proceso) selProceso.value = prev.proceso;
+  // ── Construir params de query para /taller/ordenes ─
+  function buildParams(page) {
+    const p = { page, limit: LIMITE };
+
+    // Filtro de card
+    if (cardActiva && cardActiva !== "TOTAL") p.card = cardActiva;
+
+    // Filtros manuales (solo los que no se solapan con la card)
+    const f = filtrosActivos;
+    if (f.localidad)   p.localidad   = f.localidad;
+    if (f.aseguradora) p.aseguradora = f.aseguradora;
+    if (f.placa)       p.placa       = f.placa;
+    if (f.cliente)     p.cliente     = f.cliente;
+    if (f.fecha_desde) p.fecha_desde = f.fecha_desde;
+    if (f.fecha_hasta) p.fecha_hasta = f.fecha_hasta;
+    // estado y proceso_ot manuales solo si no hay card activa
+    if (!cardActiva) {
+      if (f.estado)    p.estado    = f.estado;
+      if (f.proceso_ot) p.proceso_ot = f.proceso_ot;
+    }
+
+    return new URLSearchParams(p).toString();
   }
 
   // ── Cargar órdenes ────────────────────────────────
   async function cargarOrdenes(page = 1) {
     const tbody = document.getElementById("tbody-ordenes");
-    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:30px;color:#888;">Cargando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text-light);">Cargando...</td></tr>`;
 
-    const params = new URLSearchParams({
-      page,
-      limit: LIMITE,
-      ...filtrosActivos,
-    });
-
-    const res = await apiFetch(`/taller/ordenes?${params}`);
+    const res = await apiFetch(`/taller/ordenes?${buildParams(page)}`);
     if (!res || !res.ok) {
-      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:red;">Error cargando órdenes</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:red;padding:20px;">Error cargando órdenes</td></tr>`;
       return;
     }
     const data = await safeJson(res);
     paginaActual = data.pagina;
     totalPaginas = data.totalPaginas;
 
-    // Actualizar cards rápidas con el resumen base actual
-    cargarResumenCards();
-
-    // Render tabla
     if (!data.ordenes.length) {
-      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:30px;color:#888;">Sin resultados</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text-light);">Sin resultados</td></tr>`;
     } else {
       tbody.innerHTML = data.ordenes.map(o => {
         const ce = claseEstado(o.estado);
@@ -149,14 +158,25 @@ const CT = (() => {
     document.getElementById("btn-next").disabled = paginaActual >= totalPaginas;
   }
 
-  // ── Cards rápidas desde resumen ───────────────────
-  async function cargarResumenCards() {
-    const loc = filtrosActivos.localidad || "";
-    const qs  = loc ? `?localidad=${loc}` : "";
-    const res = await apiFetch(`/taller/resumen${qs}`);
+  // ── Cargar filtros dinámicos ──────────────────────
+  async function cargarFiltros(localidad = "") {
+    const qs  = localidad ? `?localidad=${localidad}` : "";
+    const res = await apiFetch(`/taller/filtros${qs}`);
     if (!res || !res.ok) return;
     const data = await safeJson(res);
-    renderCards(data.por_estado, data.total);
+
+    const selEstado  = document.getElementById("f-estado");
+    const selAseg    = document.getElementById("f-aseguradora");
+    const selProceso = document.getElementById("f-proceso");
+    const prevE = selEstado.value, prevA = selAseg.value, prevP = selProceso.value;
+
+    selEstado.innerHTML  = `<option value="">Todos</option>`  + (data.estados  || []).map(e => `<option value="${e}">${e}</option>`).join("");
+    selAseg.innerHTML    = `<option value="">Todas</option>`  + (data.aseguradoras || []).filter(Boolean).map(a => `<option value="${a}">${a}</option>`).join("");
+    selProceso.innerHTML = `<option value="">Todos</option>`  + (data.procesos || []).filter(Boolean).map(p => `<option value="${p}">${p}</option>`).join("");
+
+    if (prevE) selEstado.value = prevE;
+    if (prevA) selAseg.value   = prevA;
+    if (prevP) selProceso.value = prevP;
   }
 
   // ── Importar reporte ──────────────────────────────
@@ -186,8 +206,13 @@ const CT = (() => {
     document.getElementById("import-info").textContent =
       `Última importación: ${new Date().toLocaleString("es-EC")} · ${data.nuevas} nuevas · ${data.actualizadas} actualizadas`;
 
-    // Refrescar filtros y tabla
     await cargarFiltros(localidad);
+    await cargarCards(localidad);
+
+    // Limpiar card activa y recargar
+    cardActiva = null;
+    document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+    document.getElementById("cards-estado").classList.remove("cards-con-activa");
     filtrosActivos = { localidad };
     document.getElementById("f-localidad").value = localidad;
     await cargarOrdenes(1);
@@ -205,7 +230,6 @@ const CT = (() => {
     const tr  = document.querySelector(`tr[data-orden="${numeroOrden}"][data-localidad="${localidad}"]`);
     const obs = tr?.querySelector(".obs-cell")?.textContent || "";
     const fseCell = tr?.querySelector(".fecha-salida-env")?.textContent || "";
-    // convertir DD/MM/YYYY → YYYY-MM-DD para el input date
     let fseIso = "";
     const m = fseCell.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (m) fseIso = `${m[3]}-${m[2]}-${m[1]}`;
@@ -239,15 +263,13 @@ const CT = (() => {
       Swal.fire("Error", err?.error || "No se pudo guardar.", "error");
       return;
     }
-
-    // Actualizar celda en la tabla sin recargar
     if (tr) {
       tr.querySelector(".obs-cell").textContent = vals.observacion;
       tr.querySelector(".fecha-salida-env").textContent = fmtFecha(vals.fecha_salida_enviada);
     }
   }
 
-  // ── Cargar tab Resumen ────────────────────────────
+  // ── Tab Resumen ───────────────────────────────────
   async function cargarResumen() {
     const localidad = document.getElementById("res-localidad").value;
     const qs = localidad ? `?localidad=${localidad}` : "";
@@ -255,7 +277,6 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo cargar el resumen.", "error"); return; }
     const d = await safeJson(res);
 
-    // Financiero
     const fin = d.totales_financieros || {};
     document.getElementById("fin-grid").innerHTML = [
       { lbl: "Valor Total",     val: fin.valor_total              },
@@ -269,17 +290,14 @@ const CT = (() => {
         <div class="fin-lbl">${it.lbl}</div>
       </div>`).join("");
 
-    // Por estado
     document.getElementById("res-estado").innerHTML = (d.por_estado || []).map(r =>
       `<tr><td>${r.estado || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${r.pct}%</td></tr>`
-    ).join("") || `<tr><td colspan="3">Sin datos</td></tr>`;
+    ).join("") || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
-    // Por proceso
     document.getElementById("res-proceso").innerHTML = (d.por_proceso || []).map(r =>
       `<tr><td>${r.proceso_ot || "—"}</td><td class="num-right">${r.cantidad}</td></tr>`
-    ).join("") || `<tr><td colspan="2">Sin datos</td></tr>`;
+    ).join("") || `<tr><td colspan="2" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
-    // Por aseguradora
     document.getElementById("res-aseg").innerHTML = (d.por_aseguradora || []).map(r =>
       `<tr><td>${r.aseguradora}</td>
            <td class="num-right">${r.abierto || 0}</td>
@@ -287,9 +305,8 @@ const CT = (() => {
            <td class="num-right">${r.facturado || 0}</td>
            <td class="num-right">${r.anulado || 0}</td>
            <td class="num-right"><strong>${r.total}</strong></td></tr>`
-    ).join("") || `<tr><td colspan="6">Sin datos</td></tr>`;
+    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
-    // Por usuario
     document.getElementById("res-usuario").innerHTML = (d.por_usuario || []).map(r =>
       `<tr><td>${r.usuario}</td>
            <td class="num-right">${r.abierto || 0}</td>
@@ -297,9 +314,8 @@ const CT = (() => {
            <td class="num-right">${r.facturado || 0}</td>
            <td class="num-right">${r.anulado || 0}</td>
            <td class="num-right"><strong>${r.total}</strong></td></tr>`
-    ).join("") || `<tr><td colspan="6">Sin datos</td></tr>`;
+    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
-    // Por mes
     document.getElementById("res-mes").innerHTML = (d.por_mes || []).map(r =>
       `<tr><td>${fmtMes(r.mes)}</td>
            <td class="num-right">${r.abierto || 0}</td>
@@ -307,7 +323,7 @@ const CT = (() => {
            <td class="num-right">${r.facturado || 0}</td>
            <td class="num-right">${r.anulado || 0}</td>
            <td class="num-right"><strong>${r.total}</strong></td></tr>`
-    ).join("") || `<tr><td colspan="6">Sin datos</td></tr>`;
+    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
   }
 
   // ── Init ──────────────────────────────────────────
@@ -323,11 +339,23 @@ const CT = (() => {
       });
     });
 
+    // Cards como botones de filtro
+    document.getElementById("cards-estado").addEventListener("click", e => {
+      const btn = e.target.closest("[data-card]");
+      if (!btn) return;
+      activarCard(btn.dataset.card);
+    });
+
     // Importar
     document.getElementById("btn-importar").addEventListener("click", importar);
 
-    // Filtros
+    // Filtros manuales
     document.getElementById("btn-filtrar").addEventListener("click", () => {
+      // Si hay card activa, desactivarla al aplicar filtros manuales
+      cardActiva = null;
+      document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+      document.getElementById("cards-estado").classList.remove("cards-con-activa");
+
       filtrosActivos = {
         localidad:   document.getElementById("f-localidad").value,
         estado:      document.getElementById("f-estado").value,
@@ -338,25 +366,23 @@ const CT = (() => {
         fecha_desde: document.getElementById("f-desde").value,
         fecha_hasta: document.getElementById("f-hasta").value,
       };
-      // Quitar parámetros vacíos
       Object.keys(filtrosActivos).forEach(k => { if (!filtrosActivos[k]) delete filtrosActivos[k]; });
       cargarOrdenes(1);
     });
 
     document.getElementById("btn-limpiar").addEventListener("click", () => {
       filtrosActivos = {};
-      ["f-localidad","f-estado","f-aseguradora","f-proceso"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
-      ["f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
+      cardActiva = null;
+      document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+      document.getElementById("cards-estado").classList.remove("cards-con-activa");
+      ["f-localidad","f-estado","f-aseguradora","f-proceso"].forEach(id => document.getElementById(id).value = "");
+      ["f-placa","f-cliente","f-desde","f-hasta"].forEach(id => document.getElementById(id).value = "");
       cargarOrdenes(1);
     });
 
-    // Localidad filtro → actualizar selectores dinámicos
     document.getElementById("f-localidad").addEventListener("change", e => {
       cargarFiltros(e.target.value);
+      cargarCards(e.target.value);
     });
 
     // Paginación
@@ -372,6 +398,7 @@ const CT = (() => {
 
     // Carga inicial
     cargarFiltros();
+    cargarCards();
     cargarOrdenes(1);
   }
 

@@ -30,7 +30,25 @@
     .ec-terminado { background: #fef9c3; color: #713f12; border-color: #fef08a; }
     .ec-facturado { background: #dcfce7; color: #14532d; border-color: #bbf7d0; }
     .ec-anulado   { background: #ede9fe; color: #4c1d95; border-color: #ddd6fe; }
+    .ec-svc       { background: #dbeafe; color: #1e3a8a; border-color: #bfdbfe; }
+    .ec-poranular { background: #fff7ed; color: #7c2d12; border-color: #fed7aa; }
     .ec-total     { background: var(--white); color: var(--primary-dark); border-color: var(--border-subtle); }
+
+    /* Botón tarjeta */
+    .estado-card {
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      outline: none;
+      font-family: var(--font-main);
+    }
+    .estado-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .estado-card.card-activa {
+      box-shadow: 0 0 0 3px currentColor, var(--shadow-md);
+      transform: translateY(-2px);
+      opacity: 1;
+    }
+    /* Cuando hay una activa, las demás se atenúan */
+    .cards-con-activa .estado-card:not(.card-activa) { opacity: .5; }
 
     /* ── Sección importar ───────────────────────── */
     .import-box {
@@ -325,13 +343,15 @@
     <div class="import-info" id="import-info">—</div>
   </div>
 
-  <!-- ── Tarjetas resumen rápido ───────────────── -->
+  <!-- ── Tarjetas / botones de filtro rápido ───── -->
   <div class="taller-estados" id="cards-estado">
-    <div class="estado-card ec-abierto"><div class="ec-num">—</div><div class="ec-lbl">Abierto</div></div>
-    <div class="estado-card ec-terminado"><div class="ec-num">—</div><div class="ec-lbl">Terminado</div></div>
-    <div class="estado-card ec-facturado"><div class="ec-num">—</div><div class="ec-lbl">Facturado</div></div>
-    <div class="estado-card ec-anulado"><div class="ec-num">—</div><div class="ec-lbl">Anulado</div></div>
-    <div class="estado-card ec-total"><div class="ec-num">—</div><div class="ec-lbl">Total</div></div>
+    <button class="estado-card ec-abierto"   data-card="ABIERTO"   ><div class="ec-num" id="c-abierto">—</div>  <div class="ec-lbl">Abierto</div></button>
+    <button class="estado-card ec-terminado" data-card="TERMINADO" ><div class="ec-num" id="c-terminado">—</div><div class="ec-lbl">Terminado</div></button>
+    <button class="estado-card ec-facturado" data-card="FACTURADO" ><div class="ec-num" id="c-facturado">—</div><div class="ec-lbl">Facturado</div></button>
+    <button class="estado-card ec-anulado"   data-card="ANULADO"   ><div class="ec-num" id="c-anulado">—</div>  <div class="ec-lbl">Anulado</div></button>
+    <button class="estado-card ec-svc"       data-card="SVC"       ><div class="ec-num" id="c-svc">—</div>      <div class="ec-lbl">S.V.C.</div></button>
+    <button class="estado-card ec-poranular" data-card="POR_ANULAR"><div class="ec-num" id="c-poranular">—</div><div class="ec-lbl">Por Anular</div></button>
+    <button class="estado-card ec-total"     data-card="TOTAL"     ><div class="ec-num" id="c-total">—</div>    <div class="ec-lbl">Total</div></button>
   </div>
 
   <!-- ── Tabs ─────────────────────────────────── -->
