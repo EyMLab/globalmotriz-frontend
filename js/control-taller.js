@@ -409,6 +409,7 @@ const CT = (() => {
       case "S.V.C.":   return "tr-svc";
       case "DEDUCIBLE": return "tr-deducible";
       case "SANTIAGO":  return "tr-santiago";
+      case "INTERNO":   return "tr-interno";
       default:          return "";
     }
   }
@@ -428,6 +429,7 @@ const CT = (() => {
     document.getElementById("c-poranular").textContent = d.por_anular ?? 0;
     document.getElementById("c-deducible").textContent = d.deducible  ?? 0;
     document.getElementById("c-santiago").textContent  = d.santiago   ?? 0;
+    document.getElementById("c-interno").textContent   = d.interno    ?? 0;
     document.getElementById("c-total").textContent     = d.total      ?? 0;
   }
 
@@ -473,9 +475,12 @@ const CT = (() => {
     // Filtro de card
     if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
 
+    // Localidad: siempre del selector del DOM (Opción B — coherente con tarjetas)
+    const loc = document.getElementById("f-localidad")?.value;
+    if (loc) p.set("localidad", loc);
+
     // Filtros fijos (no dependen de card)
     const f = filtrosActivos;
-    if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -705,8 +710,10 @@ const CT = (() => {
     // Mismos parámetros que buildParams pero sin paginación
     const p = new URLSearchParams();
     if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    // Localidad: siempre del selector del DOM
+    const loc = document.getElementById("f-localidad")?.value;
+    if (loc) p.set("localidad", loc);
     const f = filtrosActivos;
-    if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -854,7 +861,6 @@ const CT = (() => {
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
 
       filtrosActivos = {
-        localidad:   document.getElementById("f-localidad").value,
         placa:       document.getElementById("f-placa").value.trim(),
         cliente:     document.getElementById("f-cliente").value.trim(),
         fecha_desde: document.getElementById("f-desde").value,
