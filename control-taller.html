@@ -431,6 +431,31 @@
     .ms-item input[type="checkbox"] { margin:0; cursor:pointer; accent-color:var(--primary); flex-shrink:0; }
     .ms-empty { padding:12px; text-align:center; color:var(--text-light); font-size:12px; }
 
+    /* ── Autocomplete de cliente ────────────────────── */
+    .ac-wrap { position: relative; }
+    .ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0;
+      min-width: 100%; max-width: 420px;
+      max-height: 220px; overflow-y: auto;
+      background: var(--white);
+      border: 1px solid var(--input-border);
+      border-radius: var(--r-input);
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      z-index: 1000;
+      display: none;
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ac-item:hover, .ac-item.ac-active { background: #f0f7fb; }
+
     /* ── Selector resumen ───────────────────────── */
     .resumen-toolbar {
       display: flex;
@@ -621,7 +646,9 @@
       </div>
       <div class="fg">
         <label>Cliente</label>
-        <input type="text" id="f-cliente" placeholder="Buscar cliente..." />
+        <div class="ac-wrap">
+          <input type="text" id="f-cliente" placeholder="Buscar cliente..." autocomplete="off" />
+        </div>
       </div>
       <div class="fg">
         <label>Desde</label>
@@ -719,7 +746,9 @@
       </div>
       <div class="fg">
         <label>Cliente</label>
-        <input type="text" id="d-cliente" placeholder="Buscar cliente..." />
+        <div class="ac-wrap">
+          <input type="text" id="d-cliente" placeholder="Buscar cliente..." autocomplete="off" />
+        </div>
       </div>
       <div class="fg">
         <label>Desde</label>

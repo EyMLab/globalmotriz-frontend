@@ -76,6 +76,89 @@ class MultiSelect {
   getValues() { return [...this.selected]; }
 }
 
+// ── Clase Autocomplete (búsqueda de clientes) ────────
+class Autocomplete {
+  constructor(inputId, { fetchFn, localidadFn = () => "" } = {}) {
+    this.input      = document.getElementById(inputId);
+    if (!this.input) return;
+    this.fetchFn    = fetchFn;
+    this.localidadFn = localidadFn;
+    this._timer     = null;
+    this._activeIdx = -1;
+    this._items     = [];
+
+    // Crear dropdown dentro del mismo .ac-wrap
+    this.dropdown = document.createElement("div");
+    this.dropdown.className = "ac-dropdown";
+    this.input.parentNode.appendChild(this.dropdown);
+
+    this.input.addEventListener("input",   () => this._onInput());
+    this.input.addEventListener("keydown", e  => this._onKey(e));
+    document.addEventListener("click", e => {
+      if (!this.input.parentNode.contains(e.target)) this.close();
+    });
+  }
+
+  _onInput() {
+    clearTimeout(this._timer);
+    const q = this.input.value.trim();
+    if (q.length < 2) { this.close(); return; }
+    this._timer = setTimeout(() => this._fetch(q), 300);
+  }
+
+  async _fetch(q) {
+    const loc = this.localidadFn();
+    const qs  = `q=${encodeURIComponent(q)}${loc ? `&localidad=${encodeURIComponent(loc)}` : ""}`;
+    const res = await apiFetch(`/taller/clientes?${qs}`);
+    if (!res || !res.ok) return;
+    const d = await safeJson(res);
+    this._show(d.clientes || []);
+  }
+
+  _show(items) {
+    this._items     = items;
+    this._activeIdx = -1;
+    if (!items.length) { this.close(); return; }
+    this.dropdown.innerHTML = items.map((v, i) =>
+      `<div class="ac-item" data-idx="${i}">${v}</div>`
+    ).join("");
+    this.dropdown.querySelectorAll(".ac-item").forEach(el => {
+      el.addEventListener("mousedown", e => {
+        e.preventDefault();
+        this.input.value = items[+el.dataset.idx];
+        this.close();
+      });
+    });
+    this.dropdown.classList.add("open");
+  }
+
+  _onKey(e) {
+    const els = [...this.dropdown.querySelectorAll(".ac-item")];
+    if (!els.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this._activeIdx = Math.min(this._activeIdx + 1, els.length - 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this._activeIdx = Math.max(this._activeIdx - 1, -1);
+    } else if (e.key === "Enter" && this._activeIdx >= 0) {
+      e.preventDefault();
+      this.input.value = this._items[this._activeIdx];
+      this.close();
+      return;
+    } else if (e.key === "Escape") {
+      this.close(); return;
+    } else { return; }
+    els.forEach((el, i) => el.classList.toggle("ac-active", i === this._activeIdx));
+    if (this._activeIdx >= 0) els[this._activeIdx].scrollIntoView({ block: "nearest" });
+  }
+
+  close() {
+    this.dropdown.classList.remove("open");
+    this._activeIdx = -1;
+  }
+}
+
 // ── Módulo Dashboard ──────────────────────────────
 const DASH = (() => {
   const charts = {};   // instancias Chart.js guardadas por id
@@ -923,6 +1006,10 @@ const CT = (() => {
     msDashEstado  = new MultiSelect("d-estado",      { placeholder: "Todos" });
     msDashAseg    = new MultiSelect("d-aseguradora", { placeholder: "Todas" });
     msDashProceso = new MultiSelect("d-proceso",     { placeholder: "Todos" });
+
+    // Autocomplete de cliente (Órdenes y Dashboard)
+    new Autocomplete("f-cliente", { localidadFn: () => document.getElementById("f-localidad")?.value || "" });
+    new Autocomplete("d-cliente", { localidadFn: () => document.getElementById("d-localidad")?.value || "" });
 
     // Carga inicial
     cargarFiltros().then(data => DASH.sincFiltros(data));
