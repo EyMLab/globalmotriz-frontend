@@ -342,8 +342,6 @@ const DASH = (() => {
       msDashEstado?.clear(); msDashAseg?.clear(); msDashProceso?.clear();
       cargar();
     });
-    // Auto-aplicar al cambiar localidad
-    document.getElementById("d-localidad")?.addEventListener("change", cargar);
   }
 
   return { cargar, sincFiltros, init };
@@ -881,10 +879,20 @@ const CT = (() => {
       cargarOrdenes(1);
     });
 
-    document.getElementById("f-localidad").addEventListener("change", e => {
-      cargarFiltros(e.target.value);
-      cargarCards(e.target.value);
-    });
+    // ── Sincronizar todos los selectores de localidad ──
+    // Cuando cambia cualquiera, los otros dos se igualan, las tarjetas
+    // se recargan y cada pestaña recarga su propio contenido.
+    function syncLocalidad(val) {
+      ["f-localidad", "d-localidad", "res-localidad"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      });
+      cargarFiltros(val);
+      cargarCards(val);
+    }
+    document.getElementById("f-localidad")?.addEventListener("change",   e => syncLocalidad(e.target.value));
+    document.getElementById("d-localidad")?.addEventListener("change",   e => { syncLocalidad(e.target.value); DASH.cargar(); });
+    document.getElementById("res-localidad")?.addEventListener("change", e => { syncLocalidad(e.target.value); cargarResumen(); });
 
     // Paginación
     document.getElementById("btn-prev").addEventListener("click", () => {
