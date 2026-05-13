@@ -300,9 +300,11 @@ const DASH = (() => {
     const params = new URLSearchParams();
     // Filtros de texto/fecha
     const localidad  = document.getElementById("d-localidad")?.value;
+    const cliente    = document.getElementById("d-cliente")?.value?.trim();
     const fechaDesde = document.getElementById("d-desde")?.value;
     const fechaHasta = document.getElementById("d-hasta")?.value;
     if (localidad)  params.set("localidad",   localidad);
+    if (cliente)    params.set("cliente",     cliente);
     if (fechaDesde) params.set("fecha_desde", fechaDesde);
     if (fechaHasta) params.set("fecha_hasta", fechaHasta);
     // Multi-selects
@@ -337,6 +339,7 @@ const DASH = (() => {
     document.getElementById("btn-dash-aplicar")?.addEventListener("click", cargar);
     document.getElementById("btn-dash-limpiar")?.addEventListener("click", () => {
       const loc = document.getElementById("d-localidad"); if (loc) loc.value = "";
+      const cli = document.getElementById("d-cliente");   if (cli) cli.value = "";
       const dsd = document.getElementById("d-desde");     if (dsd) dsd.value = "";
       const hst = document.getElementById("d-hasta");     if (hst) hst.value = "";
       msDashEstado?.clear(); msDashAseg?.clear(); msDashProceso?.clear();
