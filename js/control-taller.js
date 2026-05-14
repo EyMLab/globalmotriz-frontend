@@ -171,7 +171,7 @@ const DASH = (() => {
   }
   function fmtMoney(val) {
     const n = parseFloat(val) || 0;
-    return "$" + n.toLocaleString("es-EC", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return "$" + n.toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   function destroyChart(id) {
     if (charts[id]) { charts[id].destroy(); delete charts[id]; }
