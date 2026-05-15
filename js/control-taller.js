@@ -452,6 +452,9 @@ const CT = (() => {
     { id:"fsalida",   label:"F. Salida",       def:false  },
     { id:"fsenv",     label:"F. Salida Env.",  def:true   },
     { id:"placa",     label:"Placa",           def:true   },
+    { id:"marca",     label:"Marca",           def:false  },
+    { id:"modelo",    label:"Modelo",          def:false  },
+    { id:"color",     label:"Color",           def:false  },
     { id:"cliente",   label:"Cliente",         def:true   },
     { id:"aseg",      label:"Aseguradora",     def:true   },
     { id:"usuario",   label:"Usuario",         def:false  },
@@ -619,6 +622,9 @@ const CT = (() => {
           <td data-col="fsalida">${fmtFecha(o.fecha_salida)}</td>
           <td data-col="fsenv" class="fecha-salida-env">${fmtFecha(o.fecha_salida_enviada)}</td>
           <td data-col="placa">${o.placa || "—"}</td>
+          <td data-col="marca">${o.marca || "—"}</td>
+          <td data-col="modelo">${o.modelo || "—"}</td>
+          <td data-col="color">${o.color || "—"}</td>
           <td data-col="cliente" class="tc-cliente" title="${cl}">${o.cliente || "—"}</td>
           <td data-col="aseg" class="tc-aseg" title="${as}">${o.aseguradora || "—"}</td>
           <td data-col="usuario">${o.usuario_registro || "—"}</td>
@@ -824,8 +830,8 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo exportar.", "error"); return; }
     const data = await safeJson(res);
     const filas = data.ordenes;
-    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","cliente","aseguradora","usuario_registro","total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total","observacion"];
-    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","CLIENTE","ASEGURADORA","USUARIO","TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL","OBSERVACIÓN"];
+    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro","total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total","observacion"];
+    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO","TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL","OBSERVACIÓN"];
     const csv   = [hdr.join(","), ...filas.map(o => cols.map(c => `"${(o[c]??'').toString().replace(/"/g,'""')}"`).join(","))].join("\n");
     const blob  = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8;" });
     const url   = URL.createObjectURL(blob);
