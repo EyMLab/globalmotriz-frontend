@@ -884,12 +884,12 @@ const CT = (() => {
       </div>`).join("");
 
     document.getElementById("res-estado").innerHTML = (d.por_estado || []).map(r =>
-      `<tr><td>${r.estado || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${r.pct}%</td></tr>`
-    ).join("") || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+      `<tr><td>${r.estado || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${r.pct}%</td><td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+    ).join("") || `<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-proceso").innerHTML = (d.por_proceso || []).map(r =>
-      `<tr><td>${r.proceso_ot || "—"}</td><td class="num-right">${r.cantidad}</td></tr>`
-    ).join("") || `<tr><td colspan="2" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+      `<tr><td>${r.proceso_ot || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+    ).join("") || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-aseg").innerHTML = (d.por_aseguradora || []).map(r =>
       `<tr><td>${r.aseguradora}</td>
@@ -897,8 +897,9 @@ const CT = (() => {
            <td class="num-right">${r.terminado || 0}</td>
            <td class="num-right">${r.facturado || 0}</td>
            <td class="num-right">${r.anulado || 0}</td>
-           <td class="num-right"><strong>${r.total}</strong></td></tr>`
-    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+           <td class="num-right"><strong>${r.total}</strong></td>
+           <td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+    ).join("") || `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-usuario").innerHTML = (d.por_usuario || []).map(r =>
       `<tr><td>${r.usuario}</td>
@@ -906,8 +907,9 @@ const CT = (() => {
            <td class="num-right">${r.terminado || 0}</td>
            <td class="num-right">${r.facturado || 0}</td>
            <td class="num-right">${r.anulado || 0}</td>
-           <td class="num-right"><strong>${r.total}</strong></td></tr>`
-    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+           <td class="num-right"><strong>${r.total}</strong></td>
+           <td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+    ).join("") || `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-mes").innerHTML = (d.por_mes || []).map(r =>
       `<tr><td>${fmtMes(r.mes)}</td>
@@ -915,8 +917,9 @@ const CT = (() => {
            <td class="num-right">${r.terminado || 0}</td>
            <td class="num-right">${r.facturado || 0}</td>
            <td class="num-right">${r.anulado || 0}</td>
-           <td class="num-right"><strong>${r.total}</strong></td></tr>`
-    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+           <td class="num-right"><strong>${r.total}</strong></td>
+           <td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+    ).join("") || `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
   }
 
   // ── Init ──────────────────────────────────────────
