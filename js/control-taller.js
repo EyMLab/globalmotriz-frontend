@@ -572,6 +572,7 @@ const CT = (() => {
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
     if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
+    if (document.getElementById("f-con-obs")?.checked) p.set("con_obs", "1");
 
     // Multi-selects (solo si no hay card activa)
     if (!_cardActiva) {
@@ -808,6 +809,7 @@ const CT = (() => {
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
     if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
+    if (document.getElementById("f-con-obs")?.checked) p.set("con_obs", "1");
     if (!_cardActiva) {
       const e = msOrdEstado?.getValues()  || [];
       const a = msOrdAseg?.getValues()    || [];
@@ -967,6 +969,7 @@ const CT = (() => {
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
       document.getElementById("f-localidad").value = "";
       ["f-placa","f-cliente","f-desde","f-hasta"].forEach(id => document.getElementById(id).value = "");
+      const cbObs = document.getElementById("f-con-obs"); if (cbObs) cbObs.checked = false;
       msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
       cargarOrdenes(1);
     });
@@ -1016,6 +1019,23 @@ const CT = (() => {
     // Autocomplete de cliente (Órdenes y Dashboard)
     new Autocomplete("f-cliente", { localidadFn: () => document.getElementById("f-localidad")?.value || "" });
     new Autocomplete("d-cliente", { localidadFn: () => document.getElementById("d-localidad")?.value || "" });
+
+    // ── Click en celda de observación: muestra texto completo ──
+    document.getElementById("tbody-ordenes")?.addEventListener("click", e => {
+      const cell = e.target.closest(".obs-cell");
+      if (!cell) return;
+      const texto = cell.textContent.trim();
+      if (!texto) return;
+      const tr = cell.closest("tr");
+      const orden = tr?.dataset?.orden || "";
+      Swal.fire({
+        title: orden ? `Observación — OT ${orden}` : "Observación",
+        html: `<p style="text-align:left;white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.6;">${texto.replace(/</g,"&lt;")}</p>`,
+        icon: "info",
+        confirmButtonText: "Cerrar",
+        width: 520,
+      });
+    });
 
     // Carga inicial
     cargarFiltros().then(data => DASH.sincFiltros(data));

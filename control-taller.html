@@ -257,6 +257,40 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    /* Celda observación clicable */
+    .obs-cell {
+      cursor: pointer;
+      color: var(--primary);
+      text-decoration-line: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+    }
+    .obs-cell:empty {
+      cursor: default;
+      text-decoration: none;
+    }
+    /* Checkbox "Solo con observación" */
+    .fg-check {
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 4px;
+    }
+    .check-obs-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .check-obs-label input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
     .tabla-taller tbody tr:last-child td { border-bottom: none; }
     .tabla-taller tbody tr:hover { filter: brightness(.96); }
 
@@ -693,6 +727,12 @@
       <div class="fg">
         <label>Hasta</label>
         <input type="date" id="f-hasta" />
+      </div>
+      <div class="fg fg-check">
+        <label class="check-obs-label">
+          <input type="checkbox" id="f-con-obs" />
+          Solo con observación
+        </label>
       </div>
       <div class="filtros-btn-row">
         <button class="btn-primary" id="btn-filtrar">Buscar</button>
