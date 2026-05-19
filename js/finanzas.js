@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderTablaCajaChica(historial) {
     const tbody = document.getElementById('tabla-caja-chica');
 
-    if (esAdmin) document.getElementById('th-edit-cc').textContent = 'Editar';
+    if (esAdmin) document.getElementById('th-edit-cc').textContent = 'Acciones';
     if (!historial.length) {
       tbody.innerHTML = `<tr><td colspan="${esAdmin ? 10 : 9}">Sin registros</td></tr>`;
       return;
@@ -138,8 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = historial.map(r => {
       const fecha = fmtFecha(r.fecha);
       const esRepo = r.es_reposicion;
-      const editBtn = esAdmin && !esRepo
-        ? `<button class="btn btn-obs" style="font-size:11px;padding:4px 8px;" onclick="editarCajaChica(${r.id})">Editar</button>`
+      const acciones = esAdmin && !esRepo
+        ? `<div style="display:flex;gap:4px;">
+             <button class="btn btn-obs"     style="font-size:11px;padding:4px 8px;" onclick="editarCajaChica(${r.id})">Editar</button>
+             <button class="btn btn-eliminar" style="font-size:11px;padding:4px 8px;" onclick="eliminarCajaChica(${r.id})">Eliminar</button>
+           </div>`
         : '';
       return `<tr style="${esRepo ? 'background:#eff6ff;' : ''}">
         <td>${fecha}</td>
@@ -151,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${esRepo ? '—' : '$' + parseFloat(r.monto_base).toFixed(2)}</td>
         <td>${esRepo ? '—' : '$' + parseFloat(r.iva).toFixed(2)}</td>
         <td><strong>$${parseFloat(r.total).toFixed(2)}</strong></td>
-        <td>${editBtn}</td>
+        <td>${acciones}</td>
       </tr>`;
     }).join('');
   }
@@ -1444,6 +1447,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
       await Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
+      cargarCajaChica(tipoCajaActual);
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+  };
+
+  window.eliminarCajaChica = async function (id) {
+    const r = _cajachicaData.find(x => x.id === id);
+    if (!r) return;
+
+    const confirm = await Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar registro?',
+      html: `<b>${r.proveedor || '—'}</b><br>${r.concepto || '—'}<br><strong>$${parseFloat(r.total).toFixed(2)}</strong>`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await apiFetch(`/finanzas/caja-chica/${id}`, { method: 'DELETE' });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error al eliminar');
+      await Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1000, showConfirmButton: false });
       cargarCajaChica(tipoCajaActual);
     } catch (err) { Swal.fire('Error', err.message, 'error'); }
   };
