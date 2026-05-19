@@ -463,6 +463,11 @@ document.addEventListener("DOMContentLoaded", () => {
           const e = mapa.get(key);
           e.total += seg;
           if (!e.foto && t.foto_url) e.foto = t.foto_url;
+          // FUERA DEL TALLER: mostrar siempre la detección más reciente
+          if (key === 'FUERA DEL TALLER') {
+            if (t.foto_url) e.foto = t.foto_url;
+            e.fecha = t.inicio;
+          }
         } else {
           const entry = { est: key, total: seg, foto: t.foto_url, fecha: t.inicio };
           mapa.set(key, entry);
