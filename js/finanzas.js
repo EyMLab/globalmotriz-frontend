@@ -613,24 +613,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch { /* sin logo */ }
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...COLOR_PRIMARY);
     doc.text('GLOBAL MOTRIZ S.A.', logoX, 13);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...COLOR_GRAY);
     doc.text('Sistema de Gestión Financiera', logoX, 18);
 
     // Título derecha
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(...COLOR_ACCENT);
     doc.text(titulo, pageW - marginL, 12, { align: 'right' });
 
     if (subtitulo) {
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('Roboto', 'normal');
       doc.setFontSize(8.5);
       doc.setTextColor(...COLOR_GRAY);
       doc.text(subtitulo, pageW - marginL, 18, { align: 'right' });
@@ -686,14 +686,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Textos
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
+      doc.setFont('Roboto', 'bold'); doc.setTextColor(...COLOR_GRAY);
       doc.text('Saldo:', marginL + 4, startY + 6);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
+      doc.setFont('Roboto', 'normal'); doc.setTextColor(...COLOR_DARK);
       doc.text(`$${data.saldo.toFixed(2)} de $${data.limite.toFixed(2)}`, marginL + 18, startY + 6);
 
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
+      doc.setFont('Roboto', 'bold'); doc.setTextColor(...COLOR_GRAY);
       doc.text('Período:', marginL + 4, startY + 12);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
+      doc.setFont('Roboto', 'normal'); doc.setTextColor(...COLOR_DARK);
       doc.text(`${fechaDesde} - ${hoyStr}`, marginL + 22, startY + 12);
 
       // Semáforo (3 círculos, top-right del box)
@@ -712,7 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Porcentaje bajo el semáforo
       doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Roboto', 'bold');
       doc.setTextColor(...fillColor);
       doc.text(`${pct.toFixed(0)}%`, (cGreen + cRed) / 2, cY + r + 3.5, { align: 'center' });
 
@@ -765,9 +765,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ]],
         showFoot: 'lastPage',
         margin: { left: marginL, right: marginR },
-        styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2 },
-        headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold' },
-        footStyles: { fillColor: [241, 245, 249], textColor: COLOR_DARK, fontStyle: 'bold' },
+        styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2, font: 'Roboto' },
+        headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold', font: 'Roboto' },
+        footStyles: { fillColor: [241, 245, 249], textColor: COLOR_DARK, fontStyle: 'bold', font: 'Roboto' },
         columnStyles: {
           0: { cellWidth: 20 },
           1: { cellWidth: 24 },
@@ -844,9 +844,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       doc.setFontSize(8.5);
       const field = (label, val, x, y) => {
-        doc.setFont('helvetica', 'bold'); doc.setTextColor(...COLOR_GRAY);
+        doc.setFont('Roboto', 'bold'); doc.setTextColor(...COLOR_GRAY);
         doc.text(label, x, y);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(...COLOR_DARK);
+        doc.setFont('Roboto', 'normal'); doc.setTextColor(...COLOR_DARK);
         doc.text(val, x + doc.getTextWidth(label) + 1.5, y);
       };
 
@@ -888,9 +888,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ]],
         showFoot: 'lastPage',
         margin: { left: marginL, right: marginR },
-        styles: { fontSize: 7, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2 },
-        headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold' },
-        footStyles: { fillColor: [241, 245, 249], textColor: COLOR_DARK },
+        styles: { fontSize: 7, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2, font: 'Roboto' },
+        headStyles: { fillColor: COLOR_PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold', font: 'Roboto' },
+        footStyles: { fillColor: [241, 245, 249], textColor: COLOR_DARK, font: 'Roboto' },
         columnStyles: {
           0: { cellWidth: 20 },
           1: { cellWidth: 22 },
