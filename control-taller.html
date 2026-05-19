@@ -311,8 +311,8 @@
     /* ── Resumen ────────────────────────────────── */
     .resumen-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 18px;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
     }
     .resumen-card {
       background: var(--white);
@@ -320,59 +320,86 @@
       border-radius: var(--r-lg);
       overflow: hidden;
       box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
     }
+    .resumen-card.full { grid-column: 1 / -1; }
     .resumen-card h3 {
       background: var(--primary-dark);
       color: #fff;
       margin: 0;
-      padding: 11px 16px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .5px;
+      letter-spacing: .6px;
+      flex-shrink: 0;
+    }
+    /* Tablas grandes: scroll interno */
+    .resumen-card .res-scroll {
+      max-height: 340px;
+      overflow-y: auto;
+      flex: 1;
     }
     .resumen-card table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12.5px;
     }
-    .resumen-card th {
-      background: #f0f7fb;
-      padding: 8px 12px;
+    .resumen-card thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #eef4f8;
+      padding: 7px 12px;
       text-align: left;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--primary-dark);
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: .3px;
+      letter-spacing: .4px;
+      border-bottom: 2px solid #c8dce8;
+      white-space: nowrap;
     }
     .resumen-card td {
-      padding: 7px 12px;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      border-bottom: 1px solid #f0f4f7;
       color: var(--text);
+      white-space: nowrap;
     }
-    .resumen-card tr:last-child td { border-bottom: none; }
-    .resumen-card tbody tr:hover td { background: var(--row-hover); }
+    .resumen-card tbody tr:nth-child(even) td { background: #f9fbfc; }
+    .resumen-card tbody tr:last-child td { border-bottom: none; }
+    .resumen-card tbody tr:hover td { background: #deeef7 !important; }
     .num-right { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Sub-valor debajo del conteo */
+    .cell-val {
+      display: block;
+      font-size: 10.5px;
+      color: #5a8fa8;
+      font-weight: 500;
+      line-height: 1.5;
+    }
 
     /* ── Totales financieros ─────────────────────── */
     .fin-grid {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      padding: 16px;
+      padding: 14px 16px;
     }
     .fin-item {
       flex: 1;
-      min-width: 140px;
-      background: #f0f7fb;
+      min-width: 130px;
+      background: linear-gradient(160deg, #f0f7fb 0%, #e6f1f8 100%);
       border-radius: var(--r-md);
-      padding: 14px 16px;
+      padding: 12px 16px;
       text-align: center;
-      border: 1px solid var(--border-subtle);
+      border: 1px solid #c8dce8;
+      border-top: 3px solid var(--primary);
     }
-    .fin-item .fin-num { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
-    .fin-item .fin-lbl { font-size: 11px; color: var(--text-light); margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
+    .fin-item .fin-num { font-size: 17px; font-weight: 700; color: var(--primary-dark); }
+    .fin-item .fin-lbl { font-size: 10px; color: var(--text-light); margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
 
     /* ── Multi-select ──────────────────────────────── */
     .ms-wrap { position: relative; min-width: 140px; }
@@ -865,41 +892,88 @@
     </div>
 
     <div class="resumen-grid">
+
+      <!-- Por Estado -->
       <div class="resumen-card">
         <h3>Por Estado</h3>
         <table>
-          <thead><tr><th>Estado</th><th class="num-right">Cantidad</th><th class="num-right">%</th><th class="num-right">Valor Total</th></tr></thead>
+          <thead><tr>
+            <th>Estado</th>
+            <th class="num-right">Cant.</th>
+            <th class="num-right">%</th>
+            <th class="num-right">Valor Total</th>
+          </tr></thead>
           <tbody id="res-estado"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
+
+      <!-- Por Proceso OT -->
       <div class="resumen-card">
         <h3>Por Proceso OT</h3>
         <table>
-          <thead><tr><th>Proceso</th><th class="num-right">Cantidad</th><th class="num-right">Valor Total</th></tr></thead>
+          <thead><tr>
+            <th>Proceso</th>
+            <th class="num-right">Cant.</th>
+            <th class="num-right">Valor Total</th>
+          </tr></thead>
           <tbody id="res-proceso"><tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
-      <div class="resumen-card" style="grid-column:1/-1;">
+
+      <!-- Por Aseguradora -->
+      <div class="resumen-card full">
         <h3>Por Aseguradora</h3>
-        <table>
-          <thead><tr><th>Aseguradora</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
-          <tbody id="res-aseg"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
-        </table>
+        <div class="res-scroll">
+          <table>
+            <thead><tr>
+              <th>Aseguradora</th>
+              <th class="num-right">Abierto</th>
+              <th class="num-right">Terminado</th>
+              <th class="num-right">Facturado</th>
+              <th class="num-right">Anulado</th>
+              <th class="num-right">Total</th>
+            </tr></thead>
+            <tbody id="res-aseg"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+          </table>
+        </div>
       </div>
-      <div class="resumen-card" style="grid-column:1/-1;">
+
+      <!-- Por Usuario -->
+      <div class="resumen-card full">
         <h3>Por Usuario</h3>
-        <table>
-          <thead><tr><th>Usuario</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
-          <tbody id="res-usuario"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
-        </table>
+        <div class="res-scroll">
+          <table>
+            <thead><tr>
+              <th>Usuario</th>
+              <th class="num-right">Abierto</th>
+              <th class="num-right">Terminado</th>
+              <th class="num-right">Facturado</th>
+              <th class="num-right">Anulado</th>
+              <th class="num-right">Total</th>
+            </tr></thead>
+            <tbody id="res-usuario"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+          </table>
+        </div>
       </div>
-      <div class="resumen-card" style="grid-column:1/-1;">
+
+      <!-- Por Mes de Ingreso -->
+      <div class="resumen-card full">
         <h3>Por Mes de Ingreso</h3>
-        <table>
-          <thead><tr><th>Mes</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
-          <tbody id="res-mes"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
-        </table>
+        <div class="res-scroll">
+          <table>
+            <thead><tr>
+              <th>Mes</th>
+              <th class="num-right">Abierto</th>
+              <th class="num-right">Terminado</th>
+              <th class="num-right">Facturado</th>
+              <th class="num-right">Anulado</th>
+              <th class="num-right">Total</th>
+            </tr></thead>
+            <tbody id="res-mes"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+          </table>
+        </div>
       </div>
+
     </div>
   </div><!-- /panel-resumen -->
 
