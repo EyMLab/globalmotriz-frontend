@@ -431,6 +431,15 @@
     .ms-item input[type="checkbox"] { margin:0; cursor:pointer; accent-color:var(--primary); flex-shrink:0; }
     .ms-empty { padding:12px; text-align:center; color:var(--text-light); font-size:12px; }
 
+    /* ── Celda con valor debajo del conteo ─────────── */
+    .cell-val {
+      display: block;
+      font-size: 11px;
+      color: var(--text-light);
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
     /* ── Autocomplete de cliente ────────────────────── */
     .ac-wrap { position: relative; }
     .ac-dropdown {
@@ -873,22 +882,22 @@
       <div class="resumen-card" style="grid-column:1/-1;">
         <h3>Por Aseguradora</h3>
         <table>
-          <thead><tr><th>Aseguradora</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th><th class="num-right">Valor Total</th></tr></thead>
-          <tbody id="res-aseg"><tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+          <thead><tr><th>Aseguradora</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
+          <tbody id="res-aseg"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
       <div class="resumen-card" style="grid-column:1/-1;">
         <h3>Por Usuario</h3>
         <table>
-          <thead><tr><th>Usuario</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th><th class="num-right">Valor Total</th></tr></thead>
-          <tbody id="res-usuario"><tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+          <thead><tr><th>Usuario</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
+          <tbody id="res-usuario"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
       <div class="resumen-card" style="grid-column:1/-1;">
         <h3>Por Mes de Ingreso</h3>
         <table>
-          <thead><tr><th>Mes</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th><th class="num-right">Valor Total</th></tr></thead>
-          <tbody id="res-mes"><tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
+          <thead><tr><th>Mes</th><th class="num-right">Abierto</th><th class="num-right">Terminado</th><th class="num-right">Facturado</th><th class="num-right">Anulado</th><th class="num-right">Total</th></tr></thead>
+          <tbody id="res-mes"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-light);">Cargando...</td></tr></tbody>
         </table>
       </div>
     </div>

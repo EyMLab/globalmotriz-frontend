@@ -893,33 +893,30 @@ const CT = (() => {
 
     document.getElementById("res-aseg").innerHTML = (d.por_aseguradora || []).map(r =>
       `<tr><td>${r.aseguradora}</td>
-           <td class="num-right">${r.abierto || 0}</td>
-           <td class="num-right">${r.terminado || 0}</td>
-           <td class="num-right">${r.facturado || 0}</td>
-           <td class="num-right">${r.anulado || 0}</td>
-           <td class="num-right"><strong>${r.total}</strong></td>
-           <td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
-    ).join("") || `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+           <td class="num-right">${r.abierto || 0}<span class="cell-val">${fmtMoney(r.valor_abierto)}</span></td>
+           <td class="num-right">${r.terminado || 0}<span class="cell-val">${fmtMoney(r.valor_terminado)}</span></td>
+           <td class="num-right">${r.facturado || 0}<span class="cell-val">${fmtMoney(r.valor_facturado)}</span></td>
+           <td class="num-right">${r.anulado || 0}<span class="cell-val">${fmtMoney(r.valor_anulado)}</span></td>
+           <td class="num-right"><strong>${r.total}</strong><span class="cell-val">${fmtMoney(r.valor_total)}</span></td></tr>`
+    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-usuario").innerHTML = (d.por_usuario || []).map(r =>
       `<tr><td>${r.usuario}</td>
-           <td class="num-right">${r.abierto || 0}</td>
-           <td class="num-right">${r.terminado || 0}</td>
-           <td class="num-right">${r.facturado || 0}</td>
-           <td class="num-right">${r.anulado || 0}</td>
-           <td class="num-right"><strong>${r.total}</strong></td>
-           <td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
-    ).join("") || `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+           <td class="num-right">${r.abierto || 0}<span class="cell-val">${fmtMoney(r.valor_abierto)}</span></td>
+           <td class="num-right">${r.terminado || 0}<span class="cell-val">${fmtMoney(r.valor_terminado)}</span></td>
+           <td class="num-right">${r.facturado || 0}<span class="cell-val">${fmtMoney(r.valor_facturado)}</span></td>
+           <td class="num-right">${r.anulado || 0}<span class="cell-val">${fmtMoney(r.valor_anulado)}</span></td>
+           <td class="num-right"><strong>${r.total}</strong><span class="cell-val">${fmtMoney(r.valor_total)}</span></td></tr>`
+    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-mes").innerHTML = (d.por_mes || []).map(r =>
       `<tr><td>${fmtMes(r.mes)}</td>
-           <td class="num-right">${r.abierto || 0}</td>
-           <td class="num-right">${r.terminado || 0}</td>
-           <td class="num-right">${r.facturado || 0}</td>
-           <td class="num-right">${r.anulado || 0}</td>
-           <td class="num-right"><strong>${r.total}</strong></td>
-           <td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
-    ).join("") || `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
+           <td class="num-right">${r.abierto || 0}<span class="cell-val">${fmtMoney(r.valor_abierto)}</span></td>
+           <td class="num-right">${r.terminado || 0}<span class="cell-val">${fmtMoney(r.valor_terminado)}</span></td>
+           <td class="num-right">${r.facturado || 0}<span class="cell-val">${fmtMoney(r.valor_facturado)}</span></td>
+           <td class="num-right">${r.anulado || 0}<span class="cell-val">${fmtMoney(r.valor_anulado)}</span></td>
+           <td class="num-right"><strong>${r.total}</strong><span class="cell-val">${fmtMoney(r.valor_total)}</span></td></tr>`
+    ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
   }
 
   // ── Init ──────────────────────────────────────────
