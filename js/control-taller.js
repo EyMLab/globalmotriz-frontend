@@ -570,6 +570,7 @@ const CT = (() => {
 
     // Filtros fijos (no dependen de card)
     const f = filtrosActivos;
+    if (f.orden)       p.set("orden",       f.orden);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -807,6 +808,7 @@ const CT = (() => {
     const loc = document.getElementById("f-localidad")?.value;
     if (loc) p.set("localidad", loc);
     const f = filtrosActivos;
+    if (f.orden)       p.set("orden",       f.orden);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -955,6 +957,7 @@ const CT = (() => {
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
 
       filtrosActivos = {
+        orden:       document.getElementById("f-orden").value.trim(),
         placa:       document.getElementById("f-placa").value.trim(),
         cliente:     document.getElementById("f-cliente").value.trim(),
         fecha_desde: document.getElementById("f-desde").value,
@@ -970,7 +973,7 @@ const CT = (() => {
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
       document.getElementById("f-localidad").value = "";
-      ["f-placa","f-cliente","f-desde","f-hasta"].forEach(id => document.getElementById(id).value = "");
+      ["f-orden","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => document.getElementById(id).value = "");
       const cbObs = document.getElementById("f-con-obs"); if (cbObs) cbObs.checked = false;
       msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
       cargarOrdenes(1);
