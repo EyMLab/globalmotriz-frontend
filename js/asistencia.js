@@ -107,12 +107,12 @@ function renderTabla(registros) {
       : `<span style="color:#dc2626;font-weight:600;">&#8595; Salida</span>`;
 
     const fotoCol = r.tiene_foto
-      ? `<img src="img/foto-placeholder.png"
-              data-id="${r.id}"
-              class="thumb-asistencia"
-              style="width:44px;height:44px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid #e2e8f0;"
-              title="Ver foto"
-              alt="Foto">`
+      ? `<button data-id="${r.id}"
+                 class="thumb-asistencia btn-ver-foto"
+                 title="Ver foto de evidencia"
+                 style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;">
+           📷 Ver
+         </button>`
       : `<span style="color:var(--text-light);font-size:12px;">Sin foto</span>`;
 
     return `
