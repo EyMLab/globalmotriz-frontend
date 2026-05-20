@@ -383,10 +383,14 @@ const DASH = (() => {
     const params = new URLSearchParams();
     // Filtros de texto/fecha
     const localidad  = document.getElementById("d-localidad")?.value;
+    const orden      = document.getElementById("d-orden")?.value?.trim();
+    const placa      = document.getElementById("d-placa")?.value?.trim();
     const cliente    = document.getElementById("d-cliente")?.value?.trim();
     const fechaDesde = document.getElementById("d-desde")?.value;
     const fechaHasta = document.getElementById("d-hasta")?.value;
     if (localidad)  params.set("localidad",   localidad);
+    if (orden)      params.set("orden",       orden);
+    if (placa)      params.set("placa",       placa);
     if (cliente)    params.set("cliente",     cliente);
     if (fechaDesde) params.set("fecha_desde", fechaDesde);
     if (fechaHasta) params.set("fecha_hasta", fechaHasta);
@@ -422,6 +426,8 @@ const DASH = (() => {
     document.getElementById("btn-dash-aplicar")?.addEventListener("click", cargar);
     document.getElementById("btn-dash-limpiar")?.addEventListener("click", () => {
       const loc = document.getElementById("d-localidad"); if (loc) loc.value = "";
+      const ord = document.getElementById("d-orden");     if (ord) ord.value = "";
+      const pla = document.getElementById("d-placa");     if (pla) pla.value = "";
       const cli = document.getElementById("d-cliente");   if (cli) cli.value = "";
       const dsd = document.getElementById("d-desde");     if (dsd) dsd.value = "";
       const hst = document.getElementById("d-hasta");     if (hst) hst.value = "";

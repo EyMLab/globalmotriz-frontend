@@ -136,6 +136,7 @@
       gap: 10px;
       flex-wrap: wrap;
       align-items: flex-end;
+      justify-content: center;
       padding-bottom: 12px;
     }
     .filtros-actions {
@@ -563,13 +564,12 @@
     /* ── Dashboard ──────────────────────────────── */
     .dash-filtros {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: flex-end;
+      flex-direction: column;
+      gap: 0;
       background: var(--white);
       border: 1px solid var(--border-subtle);
       border-radius: var(--r-lg);
-      padding: 16px 20px;
+      padding: 14px 18px;
       margin-bottom: 20px;
       box-shadow: var(--shadow-card);
     }
@@ -580,6 +580,7 @@
       color: var(--text-light);
       text-transform: uppercase;
       letter-spacing: .4px;
+      white-space: nowrap;
       margin-bottom: 5px;
     }
     .dash-filtros select,
@@ -594,6 +595,8 @@
       height: 36px;
       box-sizing: border-box;
     }
+    .dash-filtros select:focus,
+    .dash-filtros input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,122,158,.12); }
     .dash-filtros input[type="text"]  { width: 130px; }
     .dash-filtros input[type="date"]  { width: 140px; }
     .dash-filtros select              { min-width: 140px; }
@@ -823,43 +826,56 @@
 
     <!-- Filtros del dashboard -->
     <div class="dash-filtros">
-      <div class="fg">
-        <label>Localidad</label>
-        <select id="d-localidad">
-          <option value="">Todas</option>
-          <option value="MATRIZ">MATRIZ</option>
-          <option value="SUCURSAL">SUCURSAL</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label>Estado</label>
-        <div class="ms-wrap" id="d-estado"></div>
-      </div>
-      <div class="fg">
-        <label>Aseguradora</label>
-        <div class="ms-wrap" id="d-aseguradora" style="min-width:180px;"></div>
-      </div>
-      <div class="fg">
-        <label>Proceso OT</label>
-        <div class="ms-wrap" id="d-proceso"></div>
-      </div>
-      <div class="fg">
-        <label>Cliente</label>
-        <div class="ac-wrap">
-          <input type="text" id="d-cliente" placeholder="Buscar cliente..." autocomplete="off" />
+      <div class="filtros-row">
+        <div class="fg">
+          <label>Localidad</label>
+          <select id="d-localidad">
+            <option value="">Todas</option>
+            <option value="MATRIZ">MATRIZ</option>
+            <option value="SUCURSAL">SUCURSAL</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Estado</label>
+          <div class="ms-wrap" id="d-estado"></div>
+        </div>
+        <div class="fg">
+          <label>Aseguradora</label>
+          <div class="ms-wrap" id="d-aseguradora" style="min-width:180px;"></div>
+        </div>
+        <div class="fg">
+          <label>Proceso OT</label>
+          <div class="ms-wrap" id="d-proceso"></div>
+        </div>
+        <div class="fg">
+          <label>N° Orden</label>
+          <input type="text" id="d-orden" placeholder="Ej: 4079" style="width:100px;" />
+        </div>
+        <div class="fg">
+          <label>Placa</label>
+          <input type="text" id="d-placa" placeholder="Buscar placa..." style="width:115px;" />
+        </div>
+        <div class="fg">
+          <label>Cliente</label>
+          <div class="ac-wrap">
+            <input type="text" id="d-cliente" placeholder="Buscar cliente..." autocomplete="off" style="width:160px;" />
+          </div>
+        </div>
+        <div class="fg">
+          <label>Desde</label>
+          <input type="date" id="d-desde" />
+        </div>
+        <div class="fg">
+          <label>Hasta</label>
+          <input type="date" id="d-hasta" />
         </div>
       </div>
-      <div class="fg">
-        <label>Desde</label>
-        <input type="date" id="d-desde" />
-      </div>
-      <div class="fg">
-        <label>Hasta</label>
-        <input type="date" id="d-hasta" />
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-end;">
-        <button class="btn-primary" id="btn-dash-aplicar">Aplicar</button>
-        <button class="btn-primary" id="btn-dash-limpiar" style="border-color:var(--text-light);color:var(--text-light);">Limpiar</button>
+      <div class="filtros-actions">
+        <div class="fa-spacer"></div>
+        <div class="filtros-btn-row">
+          <button class="btn-primary" id="btn-dash-aplicar">🔍 Aplicar</button>
+          <button class="btn-primary" id="btn-dash-limpiar" style="border-color:var(--text-light);color:var(--text-light);">✕ Limpiar</button>
+        </div>
       </div>
     </div>
 
