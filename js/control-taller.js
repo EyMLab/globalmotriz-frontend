@@ -497,6 +497,7 @@ const CT = (() => {
       case "DEDUCIBLE": return "tr-deducible";
       case "SANTIAGO":  return "tr-santiago";
       case "INTERNO":   return "tr-interno";
+      case "GARANTÍA":  return "tr-garantia";
       default:          return "";
     }
   }
@@ -517,6 +518,7 @@ const CT = (() => {
     document.getElementById("c-deducible").textContent = d.deducible  ?? 0;
     document.getElementById("c-santiago").textContent  = d.santiago   ?? 0;
     document.getElementById("c-interno").textContent   = d.interno    ?? 0;
+    document.getElementById("c-garantia").textContent  = d.garantia   ?? 0;
     document.getElementById("c-total").textContent     = d.total      ?? 0;
   }
 
