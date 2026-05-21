@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Info Empleados
   // ===============================
   function cargarEmpleados() {
-    const cols = rolUsuario === 'admin' ? 8 : 7;
+    const cols = rolUsuario === 'admin' ? 9 : 8;
     tablaInfo.innerHTML = `<tr><td colspan="${cols}">Cargando...</td></tr>`;
     apiFetch('/empleados')
       .then(res => {
@@ -51,7 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(err => {
         console.error('Error cargando empleados:', err);
-        tablaInfo.innerHTML = `<tr><td colspan="${cols}">Error al cargar empleados: ${err.message}</td></tr>`;
+        const colsErr = rolUsuario === 'admin' ? 9 : 8;
+        tablaInfo.innerHTML = `<tr><td colspan="${colsErr}">Error al cargar empleados: ${err.message}</td></tr>`;
       });
   }
 
@@ -97,13 +98,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    const cols = rolUsuario === 'admin' ? 8 : 7;
+    // Contador de empleados filtrados
+    const contadorEl = document.getElementById('contador-empleados');
+    if (contadorEl) {
+      contadorEl.textContent = `Total: ${lista.length} empleado${lista.length !== 1 ? 's' : ''}`;
+    }
+
+    const cols = rolUsuario === 'admin' ? 9 : 8;
     if (!lista.length) {
       tablaInfo.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;">No se encontraron empleados</td></tr>`;
       return;
     }
 
-    lista.forEach(e => {
+    lista.forEach((e, idx) => {
       const tr = document.createElement('tr');
       const fechaNac = formatFecha(e.fecha_nacimiento);
       const fechaIng = formatFecha(e.fecha_ingreso);
@@ -113,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : '';
 
       tr.innerHTML = `
+        <td style="text-align:center;color:#6b7280;font-weight:500;">${idx + 1}</td>
         <td>${e.nombre} ${e.apellido}</td>
         <td>${e.cedula || '-'}</td>
         <td>${fechaNac}</td>
