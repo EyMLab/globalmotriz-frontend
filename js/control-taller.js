@@ -665,32 +665,63 @@ const CT = (() => {
     return data;
   }
 
-  // ── Importar reporte ──────────────────────────────
+  // ── Importar reporte (modal Swal) ────────────────
   async function importar() {
-    const localidad = document.getElementById("sel-localidad").value;
-    const file      = document.getElementById("inp-reporte").files[0];
-    if (!file) { Swal.fire("Atención", "Selecciona el archivo Excel del reporte.", "warning"); return; }
+    const { value: vals } = await Swal.fire({
+      title: "Importar Reporte",
+      html: `
+        <div style="text-align:left;display:flex;flex-direction:column;gap:14px;padding:4px 0">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#374151">Localidad</label>
+            <select id="si-localidad" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff">
+              <option value="MATRIZ">MATRIZ</option>
+              <option value="SUCURSAL">SUCURSAL</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#374151">Reporte Excel (.xlsx / .xls)</label>
+            <input type="file" id="si-archivo" accept=".xlsx,.xls"
+              style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;box-sizing:border-box;background:#f9fafb"/>
+          </div>
+        </div>`,
+      confirmButtonText: "⬆ Importar",
+      cancelButtonText: "Cancelar",
+      showCancelButton: true,
+      confirmButtonColor: "#2B7A9E",
+      cancelButtonColor: "#6b7280",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      preConfirm: async () => {
+        const loc  = document.getElementById("si-localidad").value;
+        const file = document.getElementById("si-archivo").files[0];
+        if (!file) {
+          Swal.showValidationMessage("Selecciona el archivo Excel del reporte.");
+          return false;
+        }
+        const fd = new FormData();
+        fd.append("localidad", loc);
+        fd.append("reporte", file);
+        try {
+          const res = await apiFetch("/taller/importar", { method: "POST", body: fd });
+          if (!res || !res.ok) {
+            const err = await safeJson(res);
+            Swal.showValidationMessage(err?.error || "No se pudo importar el reporte.");
+            return false;
+          }
+          const data = await safeJson(res);
+          return { ...data, localidad: loc };
+        } catch (e) {
+          Swal.showValidationMessage("Error de conexión. Intenta de nuevo.");
+          return false;
+        }
+      },
+    });
 
-    const btn = document.getElementById("btn-importar");
-    btn.disabled = true;
-    btn.textContent = "Importando...";
+    if (!vals) return;   // cancelado o validación fallida
 
-    const fd = new FormData();
-    fd.append("localidad", localidad);
-    fd.append("reporte", file);
-
-    const res = await apiFetch("/taller/importar", { method: "POST", body: fd });
-    btn.disabled = false;
-    btn.textContent = "⬆ Importar";
-
-    if (!res || !res.ok) {
-      const err = await safeJson(res);
-      Swal.fire("Error", err?.error || "No se pudo importar el reporte.", "error");
-      return;
-    }
-    const data = await safeJson(res);
+    const localidad = vals.localidad;
     document.getElementById("import-info").textContent =
-      `Última importación: ${new Date().toLocaleString("es-EC")} · ${data.nuevas} nuevas · ${data.actualizadas} actualizadas`;
+      `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevas} nuevas · ${vals.actualizadas} actualizadas`;
 
     await cargarFiltros(localidad);
     await cargarCards(localidad);
@@ -705,8 +736,9 @@ const CT = (() => {
     Swal.fire({
       icon: "success",
       title: "Importación completada",
-      html: `<b>${data.nuevas}</b> órdenes nuevas<br><b>${data.actualizadas}</b> actualizadas`,
-      timer: 3000, showConfirmButton: false,
+      html: `<b>${vals.nuevas}</b> órdenes nuevas<br><b>${vals.actualizadas}</b> actualizadas`,
+      timer: 3000,
+      showConfirmButton: false,
     });
   }
 

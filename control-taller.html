@@ -79,43 +79,17 @@
     /* Cuando hay una activa, las demás se atenúan */
     .cards-con-activa .estado-card:not(.card-activa) { opacity: .5; }
 
-    /* ── Sección importar ───────────────────────── */
-    .import-box {
-      background: var(--white);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-lg);
-      padding: 16px 20px;
+    /* ── Franja info (última importación + total) ── */
+    .import-strip {
       display: flex;
       align-items: center;
       gap: 14px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-card);
+      padding: 6px 4px 14px;
     }
-    .import-box label {
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-light);
-      text-transform: uppercase;
-      letter-spacing: .4px;
-      white-space: nowrap;
-    }
-    .import-box select,
-    .import-box input[type="file"] {
-      padding: 7px 12px;
-      border: 1px solid var(--input-border);
-      border-radius: var(--r-input);
-      font-size: 14px;
-      background: var(--white);
-      color: var(--text);
-      font-family: var(--font-main);
-    }
-    .import-box select:focus { outline: none; border-color: var(--primary); }
-    .import-info {
+    .import-strip-info {
       font-size: 12px;
       color: var(--text-light);
       flex: 1;
-      min-width: 200px;
     }
 
     /* ── Tabs ───────────────────────────────────── */
@@ -691,17 +665,9 @@
 
 <div class="dashboard-container">
 
-  <!-- ── Importar reporte ───────────────────────── -->
-  <div class="import-box">
-    <label>Localidad</label>
-    <select id="sel-localidad">
-      <option value="MATRIZ">MATRIZ</option>
-      <option value="SUCURSAL">SUCURSAL</option>
-    </select>
-    <label>Reporte Excel</label>
-    <input type="file" id="inp-reporte" accept=".xlsx,.xls" />
-    <button class="btn-primary" id="btn-importar">⬆ Importar</button>
-    <div class="import-info" id="import-info">—</div>
+  <!-- ── Franja info: última importación + total ── -->
+  <div class="import-strip">
+    <span class="import-strip-info" id="import-info">Sin importaciones recientes</span>
     <div class="total-indicador">
       <span class="ti-num" id="c-total">—</span>
       <span class="ti-lbl">órdenes en total</span>
@@ -808,6 +774,7 @@
             </div>
           </div>
         </div>
+        <button class="btn-sm" id="btn-importar">⬆ Importar</button>
         <button class="btn-sm btn-sm-sec" id="btn-export-csv">⬇ CSV</button>
         <button class="btn-sm" id="btn-export-excel">⬇ Excel</button>
       </div>
