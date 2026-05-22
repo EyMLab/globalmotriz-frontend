@@ -701,11 +701,8 @@
     <button class="taller-tab"        data-tab="resumen">Resumen (tabla)</button>
   </div>
 
-  <!-- ═══════════════════════ TAB ÓRDENES ══════════════════════ -->
-  <div class="taller-tab-panel active" id="panel-ordenes">
-
-    <!-- Filtros -->
-    <div class="filtros-taller">
+  <!-- ── Filtros unificados (compartidos por las 3 pestañas) ── -->
+  <div class="filtros-taller">
       <div class="filtros-row">
         <div class="fg">
           <label>Localidad</label>
@@ -762,6 +759,9 @@
         </div>
       </div>
     </div>
+
+  <!-- ═══════════════════════ TAB ÓRDENES ══════════════════════ -->
+  <div class="taller-tab-panel active" id="panel-ordenes">
 
     <!-- Toolbar tabla -->
     <div class="tabla-toolbar">
@@ -823,61 +823,6 @@
 
   <!-- ═══════════════════════ TAB DASHBOARD ════════════════════ -->
   <div class="taller-tab-panel" id="panel-dashboard">
-
-    <!-- Filtros del dashboard -->
-    <div class="dash-filtros">
-      <div class="filtros-row">
-        <div class="fg">
-          <label>Localidad</label>
-          <select id="d-localidad">
-            <option value="">Todas</option>
-            <option value="MATRIZ">MATRIZ</option>
-            <option value="SUCURSAL">SUCURSAL</option>
-          </select>
-        </div>
-        <div class="fg">
-          <label>Estado</label>
-          <div class="ms-wrap" id="d-estado"></div>
-        </div>
-        <div class="fg">
-          <label>Aseguradora</label>
-          <div class="ms-wrap" id="d-aseguradora" style="min-width:180px;"></div>
-        </div>
-        <div class="fg">
-          <label>Proceso OT</label>
-          <div class="ms-wrap" id="d-proceso"></div>
-        </div>
-        <div class="fg">
-          <label>N° Orden</label>
-          <input type="text" id="d-orden" placeholder="Ej: 4079" style="width:100px;" />
-        </div>
-        <div class="fg">
-          <label>Placa</label>
-          <input type="text" id="d-placa" placeholder="Buscar placa..." style="width:115px;" />
-        </div>
-        <div class="fg">
-          <label>Cliente</label>
-          <div class="ac-wrap">
-            <input type="text" id="d-cliente" placeholder="Buscar cliente..." autocomplete="off" style="width:160px;" />
-          </div>
-        </div>
-        <div class="fg">
-          <label>Desde</label>
-          <input type="date" id="d-desde" />
-        </div>
-        <div class="fg">
-          <label>Hasta</label>
-          <input type="date" id="d-hasta" />
-        </div>
-      </div>
-      <div class="filtros-actions">
-        <div class="fa-spacer"></div>
-        <div class="filtros-btn-row">
-          <button class="btn-primary" id="btn-dash-aplicar">🔍 Aplicar</button>
-          <button class="btn-primary" id="btn-dash-limpiar" style="border-color:var(--text-light);color:var(--text-light);">✕ Limpiar</button>
-        </div>
-      </div>
-    </div>
 
     <!-- Tarjetas financieras -->
     <div class="dash-fin-grid" id="dash-fin-grid">
@@ -948,16 +893,6 @@
 
   <!-- ═══════════════════════ TAB RESUMEN ══════════════════════ -->
   <div class="taller-tab-panel" id="panel-resumen">
-
-    <div class="resumen-toolbar">
-      <label style="font-weight:600;font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Localidad</label>
-      <select id="res-localidad">
-        <option value="">Todas las localidades</option>
-        <option value="MATRIZ">MATRIZ</option>
-        <option value="SUCURSAL">SUCURSAL</option>
-      </select>
-      <button class="btn-primary" id="btn-cargar-resumen">Actualizar</button>
-    </div>
 
     <!-- Totales financieros -->
     <div class="resumen-card" style="margin-bottom:18px;">

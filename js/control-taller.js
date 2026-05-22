@@ -380,24 +380,19 @@ const DASH = (() => {
 
   // ── Cargar datos ─────────────────────────────────
   async function cargar() {
+    // Lee del panel de filtros unificado (f-*)
+    const f = typeof leerFiltros === "function" ? leerFiltros() : {};
     const params = new URLSearchParams();
-    // Filtros de texto/fecha
-    const localidad  = document.getElementById("d-localidad")?.value;
-    const orden      = document.getElementById("d-orden")?.value?.trim();
-    const placa      = document.getElementById("d-placa")?.value?.trim();
-    const cliente    = document.getElementById("d-cliente")?.value?.trim();
-    const fechaDesde = document.getElementById("d-desde")?.value;
-    const fechaHasta = document.getElementById("d-hasta")?.value;
-    if (localidad)  params.set("localidad",   localidad);
-    if (orden)      params.set("orden",       orden);
-    if (placa)      params.set("placa",       placa);
-    if (cliente)    params.set("cliente",     cliente);
-    if (fechaDesde) params.set("fecha_desde", fechaDesde);
-    if (fechaHasta) params.set("fecha_hasta", fechaHasta);
-    // Multi-selects
-    const estados  = msDashEstado?.getValues()  || [];
-    const aseg     = msDashAseg?.getValues()    || [];
-    const procesos = msDashProceso?.getValues() || [];
+    if (f.localidad)   params.set("localidad",   f.localidad);
+    if (f.orden)       params.set("orden",       f.orden);
+    if (f.placa)       params.set("placa",       f.placa);
+    if (f.cliente)     params.set("cliente",     f.cliente);
+    if (f.fecha_desde) params.set("fecha_desde", f.fecha_desde);
+    if (f.fecha_hasta) params.set("fecha_hasta", f.fecha_hasta);
+    // Multi-selects compartidos con pestaña Órdenes
+    const estados  = msOrdEstado?.getValues()  || [];
+    const aseg     = msOrdAseg?.getValues()    || [];
+    const procesos = msOrdProceso?.getValues() || [];
     if (estados.length)  params.set("estados_multi",     estados.join(","));
     if (aseg.length)     params.set("aseguradoras_multi", aseg.join(","));
     if (procesos.length) params.set("procesos_multi",    procesos.join(","));
@@ -414,27 +409,9 @@ const DASH = (() => {
     render(d);
   }
 
-  // ── Poblar MultiSelects del dashboard con los mismos datos de filtros ──
-  function sincFiltros(filtrosData) {
-    if (!filtrosData) return;
-    msDashEstado?.populate(filtrosData.estados     || []);
-    msDashAseg?.populate((filtrosData.aseguradoras || []).filter(Boolean));
-    msDashProceso?.populate((filtrosData.procesos  || []).filter(Boolean));
-  }
-
-  function init() {
-    document.getElementById("btn-dash-aplicar")?.addEventListener("click", cargar);
-    document.getElementById("btn-dash-limpiar")?.addEventListener("click", () => {
-      const loc = document.getElementById("d-localidad"); if (loc) loc.value = "";
-      const ord = document.getElementById("d-orden");     if (ord) ord.value = "";
-      const pla = document.getElementById("d-placa");     if (pla) pla.value = "";
-      const cli = document.getElementById("d-cliente");   if (cli) cli.value = "";
-      const dsd = document.getElementById("d-desde");     if (dsd) dsd.value = "";
-      const hst = document.getElementById("d-hasta");     if (hst) hst.value = "";
-      msDashEstado?.clear(); msDashAseg?.clear(); msDashProceso?.clear();
-      cargar();
-    });
-  }
+  // sincFiltros ya no hace falta (MultiSelects son compartidos)
+  function sincFiltros() {}
+  function init() {}
 
   return { cargar, sincFiltros, init };
 })();
@@ -445,7 +422,7 @@ const CT = (() => {
   let paginaActual  = 1;
   const LIMITE      = 100;
   let totalPaginas  = 1;
-  let filtrosActivos = {};
+  // filtrosActivos eliminado — se lee directo del DOM via leerFiltros()
   // cardActiva → _cardActiva (módulo global, compartida con DASH)
 
   // ── Definición de columnas ────────────────────────
@@ -563,25 +540,34 @@ const CT = (() => {
     }
   }
 
+  // ── Leer valores del panel de filtros unificado ──────
+  function leerFiltros() {
+    return {
+      localidad:   document.getElementById("f-localidad")?.value || "",
+      orden:       document.getElementById("f-orden")?.value?.trim() || "",
+      placa:       document.getElementById("f-placa")?.value?.trim() || "",
+      cliente:     document.getElementById("f-cliente")?.value?.trim() || "",
+      fecha_desde: document.getElementById("f-desde")?.value || "",
+      fecha_hasta: document.getElementById("f-hasta")?.value || "",
+      con_obs:     document.getElementById("f-con-obs")?.checked || false,
+    };
+  }
+
   // ── Construir params de query para /taller/ordenes ─
   function buildParams(page) {
     const p = new URLSearchParams({ page, limit: LIMITE });
+    const f = leerFiltros();
 
     // Filtro de card
     if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
 
-    // Localidad: siempre del selector del DOM (Opción B — coherente con tarjetas)
-    const loc = document.getElementById("f-localidad")?.value;
-    if (loc) p.set("localidad", loc);
-
-    // Filtros fijos (no dependen de card)
-    const f = filtrosActivos;
+    if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.orden)       p.set("orden",       f.orden);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
     if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
-    if (document.getElementById("f-con-obs")?.checked) p.set("con_obs", "1");
+    if (f.con_obs)     p.set("con_obs",     "1");
 
     // Multi-selects (solo si no hay card activa)
     if (!_cardActiva) {
@@ -706,7 +692,6 @@ const CT = (() => {
     _cardActiva = null;
     document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
     document.getElementById("cards-estado").classList.remove("cards-con-activa");
-    filtrosActivos = { localidad };
     document.getElementById("f-localidad").value = localidad;
     await cargarOrdenes(1);
 
@@ -807,19 +792,16 @@ const CT = (() => {
 
   // ── Exportar ──────────────────────────────────────
   function buildExportParams() {
-    // Mismos parámetros que buildParams pero sin paginación
     const p = new URLSearchParams();
+    const f = leerFiltros();
     if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
-    // Localidad: siempre del selector del DOM
-    const loc = document.getElementById("f-localidad")?.value;
-    if (loc) p.set("localidad", loc);
-    const f = filtrosActivos;
+    if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.orden)       p.set("orden",       f.orden);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
     if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
-    if (document.getElementById("f-con-obs")?.checked) p.set("con_obs", "1");
+    if (f.con_obs)     p.set("con_obs",     "1");
     if (!_cardActiva) {
       const e = msOrdEstado?.getValues()  || [];
       const a = msOrdAseg?.getValues()    || [];
@@ -874,10 +856,21 @@ const CT = (() => {
 
   // ── Tab Resumen ───────────────────────────────────
   async function cargarResumen() {
-    const localidad = document.getElementById("res-localidad").value;
+    const f = leerFiltros();
     const p = new URLSearchParams();
-    if (localidad) p.set("localidad", localidad);
+    if (f.localidad)   p.set("localidad",   f.localidad);
+    if (f.orden)       p.set("orden",       f.orden);
+    if (f.placa)       p.set("placa",       f.placa);
+    if (f.cliente)     p.set("cliente",     f.cliente);
+    if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
+    if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
     if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    const estados  = msOrdEstado?.getValues()  || [];
+    const aseg     = msOrdAseg?.getValues()    || [];
+    const procesos = msOrdProceso?.getValues() || [];
+    if (estados.length)  p.set("estados_multi",     estados.join(","));
+    if (aseg.length)     p.set("aseguradoras_multi", aseg.join(","));
+    if (procesos.length) p.set("procesos_multi",    procesos.join(","));
     const res = await apiFetch(`/taller/resumen?${p}`);
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo cargar el resumen.", "error"); return; }
     const d = await safeJson(res);
@@ -931,9 +924,17 @@ const CT = (() => {
     ).join("") || `<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
   }
 
+  // ── Recargar la pestaña activa con los filtros actuales ──
+  function recargarTabActiva() {
+    const tab = document.querySelector(".taller-tab.active")?.dataset.tab || "ordenes";
+    if      (tab === "ordenes")   cargarOrdenes(1);
+    else if (tab === "dashboard") DASH.cargar();
+    else if (tab === "resumen")   cargarResumen();
+  }
+
   // ── Init ──────────────────────────────────────────
   function init() {
-    // Tabs
+    // Tabs — al cambiar de pestaña, recargar con filtros actuales
     document.querySelectorAll(".taller-tab").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".taller-tab").forEach(b => b.classList.remove("active"));
@@ -942,6 +943,7 @@ const CT = (() => {
         document.getElementById(`panel-${btn.dataset.tab}`).classList.add("active");
         if (btn.dataset.tab === "resumen")   cargarResumen();
         if (btn.dataset.tab === "dashboard") DASH.cargar();
+        if (btn.dataset.tab === "ordenes")   cargarOrdenes(1);
       });
     });
 
@@ -955,50 +957,37 @@ const CT = (() => {
     // Importar
     document.getElementById("btn-importar").addEventListener("click", importar);
 
-    // Filtros manuales
+    // ── Buscar: desactiva card y recarga la pestaña activa ──
     document.getElementById("btn-filtrar").addEventListener("click", () => {
-      // Desactivar card al aplicar filtros manuales
       _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
-
-      filtrosActivos = {
-        orden:       document.getElementById("f-orden").value.trim(),
-        placa:       document.getElementById("f-placa").value.trim(),
-        cliente:     document.getElementById("f-cliente").value.trim(),
-        fecha_desde: document.getElementById("f-desde").value,
-        fecha_hasta: document.getElementById("f-hasta").value,
-      };
-      Object.keys(filtrosActivos).forEach(k => { if (!filtrosActivos[k]) delete filtrosActivos[k]; });
-      cargarOrdenes(1);
+      recargarTabActiva();
     });
 
+    // ── Limpiar: vacía todos los campos y recarga ──
     document.getElementById("btn-limpiar").addEventListener("click", () => {
-      filtrosActivos = {};
       _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
       document.getElementById("f-localidad").value = "";
-      ["f-orden","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => document.getElementById(id).value = "");
+      ["f-orden","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = "";
+      });
       const cbObs = document.getElementById("f-con-obs"); if (cbObs) cbObs.checked = false;
       msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
-      cargarOrdenes(1);
+      cargarFiltros("");
+      cargarCards("");
+      recargarTabActiva();
     });
 
-    // ── Sincronizar todos los selectores de localidad ──
-    // Cuando cambia cualquiera, los otros dos se igualan, las tarjetas
-    // se recargan y cada pestaña recarga su propio contenido.
-    function syncLocalidad(val) {
-      ["f-localidad", "d-localidad", "res-localidad"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = val;
-      });
+    // Localidad — un solo selector, recarga tarjetas + pestaña activa
+    document.getElementById("f-localidad")?.addEventListener("change", e => {
+      const val = e.target.value;
       cargarFiltros(val);
       cargarCards(val);
-    }
-    document.getElementById("f-localidad")?.addEventListener("change",   e => syncLocalidad(e.target.value));
-    document.getElementById("d-localidad")?.addEventListener("change",   e => { syncLocalidad(e.target.value); DASH.cargar(); });
-    document.getElementById("res-localidad")?.addEventListener("change", e => { syncLocalidad(e.target.value); cargarResumen(); });
+      recargarTabActiva();
+    });
 
     // Paginación
     document.getElementById("btn-prev").addEventListener("click", () => {
@@ -1008,28 +997,18 @@ const CT = (() => {
       if (paginaActual < totalPaginas) cargarOrdenes(paginaActual + 1);
     });
 
-    // Resumen
-    document.getElementById("btn-cargar-resumen").addEventListener("click", cargarResumen);
-
     // Columnas y exportar
     initColumnToggle();
     document.getElementById("btn-export-csv")?.addEventListener("click", exportarCSV);
     document.getElementById("btn-export-excel")?.addEventListener("click", exportarExcel);
 
-    // Init dashboard
-    DASH.init();
-
-    // Inicializar MultiSelects (después de que el DOM existe)
+    // Inicializar MultiSelects compartidos
     msOrdEstado  = new MultiSelect("f-estado",      { placeholder: "Todos" });
     msOrdAseg    = new MultiSelect("f-aseguradora", { placeholder: "Todas" });
     msOrdProceso = new MultiSelect("f-proceso",     { placeholder: "Todos" });
-    msDashEstado  = new MultiSelect("d-estado",      { placeholder: "Todos" });
-    msDashAseg    = new MultiSelect("d-aseguradora", { placeholder: "Todas" });
-    msDashProceso = new MultiSelect("d-proceso",     { placeholder: "Todos" });
 
-    // Autocomplete de cliente (Órdenes y Dashboard)
+    // Autocomplete de cliente
     new Autocomplete("f-cliente", { localidadFn: () => document.getElementById("f-localidad")?.value || "" });
-    new Autocomplete("d-cliente", { localidadFn: () => document.getElementById("d-localidad")?.value || "" });
 
     // ── Click en celda de observación: muestra texto completo ──
     document.getElementById("tbody-ordenes")?.addEventListener("click", e => {
@@ -1049,7 +1028,7 @@ const CT = (() => {
     });
 
     // Carga inicial
-    cargarFiltros().then(data => DASH.sincFiltros(data));
+    cargarFiltros();
     cargarCards();
     cargarOrdenes(1);
   }
