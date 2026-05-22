@@ -38,7 +38,27 @@
     .ec-interno   { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
     .ec-garantia  { background: #fefce8; color: #713f12; border-color: #fde68a; }
     .ec-empleado  { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
-    .ec-total     { background: var(--white); color: var(--primary-dark); border-color: var(--border-subtle); }
+
+    /* ── Indicador total (no es botón) ─────────────── */
+    .total-indicador {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .ti-num {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      line-height: 1;
+    }
+    .ti-lbl {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
 
     /* Botón tarjeta */
     .estado-card {
@@ -694,7 +714,12 @@
     <button class="estado-card ec-interno"   data-card="INTERNO"   ><div class="ec-num" id="c-interno">—</div>   <div class="ec-lbl">Interno</div></button>
     <button class="estado-card ec-garantia"  data-card="GARANTIA"  ><div class="ec-num" id="c-garantia">—</div>  <div class="ec-lbl">Garantía</div></button>
     <button class="estado-card ec-empleado"  data-card="EMPLEADO"  ><div class="ec-num" id="c-empleado">—</div>  <div class="ec-lbl">Empleado</div></button>
-    <button class="estado-card ec-total"     data-card="TOTAL"     ><div class="ec-num" id="c-total">—</div>     <div class="ec-lbl">Total</div></button>
+  </div>
+
+  <!-- Indicador total -->
+  <div class="total-indicador">
+    <span class="ti-num" id="c-total">—</span>
+    <span class="ti-lbl">órdenes en total</span>
   </div>
 
   <!-- ── Tabs ─────────────────────────────────── -->

@@ -566,7 +566,7 @@ const CT = (() => {
     const f = leerFiltros();
 
     // Filtro de card
-    if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    if (_cardActiva) p.set("card", _cardActiva);
 
     if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.orden)       p.set("orden",       f.orden);
@@ -801,7 +801,7 @@ const CT = (() => {
   function buildExportParams() {
     const p = new URLSearchParams();
     const f = leerFiltros();
-    if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    if (_cardActiva) p.set("card", _cardActiva);
     if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.orden)       p.set("orden",       f.orden);
     if (f.placa)       p.set("placa",       f.placa);
@@ -871,7 +871,7 @@ const CT = (() => {
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
     if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
-    if (_cardActiva && _cardActiva !== "TOTAL") p.set("card", _cardActiva);
+    if (_cardActiva) p.set("card", _cardActiva);
     const estados  = msOrdEstado?.getValues()  || [];
     const aseg     = msOrdAseg?.getValues()    || [];
     const procesos = msOrdProceso?.getValues() || [];
