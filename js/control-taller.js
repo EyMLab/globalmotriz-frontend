@@ -380,15 +380,20 @@ const DASH = (() => {
 
   // ── Cargar datos ─────────────────────────────────
   async function cargar() {
-    // Lee del panel de filtros unificado (f-*)
-    const f = typeof leerFiltros === "function" ? leerFiltros() : {};
+    // Lee directamente del panel de filtros unificado (f-*)
+    const localidad  = document.getElementById("f-localidad")?.value || "";
+    const orden      = (document.getElementById("f-orden")?.value   || "").trim();
+    const placa      = (document.getElementById("f-placa")?.value   || "").trim();
+    const cliente    = (document.getElementById("f-cliente")?.value || "").trim();
+    const fechaDesde = document.getElementById("f-desde")?.value    || "";
+    const fechaHasta = document.getElementById("f-hasta")?.value    || "";
     const params = new URLSearchParams();
-    if (f.localidad)   params.set("localidad",   f.localidad);
-    if (f.orden)       params.set("orden",       f.orden);
-    if (f.placa)       params.set("placa",       f.placa);
-    if (f.cliente)     params.set("cliente",     f.cliente);
-    if (f.fecha_desde) params.set("fecha_desde", f.fecha_desde);
-    if (f.fecha_hasta) params.set("fecha_hasta", f.fecha_hasta);
+    if (localidad)  params.set("localidad",   localidad);
+    if (orden)      params.set("orden",       orden);
+    if (placa)      params.set("placa",       placa);
+    if (cliente)    params.set("cliente",     cliente);
+    if (fechaDesde) params.set("fecha_desde", fechaDesde);
+    if (fechaHasta) params.set("fecha_hasta", fechaHasta);
     // Multi-selects compartidos con pestaña Órdenes
     const estados  = msOrdEstado?.getValues()  || [];
     const aseg     = msOrdAseg?.getValues()    || [];
