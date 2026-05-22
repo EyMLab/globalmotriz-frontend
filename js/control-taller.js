@@ -486,6 +486,7 @@ const CT = (() => {
       case "SANTIAGO":  return "tr-santiago";
       case "INTERNO":   return "tr-interno";
       case "GARANTÍA":  return "tr-garantia";
+      case "EMPLEADO":  return "tr-empleado";
       default:          return "";
     }
   }
@@ -507,6 +508,7 @@ const CT = (() => {
     document.getElementById("c-santiago").textContent  = d.santiago   ?? 0;
     document.getElementById("c-interno").textContent   = d.interno    ?? 0;
     document.getElementById("c-garantia").textContent  = d.garantia   ?? 0;
+    document.getElementById("c-empleado").textContent  = d.empleado   ?? 0;
     document.getElementById("c-total").textContent     = d.total      ?? 0;
   }
 
