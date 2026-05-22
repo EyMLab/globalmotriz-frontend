@@ -39,25 +39,28 @@
     .ec-garantia  { background: #fefce8; color: #713f12; border-color: #fde68a; }
     .ec-empleado  { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
 
-    /* ── Indicador total (no es botón) ─────────────── */
+    /* ── Indicador total (dentro del import-box) ───── */
     .total-indicador {
       display: flex;
       align-items: baseline;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-left: auto;
+      padding-left: 20px;
+      border-left: 2px solid var(--border-subtle);
     }
     .ti-num {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 800;
       color: var(--primary-dark);
       line-height: 1;
     }
     .ti-lbl {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-light);
       text-transform: uppercase;
       letter-spacing: .5px;
+      white-space: nowrap;
     }
 
     /* Botón tarjeta */
@@ -699,6 +702,10 @@
     <input type="file" id="inp-reporte" accept=".xlsx,.xls" />
     <button class="btn-primary" id="btn-importar">⬆ Importar</button>
     <div class="import-info" id="import-info">—</div>
+    <div class="total-indicador">
+      <span class="ti-num" id="c-total">—</span>
+      <span class="ti-lbl">órdenes en total</span>
+    </div>
   </div>
 
   <!-- ── Tarjetas / botones de filtro rápido ───── -->
@@ -716,11 +723,6 @@
     <button class="estado-card ec-empleado"  data-card="EMPLEADO"  ><div class="ec-num" id="c-empleado">—</div>  <div class="ec-lbl">Empleado</div></button>
   </div>
 
-  <!-- Indicador total -->
-  <div class="total-indicador">
-    <span class="ti-num" id="c-total">—</span>
-    <span class="ti-lbl">órdenes en total</span>
-  </div>
 
   <!-- ── Tabs ─────────────────────────────────── -->
   <div class="taller-tabs">
