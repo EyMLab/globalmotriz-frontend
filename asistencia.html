@@ -26,8 +26,10 @@
         <label for="filtro-tipo">Tipo:</label>
         <select id="filtro-tipo">
           <option value="">Todos</option>
-          <option value="entrada">&#8593; Entrada</option>
-          <option value="salida">&#8595; Salida</option>
+          <option value="entrada">↑ Entrada</option>
+          <option value="salida">↓ Salida</option>
+          <option value="salida_almuerzo">🍽 Salida almuerzo</option>
+          <option value="regreso_almuerzo">↩ Regreso almuerzo</option>
         </select>
       </div>
 
@@ -48,6 +50,22 @@
       <div class="filtro-grupo">
         <label for="fecha-hasta">Hasta:</label>
         <input type="date" id="fecha-hasta">
+      </div>
+
+      <div class="filtro-grupo" style="display:flex;align-items:flex-end;">
+        <button id="btn-config" title="Configurar horarios" style="
+          background: var(--primary);
+          color: #fff;
+          border: none;
+          border-radius: var(--r-md);
+          padding: 6px 14px;
+          cursor: pointer;
+          font-size: 14px;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        ">⚙️ Configuración</button>
       </div>
 
     </div>
@@ -72,6 +90,72 @@
       <button id="btn-next">Siguiente</button>
     </div>
 
+  </div>
+
+  <!-- ===== Modal Configuración ===== -->
+  <div id="modal-config" class="modal" style="display:none;">
+    <div class="modal-box" style="
+      background:#fff;
+      border-radius: var(--r-lg);
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      box-shadow: var(--shadow-lg);
+    ">
+      <span id="btn-cerrar-config" style="
+        position:absolute;top:16px;right:20px;
+        font-size:22px;cursor:pointer;color:var(--text-light);
+      ">&times;</span>
+
+      <h2 style="margin:0 0 6px;color:var(--primary);font-size:18px;">⚙️ Configuración de horarios</h2>
+      <p style="margin:0 0 24px;color:var(--text-light);font-size:13px;">
+        Define el rango de horario de almuerzo por localidad.<br>
+        El sistema usará estos rangos para detectar automáticamente las salidas y regresos de almuerzo.
+      </p>
+
+      <!-- MATRIZ -->
+      <div style="border:1px solid #e2e8f0;border-radius:var(--r-md);padding:16px 20px;margin-bottom:16px;">
+        <p style="margin:0 0 12px;font-weight:600;color:var(--text);">🏢 MATRIZ</p>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="flex:1;">
+            <label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px;">Inicio almuerzo</label>
+            <input type="time" id="cfg-matriz-inicio" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:var(--r-sm);">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px;">Fin almuerzo</label>
+            <input type="time" id="cfg-matriz-fin" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:var(--r-sm);">
+          </div>
+        </div>
+      </div>
+
+      <!-- SUCURSAL -->
+      <div style="border:1px solid #e2e8f0;border-radius:var(--r-md);padding:16px 20px;margin-bottom:24px;">
+        <p style="margin:0 0 12px;font-weight:600;color:var(--text);">🏪 SUCURSAL</p>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="flex:1;">
+            <label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px;">Inicio almuerzo</label>
+            <input type="time" id="cfg-sucursal-inicio" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:var(--r-sm);">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px;">Fin almuerzo</label>
+            <input type="time" id="cfg-sucursal-fin" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:var(--r-sm);">
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-guardar-config" style="
+        width:100%;
+        background:var(--primary);
+        color:#fff;
+        border:none;
+        border-radius:var(--r-md);
+        padding:10px;
+        font-size:15px;
+        cursor:pointer;
+        font-weight:600;
+      ">Guardar cambios</button>
+    </div>
   </div>
 
   <!-- Modal foto -->
