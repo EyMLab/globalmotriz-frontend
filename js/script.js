@@ -8,7 +8,6 @@ const inputPassword  = document.getElementById('password');
 const btnEntrar      = document.getElementById('btn-entrar');
 const mensajeError   = document.getElementById('mensaje-error');
 const togglePwdBtn   = document.getElementById('toggle-password');
-const togglePwdIcon  = document.getElementById('toggle-password-icon');
 const capslockWarn   = document.getElementById('capslock-warning');
 
 const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
@@ -53,7 +52,7 @@ inputPassword.addEventListener('blur',    () => { capslockWarn.hidden = true; })
 togglePwdBtn.addEventListener('click', () => {
   const esPassword = inputPassword.type === 'password';
   inputPassword.type = esPassword ? 'text' : 'password';
-  togglePwdIcon.textContent = esPassword ? '🙈' : '👁';
+  togglePwdBtn.classList.toggle('is-active', esPassword);
   togglePwdBtn.setAttribute(
     'aria-label',
     esPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
