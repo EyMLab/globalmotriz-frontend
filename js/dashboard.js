@@ -34,9 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   // UI helpers
   // =========================
+  let _loaderTimer = null;
+
   function setLoaderVisible(visible) {
     if (loader) loader.style.display = visible ? 'flex' : 'none';
     if (contenido) contenido.style.display = visible ? 'none' : 'block';
+    if (!visible && _loaderTimer) {
+      clearTimeout(_loaderTimer);
+      _loaderTimer = null;
+    }
+  }
+
+  // Muestra el loader solo si init() tarda más de los ms indicados.
+  // Si la carga es rápida (Render caliente), el usuario no ve flash de spinner.
+  function scheduleLoader(delayMs = 600) {
+    if (_loaderTimer) clearTimeout(_loaderTimer);
+    _loaderTimer = setTimeout(() => {
+      if (loader) loader.style.display = 'flex';
+    }, delayMs);
   }
 
   function setLoaderText(text) {
@@ -48,8 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   // Init
   // =========================
-  setLoaderVisible(true);
-  setLoaderText('Conectando con el servidor...');
+  // El contenido se muestra inmediatamente para evitar pantalla en blanco.
+  // El loader solo aparecerá si la carga inicial supera 600ms.
+  if (contenido) contenido.style.display = 'block';
+  scheduleLoader(600);
 
   init();
 
@@ -76,14 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function verificarSesion() {
-    const inicio = Date.now();
-
     try {
       const res = await apiFetch('/auth/me');
       if (!res) return false;
-
-      const duracion = Date.now() - inicio;
-      if (duracion > 1500) setLoaderText('Conectando con el servidor...');
 
       if (!res.ok) return false;
 

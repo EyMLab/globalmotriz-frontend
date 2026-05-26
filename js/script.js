@@ -105,6 +105,19 @@ form.addEventListener('submit', async function (e) {
     localStorage.setItem('usuario', data.usuario);
     localStorage.setItem('rol',     data.rol);
 
+    // ✅ Pre-calentar el backend y verificar el token antes de redirigir.
+    // Render gratis duerme tras inactividad; al hacer /auth/me ya despierto,
+    // la página destino carga rápido y el usuario no ve loaders intermedios.
+    btnEntrar.textContent = 'Iniciando sesión...';
+    try {
+      await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${data.token}` }
+      });
+    } catch (_) {
+      // Si /auth/me falla por timeout, igual seguimos con la redirección.
+      // La página destino re-verificará la sesión.
+    }
+
     // Redirigir al inicio correcto según rol
     const destinos = {
       seguro:             'lpr.html',
