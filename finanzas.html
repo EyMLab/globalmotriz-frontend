@@ -40,7 +40,7 @@
     ============================================================ -->
     <div id="panel-caja-chica" class="subtab-panel active">
 
-      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="section-header section-header-flex">
         <h2 style="margin:0;">Caja Chica</h2>
       </div>
 
@@ -97,7 +97,7 @@
     ============================================================ -->
     <div id="panel-cierre-caja" class="subtab-panel">
 
-      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="section-header section-header-flex">
         <h2 style="margin:0;">Cierre de Caja</h2>
       </div>
 
@@ -161,14 +161,14 @@
             <button class="btn btn-primary" onclick="modalRegistrarDeducible()">+ Registrar Deducible</button>
             <button class="btn btn-obs" onclick="exportarDeduciblesExcel()">&#8595; Exportar Excel</button>
           </div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <select id="ded-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
+          <div class="filter-row" style="margin-bottom:0;">
+            <select id="ded-filtro-estado" class="filter-select-sm">
               <option value="">Todos los estados</option>
               <option value="PENDIENTE">⚠ Pendiente</option>
               <option value="DEVUELTO">✓ Devuelto</option>
             </select>
-            <input id="ded-filtro-ot" placeholder="Buscar OT..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:130px;">
-            <input id="ded-filtro-aseguradora" placeholder="Buscar aseguradora..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:180px;">
+            <input id="ded-filtro-ot" placeholder="Buscar OT..." class="filter-input-sm" style="width:130px;">
+            <input id="ded-filtro-aseguradora" placeholder="Buscar aseguradora..." class="filter-input-sm" style="width:180px;">
             <button class="btn btn-obs" onclick="limpiarFiltrosDeducibles()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
           </div>
         </div>
@@ -231,7 +231,7 @@
     ============================================================ -->
     <div id="panel-facturas-anuladas" class="subtab-panel">
 
-      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="section-header section-header-flex">
         <h2 style="margin:0;">Facturas Anuladas</h2>
       </div>
 
@@ -239,14 +239,14 @@
         <button class="btn btn-primary" onclick="modalRegistrarAnulacion()">+ Registrar Anulación</button>
       </div>
 
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-        <select id="fan-filtro-estado" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;color:#1e293b;background:#fff;cursor:pointer;">
+      <div class="filter-row">
+        <select id="fan-filtro-estado" class="filter-select-sm">
           <option value="">Todos los estados</option>
           <option value="PENDIENTE">⚠ Pendiente</option>
           <option value="REEMPLAZADA">✓ Reemplazada</option>
         </select>
-        <input id="fan-filtro-ot" placeholder="Buscar OT..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:130px;">
-        <input id="fan-filtro-factura" placeholder="Buscar N° factura..." style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:165px;">
+        <input id="fan-filtro-ot" placeholder="Buscar OT..." class="filter-input-sm" style="width:130px;">
+        <input id="fan-filtro-factura" placeholder="Buscar N° factura..." class="filter-input-sm" style="width:165px;">
         <button class="btn btn-obs" onclick="limpiarFiltrosFacturas()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
       </div>
 

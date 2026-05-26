@@ -23,18 +23,18 @@
     </div>
 
     <!-- Filtros -->
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+    <div class="filter-row" style="margin-bottom:16px;">
       <input id="buscar-empleado" class="swal2-input" placeholder="Buscar por nombre o cédula..."
              style="width:260px;margin:0;height:36px;font-size:13px;">
-      <select id="filtro-localidad-rrhh" style="height:36px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;background:#fff;">
+      <select id="filtro-localidad-rrhh" class="filter-select-md">
         <option value="">Todas las localidades</option>
         <option value="MATRIZ">MATRIZ</option>
         <option value="SUCURSAL">SUCURSAL</option>
       </select>
-      <select id="filtro-cargo-rrhh" style="height:36px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;background:#fff;">
+      <select id="filtro-cargo-rrhh" class="filter-select-md">
         <option value="">Todos los cargos</option>
       </select>
-      <select id="filtro-estado-rrhh" style="height:36px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;background:#fff;">
+      <select id="filtro-estado-rrhh" class="filter-select-md">
         <option value="activo">Activos</option>
         <option value="inactivo">Inactivos</option>
         <option value="">Todos</option>
