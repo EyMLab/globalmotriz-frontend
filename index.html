@@ -3,25 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login - Facturas</title>
+  <title>Iniciar Sesión - Global Motriz</title>
   <link rel="stylesheet" href="css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body class="login">
   <div class="login-container">
     <div class="logo">
-      <img src="img/logo.png" alt="Logo Facturas" class="logo-img">
+      <img src="img/logo.png" alt="Logo Global Motriz" class="logo-img">
     </div>
 
     <h2>Iniciar Sesión</h2>
 
-    <form id="login-form">
-      <input type="text" id="usuario" placeholder="Usuario" required />
-      <input type="password" id="password" placeholder="Contraseña" required />
-      <button type="submit">Entrar</button>
+    <form id="login-form" novalidate>
+      <div class="login-field">
+        <label for="usuario" class="sr-only">Usuario</label>
+        <input
+          type="text"
+          id="usuario"
+          name="usuario"
+          placeholder="Usuario"
+          autocomplete="username"
+          autofocus
+          required
+        />
+      </div>
+
+      <div class="login-field login-field-password">
+        <label for="password" class="sr-only">Contraseña</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Contraseña"
+          autocomplete="current-password"
+          required
+        />
+        <button
+          type="button"
+          id="toggle-password"
+          class="toggle-password-btn"
+          aria-label="Mostrar contraseña"
+          tabindex="-1"
+        >
+          <span id="toggle-password-icon" aria-hidden="true">👁</span>
+        </button>
+      </div>
+
+      <p id="capslock-warning" class="capslock-warning" hidden>
+        <span aria-hidden="true">⚠</span> Mayúsculas activadas
+      </p>
+
+      <button type="submit" id="btn-entrar">Entrar</button>
     </form>
 
-    <p id="mensaje-error">&nbsp;</p>
+    <div id="mensaje-error" class="login-error" role="alert" aria-live="polite" hidden></div>
   </div>
   <script src="js/script.js"></script>
 </body>

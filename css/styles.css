@@ -64,12 +64,18 @@ body.login {
 
 .login-container {
   background: var(--white);
-  padding: 30px 40px;
+  padding: 36px 44px 40px;
   border-radius: var(--r-lg);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  max-width: 350px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 420px;
   width: 100%;
   text-align: center;
+  animation: login-fade-in 0.45s ease-out;
+}
+
+@keyframes login-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .login-container h2 {
@@ -96,9 +102,53 @@ body.login {
 .login-container input:focus {
   border-color: var(--primary);
   outline: none;
+  box-shadow: 0 0 0 3px rgba(43, 122, 158, 0.18);
 }
 
-.login-container button {
+/* Contenedor de cada campo (para posicionar el toggle de password) */
+.login-field {
+  position: relative;
+}
+.login-field input { margin-bottom: 15px; }
+
+/* Botón ojo para mostrar/ocultar contraseña */
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-top: -8px; /* compensar el margin-bottom del input */
+  background: none !important;
+  border: none !important;
+  width: 36px !important;
+  height: 36px;
+  padding: 0 !important;
+  cursor: pointer;
+  color: var(--text-light);
+  font-size: 18px;
+  border-radius: 6px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.toggle-password-btn:hover {
+  background: var(--row-hover) !important;
+  color: var(--primary) !important;
+}
+
+/* Aviso de Caps Lock */
+.capslock-warning {
+  margin: -6px 0 12px;
+  padding: 6px 10px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.login-container button[type="submit"] {
   background: var(--primary-dark); /* Azul oscuro del logo */
   color: var(--white);
   border: none;
@@ -106,14 +156,53 @@ body.login {
   cursor: pointer;
 }
 
-.login-container button:hover {
+.login-container button[type="submit"]:hover {
   background: var(--primary);
 }
 
-#mensaje-error {
-  color: red;
+.login-container button[type="submit"]:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.login-container button[type="submit"][disabled] {
+  background: var(--text-light);
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+/* Caja de error estilizada */
+.login-error {
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: var(--danger-bg);
+  color: var(--danger-dark);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--r-sm);
   font-size: 14px;
-  min-height: 20px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.login-error::before {
+  content: "⚠";
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.login-error[hidden] { display: none; }
+
+/* Utilidad para etiquetas accesibles (visibles solo para lectores de pantalla) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .logo-img {
