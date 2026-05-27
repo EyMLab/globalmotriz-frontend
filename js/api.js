@@ -8,8 +8,15 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
+// Keys de autenticación guardadas en localStorage
+const AUTH_KEYS = ['token', 'usuario', 'rol'];
+
+function clearAuthStorage() {
+  AUTH_KEYS.forEach(k => localStorage.removeItem(k));
+}
+
 function redirectLogin() {
-  localStorage.clear();
+  clearAuthStorage();
   window.location.href = 'index.html';
 }
 

@@ -22,23 +22,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     _navRol = rol; // guardamos para las funciones de notificaciones
 
     // ============================================
-    // Detectar página actual
+    // Detectar página actual (match exacto por nombre de archivo)
     // ============================================
-    let pagina = "Facturas";
+    const PAGINA_POR_ARCHIVO = {
+      'dashboard':      'Facturas',
+      'usuarios':       'Usuarios',
+      'finanzas':       'Finanzas',
+      'insumos':        'Insumos',
+      'inventario':     'Inventario',
+      'historial':      'Inventario',     // sub-página de inventario
+      'compras':        'Compras',
+      'cotizaciones':   'Cotizaciones',
+      'control-taller': 'ControlTaller',
+      'lpr':            'Taller',
+      'cumpleanos':     'Cumpleaños',
+      'rrhh':           'RRHH',
+      'asistencia':     'Asistencia'
+    };
 
-    if (window.location.pathname.includes("usuarios")) pagina = "Usuarios";
-    else if (window.location.pathname.includes("finanzas")) pagina = "Finanzas";
-    else if (window.location.pathname.includes("insumos")) pagina = "Insumos";
-    else if (window.location.pathname.includes("inventario") || window.location.pathname.includes("historial")) {
-        pagina = "Inventario";
-    }
-    else if (window.location.pathname.includes("compras")) pagina = "Compras";
-    else if (window.location.pathname.includes("cotizaciones")) pagina = "Cotizaciones";
-    else if (window.location.pathname.includes("control-taller")) pagina = "ControlTaller";
-    else if (window.location.pathname.includes("lpr")) pagina = "Taller";
-    else if (window.location.pathname.includes("cumpleanos")) pagina = "Cumpleaños";
-    else if (window.location.pathname.includes("rrhh")) pagina = "RRHH";
-    else if (window.location.pathname.includes("asistencia")) pagina = "Asistencia";
+    const archivo = window.location.pathname.split('/').pop().replace('.html', '');
+    const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Facturas';
 
     // Seguro solo puede ver Taller
     if (rol === 'seguro' && pagina !== 'Taller') {
@@ -76,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
-      ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Taller</a>`
+      ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Estado del Taller</a>`
       : "";
 
     const enlaceControlTaller = ['admin', 'control', 'asistente_contable'].includes(rol)
@@ -112,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <header class="navbar">
         <div class="nav-left">
           <img src="img/logo.png" alt="Logo" class="logo-header">
-          <span class="nav-title">${pagina}</span>
+          <span class="nav-title">${pagina === 'Taller' ? 'Estado del Taller' : pagina}</span>
         </div>
 
         <nav class="nav-center nav-links">
@@ -402,7 +405,7 @@ function cerrarSesion() {
     confirmButtonColor: '#d33'
   }).then(result => {
     if (result.isConfirmed) {
-      localStorage.clear();
+      clearAuthStorage();
       window.location.href = 'index.html';
     }
   });

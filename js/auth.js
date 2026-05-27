@@ -16,7 +16,7 @@ function resetInactivityTimer() {
       text: 'Se cerró sesión por inactividad.',
       confirmButtonText: 'Aceptar'
     }).then(() => {
-      localStorage.clear();
+      clearAuthStorage();
       window.location.href = 'index.html';
     });
   }, MAX_INACTIVITY_MS);
@@ -74,7 +74,7 @@ function cerrarSesion() {
     confirmButtonColor: '#d33'
   }).then(result => {
     if (result.isConfirmed) {
-      localStorage.clear();
+      clearAuthStorage();
       window.location.href = 'index.html';
     }
   });
