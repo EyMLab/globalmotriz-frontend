@@ -102,8 +102,8 @@ const PROV = (() => {
           ? `<span class="badge-descartado">DESCARTADO</span>`
           : `<span class="badge-activo">ACTIVO</span>`;
         const btnAccion = descartado
-          ? `<button class="btn-reactivar" onclick="PROV.cambiarEstado('${d.numero_documento}','ACTIVO')">↩ Reactivar</button>`
-          : `<button class="btn-descartar" onclick="PROV.cambiarEstado('${d.numero_documento}','DESCARTADO')">✕ Descartar</button>`;
+          ? `<button class="btn-reactivar" onclick="PROV.cambiarEstado('${d.numero_documento}','ACTIVO')">Reactivar</button>`
+          : `<button class="btn-descartar" onclick="PROV.cambiarEstado('${d.numero_documento}','DESCARTADO')">Descartar</button>`;
         return `<tr class="${descartado ? "tr-descartado" : ""}">
           <td title="${(d.proveedor||"").replace(/"/g,"&quot;")}">${d.proveedor || "—"}</td>
           <td>${d.tipo_doc || "—"}</td>
@@ -224,7 +224,7 @@ const PROV = (() => {
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
         <td><input type="number" class="input-prior" value="${r.prioridad || ""}" placeholder="—" data-campo="prioridad" data-proveedor="${provEnc}"/></td>
         <td><input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}"/></td>
-        <td><button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">💾</button></td>
+        <td><button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">Guardar</button></td>
       </tr>`;
     }).join("");
   }
@@ -306,7 +306,7 @@ const PROV = (() => {
         <td><input type="text"   class="c-concepto" value="${(c.concepto||"").replace(/"/g,"&quot;")}" placeholder="Concepto…"/></td>
         <td><input type="number" class="c-monto"    value="${c.monto || ""}" step="0.01" placeholder="0.00"/></td>
         <td style="text-align:center"><input type="checkbox" class="c-pagado" ${c.pagado ? "checked" : ""}/></td>
-        <td><button class="btn-del-concepto" onclick="PROV.delConcepto(${i})">✕</button></td>
+        <td><button class="btn-del-concepto" onclick="PROV.delConcepto(${i})">x</button></td>
       </tr>`).join("");
   }
 
@@ -319,7 +319,7 @@ const PROV = (() => {
       <td><input type="text"   class="c-concepto" placeholder="Concepto…"/></td>
       <td><input type="number" class="c-monto"    step="0.01" placeholder="0.00"/></td>
       <td style="text-align:center"><input type="checkbox" class="c-pagado"/></td>
-      <td><button class="btn-del-concepto" onclick="this.closest('tr').remove()">✕</button></td>`;
+      <td><button class="btn-del-concepto" onclick="this.closest('tr').remove()">x</button></td>`;
     tbody.appendChild(tr);
   }
 
@@ -382,7 +382,7 @@ const PROV = (() => {
             Se leerá la hoja <b>"Worksheet 1"</b>. Los documentos que ya no aparezcan serán marcados automáticamente como descartados.
           </p>
         </div>`,
-      confirmButtonText: "⬆ Importar",
+      confirmButtonText: "Importar",
       cancelButtonText: "Cancelar",
       showCancelButton: true,
       confirmButtonColor: "#2B7A9E",
