@@ -18,8 +18,9 @@ const PROV = (() => {
 
   function fmtFecha(s) {
     if (!s) return "—";
-    const d = new Date(s + "T00:00:00");
-    if (isNaN(d)) return s;
+    const solo = String(s).slice(0, 10);   // toma solo "YYYY-MM-DD" de cualquier formato ISO
+    const d = new Date(solo + "T00:00:00");
+    if (isNaN(d)) return solo;
     return d.toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
   }
 
@@ -115,10 +116,12 @@ const PROV = (() => {
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
-        const obs = (d.observacion || "").replace(/"/g, "&quot;");
-        const obsCorta = obs.length > 40 ? obs.slice(0, 40) + "…" : obs;
+        const obs    = (d.observacion || "").replace(/"/g, "&quot;");
+        const numEsc = d.numero_documento.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
         const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
-        const numEsc = d.numero_documento.replace(/'/g, "\\'");
+        const btnObs = obs
+          ? `<button class="btn-obs" onclick="PROV.editarObservacion('${numEsc}','${obs.replace(/'/g,"\\'")}')">Ver / Editar</button>`
+          : `<button class="btn-obs btn-obs-vacia" onclick="PROV.editarObservacion('${numEsc}','')">Agregar</button>`;
         return `<tr style="${rowStyle}">
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
@@ -132,7 +135,7 @@ const PROV = (() => {
           <td style="font-family:monospace;font-size:12px">${d.numero_documento}</td>
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
-          <td class="obs-cell" title="${obs}" onclick="PROV.editarObservacion('${numEsc}','${obs}')">${obsCorta || "—"}</td>
+          <td>${btnObs}</td>
         </tr>`;
       }).join("");
       // Resetear barra y check-all al recargar
@@ -202,12 +205,24 @@ const PROV = (() => {
   async function editarObservacion(numDoc, obsActual) {
     const { value, isConfirmed } = await Swal.fire({
       title: "Observación",
-      html: `<div style="font-family:monospace;font-size:12px;color:#6b7280;margin-bottom:10px">${numDoc}</div>
-             <textarea id="swal-obs" rows="5" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical">${obsActual}</textarea>`,
+      width: 540,
+      html: `
+        <div style="text-align:left">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Documento</div>
+          <div style="font-family:monospace;font-size:13px;color:#1e40af;background:#eff6ff;padding:6px 10px;border-radius:6px;margin-bottom:14px">${numDoc}</div>
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Texto de observación</div>
+          <textarea id="swal-obs" rows="5"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.5;outline:none;color:#111827"
+            onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.15)'"
+            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"
+          >${obsActual}</textarea>
+        </div>`,
       showCancelButton: true,
       confirmButtonText: "Guardar",
       confirmButtonColor: "#2B7A9E",
       cancelButtonText: "Cancelar",
+      cancelButtonColor: "#9ca3af",
+      focusConfirm: false,
       preConfirm: () => document.getElementById("swal-obs").value.trim(),
     });
     if (!isConfirmed) return;
