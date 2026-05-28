@@ -107,22 +107,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data?.error || 'Error al cargar');
 
       _cajachicaData = data.historial;
-      renderBalance(data.saldo, data.limite);
+      renderBalance(data.acumulado, data.limite);
       renderTablaCajaChica(data.historial);
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
     }
   }
 
-  function renderBalance(saldo, limite) {
-    const pct = Math.min(100, Math.max(0, (saldo / limite) * 100));
-    const clase = pct > 50 ? 'verde' : pct > 20 ? 'amarillo' : 'rojo';
+  function renderBalance(acumulado, limite) {
+    const pct = Math.max(0, (acumulado / limite) * 100);
+    const clase = pct < 50 ? 'verde' : pct < 80 ? 'amarillo' : 'rojo';
 
-    document.getElementById('balance-saldo').textContent = `$${saldo.toFixed(2)}`;
+    document.getElementById('balance-saldo').textContent = `$${acumulado.toFixed(2)}`;
     document.getElementById('balance-limite').textContent = `Límite: $${limite.toFixed(2)}`;
 
     const fill = document.getElementById('balance-fill');
-    fill.style.width = `${pct}%`;
+    fill.style.width = `${Math.min(pct, 100)}%`;
     fill.className = `balance-bar-fill ${clase}`;
   }
 
@@ -674,9 +674,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `Desde: ${fechaDesde}  |  Emitido: ${hoyStr}`
       );
 
-      // Info box con semáforo
-      const pct = Math.min(100, Math.max(0, (data.saldo / data.limite) * 100));
-      const fillColor = pct > 50 ? [34, 197, 94] : pct > 20 ? [245, 158, 11] : [239, 68, 68];
+      // Info box con semáforo (acumulativo: crece de 0 al límite)
+      const pct = Math.max(0, (data.acumulado / data.limite) * 100);
+      const fillColor = pct < 50 ? [34, 197, 94] : pct < 80 ? [245, 158, 11] : [239, 68, 68];
       const inactiveLight = [213, 220, 228];
       const boxW = pageW - marginL - marginR;
 
@@ -687,9 +687,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Textos
       doc.setFontSize(9);
       doc.setFont('Roboto', 'bold'); doc.setTextColor(...COLOR_GRAY);
-      doc.text('Saldo:', marginL + 4, startY + 6);
+      doc.text('Acumulado:', marginL + 4, startY + 6);
       doc.setFont('Roboto', 'normal'); doc.setTextColor(...COLOR_DARK);
-      doc.text(`$${data.saldo.toFixed(2)} de $${data.limite.toFixed(2)}`, marginL + 18, startY + 6);
+      doc.text(`$${data.acumulado.toFixed(2)} de $${data.limite.toFixed(2)}`, marginL + 26, startY + 6);
 
       doc.setFont('Roboto', 'bold'); doc.setTextColor(...COLOR_GRAY);
       doc.text('Período:', marginL + 4, startY + 12);
@@ -703,11 +703,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const cYellow = cRed - 9;
       const cGreen  = cYellow - 9;
 
-      doc.setFillColor(...(pct <= 20 ? [239, 68, 68] : inactiveLight));
+      doc.setFillColor(...(pct >= 80 ? [239, 68, 68] : inactiveLight));
       doc.circle(cRed, cY, r, 'F');
-      doc.setFillColor(...(pct > 20 && pct <= 50 ? [245, 158, 11] : inactiveLight));
+      doc.setFillColor(...(pct >= 50 && pct < 80 ? [245, 158, 11] : inactiveLight));
       doc.circle(cYellow, cY, r, 'F');
-      doc.setFillColor(...(pct > 50 ? [34, 197, 94] : inactiveLight));
+      doc.setFillColor(...(pct < 50 ? [34, 197, 94] : inactiveLight));
       doc.circle(cGreen, cY, r, 'F');
 
       // Porcentaje bajo el semáforo
@@ -724,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       doc.setFillColor(226, 232, 240);
       doc.roundedRect(barX, barY, barW, barH, 1, 1, 'F');
-      const fillW = Math.max(barH, (pct / 100) * barW);
+      const fillW = Math.max(barH, (Math.min(pct, 100) / 100) * barW);
       doc.setFillColor(...fillColor);
       doc.roundedRect(barX, barY, fillW, barH, 1, 1, 'F');
 
@@ -761,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: tableBody,
         foot: [[
           { content: 'TOTALES', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
-          { content: `$${(totalRepos - totalGastos).toFixed(2)} saldo`, styles: { fontStyle: 'bold' } }
+          { content: `$${totalGastos.toFixed(2)} acumulado`, styles: { fontStyle: 'bold' } }
         ]],
         showFoot: 'lastPage',
         margin: { left: marginL, right: marginR },
