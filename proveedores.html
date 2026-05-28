@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cuentas por Pagar</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* ── Franja info ────────────────────────────── */
+    .import-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 4px 14px;
+    }
+    .import-strip-info {
+      font-size: 12px;
+      color: var(--text-light);
+    }
+    .total-indicador {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-left: auto;
+      padding-left: 20px;
+      border-left: 2px solid var(--border-subtle);
+    }
+    .ti-num { font-size: 22px; font-weight: 800; color: var(--primary-dark); line-height: 1; }
+    .ti-lbl { font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .4px; }
+
+    /* ── Tabs ───────────────────────────────────── */
+    .prov-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid var(--border-subtle);
+      margin-bottom: 20px;
+    }
+    .prov-tab {
+      padding: 8px 20px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+    }
+    .prov-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .prov-tab-panel { display: none; }
+    .prov-tab-panel.active { display: block; }
+
+    /* ── Filtros ────────────────────────────────── */
+    .filtros-prov {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .filtros-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 10px;
+    }
+    .filtros-row label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-light); }
+    .filtros-row input,
+    .filtros-row select { padding: 6px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); font-size: 13px; background: var(--bg); min-width: 130px; }
+    .filtros-actions { display: flex; align-items: center; gap: 10px; }
+    .fa-spacer { flex: 1; }
+
+    /* ── Tabla documentos ───────────────────────── */
+    .prov-table-wrap { overflow-x: auto; }
+    .prov-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .prov-table th { background: var(--primary); color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+    .prov-table td { padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .prov-table tr:hover td { background: var(--hover-bg); }
+    .tr-descartado td { opacity: .55; }
+    .num-right { text-align: right; font-variant-numeric: tabular-nums; }
+    .obs-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; text-decoration: underline dotted; color: var(--primary); }
+
+    /* ── Badges de estado ───────────────────────── */
+    .badge-activo     { background: #dcfce7; color: #14532d; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .badge-descartado { background: #f3f4f6; color: #6b7280; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+
+    /* ── Botones mini ───────────────────────────── */
+    .btn-descartar  { font-size: 11px; padding: 3px 8px; border: 1px solid #fca5a5; background: #fef2f2; color: #b91c1c; border-radius: var(--r-md); cursor: pointer; white-space: nowrap; }
+    .btn-reactivar  { font-size: 11px; padding: 3px 8px; border: 1px solid #6ee7b7; background: #ecfdf5; color: #065f46; border-radius: var(--r-md); cursor: pointer; white-space: nowrap; }
+    .btn-descartar:hover { background: #fee2e2; }
+    .btn-reactivar:hover { background: #d1fae5; }
+
+    /* ── Paginación ─────────────────────────────── */
+    .paginacion { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 14px; font-size: 13px; }
+    .paginacion button { padding: 5px 14px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); background: var(--card-bg); cursor: pointer; font-size: 12px; }
+    .paginacion button:disabled { opacity: .4; cursor: default; }
+
+    /* ── Resumen por proveedor ──────────────────── */
+    .resumen-indicadores {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .res-card {
+      flex: 1 1 160px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .res-card .rc-num { font-size: 24px; font-weight: 800; color: var(--primary-dark); line-height: 1; }
+    .res-card .rc-lbl { font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .4px; margin-top: 5px; }
+    .rc-disponible .rc-num { color: #15803d; }
+    .rc-deficit .rc-num    { color: #b91c1c; }
+
+    .res-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .res-table th { background: var(--primary); color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+    .res-table td { padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .res-table tr:hover td { background: var(--hover-bg); }
+    .input-abonar { width: 90px; padding: 4px 8px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); font-size: 13px; text-align: right; }
+    .input-prior  { width: 55px; padding: 4px 8px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); font-size: 13px; text-align: center; }
+    .btn-guardar-abono { font-size: 11px; padding: 3px 8px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: var(--r-md); cursor: pointer; }
+    .btn-guardar-abono:hover { background: #dbeafe; }
+    .pago-ok      { background: #dcfce7; }
+    .pago-parcial { background: #fef9c3; }
+    .pago-nulo    { background: #fff; }
+
+    /* ── Costos del mes ─────────────────────────── */
+    .costos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 640px) { .costos-grid { grid-template-columns: 1fr; } }
+    .costos-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: 18px 20px;
+    }
+    .costos-card h4 { font-size: 13px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 14px; }
+    .costos-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .costos-field label { font-size: 12px; font-weight: 600; color: var(--text-light); }
+    .costos-field input { padding: 7px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); font-size: 14px; }
+    .disponible-box {
+      background: #f0fdf4;
+      border: 2px solid #86efac;
+      border-radius: var(--r-lg);
+      padding: 16px 20px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .disponible-box.negativo { background: #fef2f2; border-color: #fca5a5; }
+    .disponible-box .disp-num { font-size: 32px; font-weight: 800; color: #15803d; line-height: 1; }
+    .disponible-box.negativo .disp-num { color: #b91c1c; }
+    .disponible-box .disp-lbl { font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; margin-top: 4px; }
+
+    .conceptos-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    .conceptos-table th { background: var(--primary); color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+    .conceptos-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-subtle); }
+    .conceptos-table input[type="text"]   { width: 100%; padding: 4px 8px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); font-size: 13px; }
+    .conceptos-table input[type="number"] { width: 90px; padding: 4px 8px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); font-size: 13px; text-align: right; }
+    .conceptos-table input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .btn-add-concepto { font-size: 12px; padding: 4px 12px; border: 1px dashed var(--border-subtle); background: transparent; color: var(--primary); border-radius: var(--r-md); cursor: pointer; margin-top: 8px; }
+    .btn-add-concepto:hover { background: var(--hover-bg); }
+    .btn-del-concepto { font-size: 14px; background: none; border: none; color: #ef4444; cursor: pointer; padding: 0 4px; line-height: 1; }
+  </style>
+</head>
+<body>
+
+<div id="nav-container"></div>
+
+<main class="main-content">
+  <div class="page-header">
+    <h1 class="page-title">Cuentas por Pagar</h1>
+  </div>
+
+  <!-- ── Toolbar ─────────────────────────────── -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="btn-sm" id="btn-importar-prov">⬆ Importar</button>
+      <button class="btn-sm btn-sm-sec" id="btn-export-csv-prov">⬇ CSV</button>
+    </div>
+  </div>
+
+  <!-- ── Franja info ─────────────────────────── -->
+  <div class="import-strip">
+    <span class="import-strip-info" id="import-info-prov">Sin importaciones recientes</span>
+    <div class="total-indicador">
+      <span class="ti-num" id="c-total-prov">—</span>
+      <span class="ti-lbl">docs activos</span>
+    </div>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────── -->
+  <div class="prov-tabs">
+    <button class="prov-tab active" data-tab="documentos">Documentos</button>
+    <button class="prov-tab"        data-tab="resumen">Resumen</button>
+    <button class="prov-tab"        data-tab="costos">Costos del Mes</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: DOCUMENTOS
+  ══════════════════════════════════════════ -->
+  <div class="prov-tab-panel active" id="panel-documentos">
+
+    <div class="filtros-prov">
+      <div class="filtros-row">
+        <label>Estado
+          <select id="f-estado">
+            <option value="ACTIVO">Activo</option>
+            <option value="DESCARTADO">Descartado</option>
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label>Centro de Costos
+          <select id="f-centro">
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label>Tipo Documento
+          <select id="f-tipo">
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label>Proveedor
+          <input type="text" id="f-proveedor" placeholder="Buscar proveedor…"/>
+        </label>
+        <label>Desde
+          <input type="date" id="f-desde"/>
+        </label>
+        <label>Hasta
+          <input type="date" id="f-hasta"/>
+        </label>
+      </div>
+      <div class="filtros-actions">
+        <span class="fa-spacer"></span>
+        <button class="btn-primary" id="btn-filtrar-prov">🔍 Buscar</button>
+        <button class="btn-primary" id="btn-limpiar-prov">✕ Limpiar</button>
+      </div>
+    </div>
+
+    <div class="prov-table-wrap">
+      <table class="prov-table">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Tipo</th>
+            <th>Centro</th>
+            <th>N° Documento</th>
+            <th>Fecha Emisión</th>
+            <th>Saldo</th>
+            <th>Observación</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-docs">
+          <tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-light)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacion">
+      <button id="btn-prev-doc" disabled>‹ Anterior</button>
+      <span id="pag-info-doc">Página 1 de 1</span>
+      <button id="btn-next-doc" disabled>Siguiente ›</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: RESUMEN
+  ══════════════════════════════════════════ -->
+  <div class="prov-tab-panel" id="panel-resumen">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <label style="font-size:12px;font-weight:600;color:var(--text-light);display:flex;align-items:center;gap:8px">
+        Centro de Costos
+        <select id="f-centro-res" style="padding:5px 10px;border:1px solid var(--border-subtle);border-radius:var(--r-md);font-size:13px;background:var(--bg)">
+          <option value="">Todos</option>
+        </select>
+      </label>
+      <button class="btn-primary" id="btn-filtrar-res">🔍 Buscar</button>
+      <button class="btn-sm btn-sm-sec" id="btn-guardar-todos">💾 Guardar cambios</button>
+    </div>
+
+    <div class="resumen-indicadores">
+      <div class="res-card">
+        <div class="rc-num" id="rc-total-deuda">—</div>
+        <div class="rc-lbl">Total deuda activa</div>
+      </div>
+      <div class="res-card rc-disponible">
+        <div class="rc-num" id="rc-disponible">—</div>
+        <div class="rc-lbl">Disponible para pagar</div>
+      </div>
+      <div class="res-card">
+        <div class="rc-num" id="rc-con-plan">—</div>
+        <div class="rc-lbl">Con plan de abono</div>
+      </div>
+      <div class="res-card rc-deficit" id="rc-diferencia-card">
+        <div class="rc-num" id="rc-diferencia">—</div>
+        <div class="rc-lbl">Diferencia</div>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table class="res-table" id="tabla-resumen">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Proveedor</th>
+            <th>Docs</th>
+            <th>Total Saldo</th>
+            <th>Prioridad</th>
+            <th>Por Abonar</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resumen">
+          <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-light)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: COSTOS DEL MES
+  ══════════════════════════════════════════ -->
+  <div class="prov-tab-panel" id="panel-costos">
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap">
+      <label style="font-size:12px;font-weight:600;color:var(--text-light);display:flex;align-items:center;gap:8px">
+        Periodo
+        <input type="month" id="inp-periodo" style="padding:6px 10px;border:1px solid var(--border-subtle);border-radius:var(--r-md);font-size:13px"/>
+      </label>
+      <button class="btn-primary" id="btn-cargar-costos">Cargar</button>
+    </div>
+
+    <!-- Disponible destacado -->
+    <div class="disponible-box" id="disponible-box">
+      <div class="disp-num" id="disp-num">$0.00</div>
+      <div class="disp-lbl">Disponible para pagar proveedores</div>
+    </div>
+
+    <div class="costos-grid">
+      <div class="costos-card">
+        <h4>Flujo de caja</h4>
+        <div class="costos-field">
+          <label>Dinero en caja actualmente</label>
+          <input type="number" id="inp-caja" step="0.01" placeholder="0.00" oninput="PROV.recalcDisponible()"/>
+        </div>
+        <div class="costos-field">
+          <label>Colchón mensual (reserva)</label>
+          <input type="number" id="inp-colchon" step="0.01" value="2000" oninput="PROV.recalcDisponible()"/>
+        </div>
+        <div class="costos-field">
+          <label>Por pagar fijo (compromisos)</label>
+          <input type="number" id="inp-fijo" step="0.01" placeholder="0.00" oninput="PROV.recalcDisponible()"/>
+        </div>
+      </div>
+
+      <div class="costos-card">
+        <h4>Conceptos de costos fijos</h4>
+        <table class="conceptos-table">
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              <th style="text-align:right">Monto</th>
+              <th style="text-align:center">Pagado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-conceptos"></tbody>
+        </table>
+        <button class="btn-add-concepto" id="btn-add-concepto">+ Agregar concepto</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn-primary" id="btn-guardar-costos">💾 Guardar costos del mes</button>
+    </div>
+  </div>
+
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/proveedores.js"></script>
+</body>
+</html>

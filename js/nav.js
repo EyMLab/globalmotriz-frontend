@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'compras':        'Compras',
       'cotizaciones':   'Cotizaciones',
       'control-taller': 'ControlTaller',
+      'proveedores':    'Proveedores',
       'lpr':            'Taller',
       'cumpleanos':     'Cumpleaños',
       'rrhh':           'RRHH',
@@ -42,6 +43,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
     const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Facturas';
+
+    // Admin: bloqueo si intenta acceder a Proveedores sin ser admin
+    if (rol !== 'admin' && pagina === 'Proveedores') {
+      window.location.href = 'dashboard.html';
+      return;
+    }
 
     // Seguro solo puede ver Taller
     if (rol === 'seguro' && pagina !== 'Taller') {
@@ -106,6 +113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 
+    const enlaceProveedores = rol === 'admin'
+      ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas x Pagar</a>`
+      : "";
+
 
     // ============================================
     // Renderizado del navbar
@@ -154,6 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>` : ''}
           ${enlaceFinanzas}
+          ${enlaceProveedores}
           ${enlaceUsuarios}
         </nav>
 
