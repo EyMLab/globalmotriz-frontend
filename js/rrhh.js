@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Info Empleados
   // ===============================
   function cargarEmpleados() {
-    const cols = rolUsuario === 'admin' ? 9 : 8;
+    const cols = rolUsuario === 'admin' ? 10 : 9;
     tablaInfo.innerHTML = `<tr><td colspan="${cols}">Cargando...</td></tr>`;
     apiFetch('/empleados')
       .then(res => {
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(err => {
         console.error('Error cargando empleados:', err);
-        const colsErr = rolUsuario === 'admin' ? 9 : 8;
+        const colsErr = rolUsuario === 'admin' ? 10 : 9;
         tablaInfo.innerHTML = `<tr><td colspan="${colsErr}">Error al cargar empleados: ${err.message}</td></tr>`;
       });
   }
@@ -104,7 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
       contadorEl.textContent = `Total: ${lista.length} empleado${lista.length !== 1 ? 's' : ''}`;
     }
 
-    const cols = rolUsuario === 'admin' ? 9 : 8;
+    // Mostrar u ocultar botón resumen según si hay datos
+    const btnResumen = document.getElementById('btn-resumen-tallas');
+    if (btnResumen) btnResumen.style.display = lista.length ? 'inline-block' : 'none';
+
+    const cols = rolUsuario === 'admin' ? 10 : 9;
     if (!lista.length) {
       tablaInfo.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;">No se encontraron empleados</td></tr>`;
       return;
@@ -114,6 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       const fechaNac = formatFecha(e.fecha_nacimiento);
       const fechaIng = formatFecha(e.fecha_ingreso);
+
+      // Resumen compacto de tallas
+      const tallas = [e.talla_zapatos, e.talla_pantalon, e.talla_camiseta, e.talla_chompa]
+        .map(t => t || '—').join(' / ');
 
       const btnEditar = rolUsuario === 'admin'
         ? `<td class="user-actions"><button class="btn-obs" onclick="editarInfoEmpleado(${e.id})">Editar</button></td>`
@@ -127,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${fechaIng}</td>
         <td><span class="badge-localidad badge-${(e.localidad || 'MATRIZ').toLowerCase()}">${e.localidad || 'MATRIZ'}</span></td>
         <td>${e.cargo}</td>
+        <td style="font-size:12px;color:#374151;white-space:nowrap;">${tallas}</td>
         <td><span class="badge ${e.activo ? 'badge-ok' : 'badge-off'}">${e.activo ? 'Activo' : 'Inactivo'}</span></td>
         ${btnEditar}
       `;
@@ -150,6 +159,66 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
+  // Resumen de tallas para compras
+  // ===============================
+  function contarTallas(campo) {
+    const mapa = {};
+    empleados.filter(e => e.activo).forEach(e => {
+      const t = e[campo] || null;
+      if (!t) return; // omitir sin talla
+      mapa[t] = (mapa[t] || 0) + 1;
+    });
+    return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
+  }
+
+  function filasTallas(lista) {
+    if (!lista.length) return '<tr><td colspan="2" style="color:#9ca3af;font-size:12px;">Sin datos</td></tr>';
+    return lista.map(([t, n]) =>
+      `<tr><td style="padding:2px 8px;font-weight:600;">${t}</td><td style="padding:2px 8px;">× ${n}</td></tr>`
+    ).join('');
+  }
+
+  function mostrarResumenTallas() {
+    const activos = empleados.filter(e => e.activo).length;
+    const zapatos  = contarTallas('talla_zapatos');
+    const pantalon = contarTallas('talla_pantalon');
+    const camiseta = contarTallas('talla_camiseta');
+    const chompa   = contarTallas('talla_chompa');
+
+    Swal.fire({
+      title: '📊 Resumen de tallas',
+      width: 700,
+      html: `
+        <p style="color:#6b7280;font-size:13px;margin-bottom:14px;">Empleados activos: <strong>${activos}</strong></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;text-align:left;">
+          <div>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:4px;">👟 Zapatos</p>
+            <table style="width:100%;font-size:13px;">${filasTallas(zapatos)}</table>
+          </div>
+          <div>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#0891b2;border-bottom:2px solid #0891b2;padding-bottom:4px;">👖 Pantalón</p>
+            <table style="width:100%;font-size:13px;">${filasTallas(pantalon)}</table>
+          </div>
+          <div>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#16a34a;border-bottom:2px solid #16a34a;padding-bottom:4px;">👕 Camiseta</p>
+            <table style="width:100%;font-size:13px;">${filasTallas(camiseta)}</table>
+          </div>
+          <div>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#dc2626;border-bottom:2px solid #dc2626;padding-bottom:4px;">🧥 Chompa</p>
+            <table style="width:100%;font-size:13px;">${filasTallas(chompa)}</table>
+          </div>
+        </div>
+      `,
+      confirmButtonText: 'Cerrar',
+      showCancelButton: false,
+    });
+  }
+
+  // Bind botón resumen
+  const btnResumen = document.getElementById('btn-resumen-tallas');
+  if (btnResumen) btnResumen.addEventListener('click', mostrarResumenTallas);
+
+  // ===============================
   // Editar info empleado
   // ===============================
   window.editarInfoEmpleado = function (id) {
@@ -171,15 +240,41 @@ document.addEventListener('DOMContentLoaded', () => {
           <option value="MATRIZ" ${emp.localidad === 'MATRIZ' ? 'selected' : ''}>MATRIZ</option>
           <option value="SUCURSAL" ${emp.localidad === 'SUCURSAL' ? 'selected' : ''}>SUCURSAL</option>
         </select>
+
+        <div style="margin-top:14px;border-top:1px solid #e5e7eb;padding-top:10px;">
+          <p style="font-size:13px;font-weight:600;text-align:left;margin:0 0 6px 18px;color:#374151;">Tallas de uniforme</p>
+          <input id="rrhh-zapatos"  class="swal2-input" placeholder="Zapatos (ej: 42)"  value="${emp.talla_zapatos  || ''}">
+          <input id="rrhh-pantalon" class="swal2-input" placeholder="Pantalón (ej: 32)" value="${emp.talla_pantalon || ''}">
+          <select id="rrhh-camiseta" class="swal2-select" style="margin-top:6px;">
+            <option value="">Camiseta...</option>
+            <option value="S"   ${emp.talla_camiseta === 'S'   ? 'selected' : ''}>S</option>
+            <option value="M"   ${emp.talla_camiseta === 'M'   ? 'selected' : ''}>M</option>
+            <option value="L"   ${emp.talla_camiseta === 'L'   ? 'selected' : ''}>L</option>
+            <option value="XL"  ${emp.talla_camiseta === 'XL'  ? 'selected' : ''}>XL</option>
+            <option value="XXL" ${emp.talla_camiseta === 'XXL' ? 'selected' : ''}>XXL</option>
+          </select>
+          <select id="rrhh-chompa" class="swal2-select" style="margin-top:6px;">
+            <option value="">Chompa...</option>
+            <option value="S"   ${emp.talla_chompa === 'S'   ? 'selected' : ''}>S</option>
+            <option value="M"   ${emp.talla_chompa === 'M'   ? 'selected' : ''}>M</option>
+            <option value="L"   ${emp.talla_chompa === 'L'   ? 'selected' : ''}>L</option>
+            <option value="XL"  ${emp.talla_chompa === 'XL'  ? 'selected' : ''}>XL</option>
+            <option value="XXL" ${emp.talla_chompa === 'XXL' ? 'selected' : ''}>XXL</option>
+          </select>
+        </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Guardar',
       preConfirm: () => {
         return {
-          cedula: document.getElementById('rrhh-cedula').value.trim() || null,
-          fecha_nacimiento: document.getElementById('rrhh-fechanac').value || null,
-          fecha_ingreso: document.getElementById('rrhh-fechaing').value || null,
-          localidad: document.getElementById('rrhh-localidad').value
+          cedula:          document.getElementById('rrhh-cedula').value.trim()   || null,
+          fecha_nacimiento:document.getElementById('rrhh-fechanac').value        || null,
+          fecha_ingreso:   document.getElementById('rrhh-fechaing').value        || null,
+          localidad:       document.getElementById('rrhh-localidad').value,
+          talla_zapatos:   document.getElementById('rrhh-zapatos').value.trim()  || null,
+          talla_pantalon:  document.getElementById('rrhh-pantalon').value.trim() || null,
+          talla_camiseta:  document.getElementById('rrhh-camiseta').value        || null,
+          talla_chompa:    document.getElementById('rrhh-chompa').value          || null,
         };
       }
     }).then(r => {
