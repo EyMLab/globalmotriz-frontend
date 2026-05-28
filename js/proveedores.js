@@ -127,12 +127,14 @@ const PROV = (() => {
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
-        const obs    = (d.observacion || "").replace(/"/g, "&quot;");
-        const numEsc = d.numero_documento.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+        const obsEnc = (d.observacion || "")
+          .replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        const numEnc = d.numero_documento.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
         const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
-        const btnObs = obs
-          ? `<button class="btn-obs" onclick="PROV.editarObservacion('${numEsc}','${obs.replace(/'/g,"\\'")}')">Ver / Editar</button>`
-          : `<button class="btn-obs btn-obs-vacia" onclick="PROV.editarObservacion('${numEsc}','')">Agregar</button>`;
+        const tieneObs = !!(d.observacion || "").trim();
+        const btnObs = `<button class="btn-obs${tieneObs ? "" : " btn-obs-vacia"}"
+          data-num="${numEnc}" data-obs="${obsEnc}"
+          onclick="PROV.editarObsClick(this)">${tieneObs ? "Ver / Editar" : "Agregar"}</button>`;
         return `<tr style="${rowStyle}">
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
@@ -210,6 +212,11 @@ const PROV = (() => {
     if (errores) Swal.fire("Atención", `${errores} documentos no se pudieron actualizar.`, "warning");
     else Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1500, showConfirmButton: false });
     await cargarDocumentos(paginaDoc);
+  }
+
+  // ── Wrapper seguro para onclick del botón ────────
+  function editarObsClick(btn) {
+    editarObservacion(btn.dataset.num, btn.dataset.obs || "");
   }
 
   // ── Editar observación ───────────────────────────
@@ -615,6 +622,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { actualizarBarraSeleccion, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
+  return { actualizarBarraSeleccion, editarObsClick, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
 
 })();
