@@ -328,11 +328,19 @@
       </div>
     </div>
 
+    <!-- Barra de selección (aparece cuando hay filas marcadas) -->
+    <div id="sel-bar" style="display:none;align-items:center;gap:12px;padding:8px 14px;margin-bottom:8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--r-md);flex-wrap:wrap;">
+      <span id="sel-count" style="font-size:13px;font-weight:600;color:#1d4ed8;flex:1"></span>
+      <button class="btn-descartar" id="btn-desc-sel">Descartar seleccionados</button>
+      <button class="btn-reactivar" id="btn-react-sel">Reactivar seleccionados</button>
+      <button class="btn-sm btn-sm-sec" id="btn-desel-all" style="font-size:11px;padding:3px 10px">Limpiar selección</button>
+    </div>
+
     <div class="prov-table-wrap">
       <table class="prov-table">
         <thead>
           <tr>
-            <th style="width:90px">Acción</th>
+            <th style="width:32px;text-align:center"><input type="checkbox" id="check-all-docs" title="Seleccionar todos" style="cursor:pointer;width:15px;height:15px;accent-color:#fff"/></th>
             <th>Proveedor</th>
             <th>Tipo</th>
             <th>Centro</th>

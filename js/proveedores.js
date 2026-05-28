@@ -98,21 +98,28 @@ const PROV = (() => {
         const descartado = d.estado === "DESCARTADO";
         const obs = (d.observacion || "").replace(/"/g, "&quot;");
         const obsCorta = obs.length > 40 ? obs.slice(0, 40) + "…" : obs;
-        const btnAccion = descartado
-          ? `<button class="btn-reactivar" onclick="PROV.cambiarEstado('${d.numero_documento}','ACTIVO')">Reactivar</button>`
-          : `<button class="btn-descartar" onclick="PROV.cambiarEstado('${d.numero_documento}','DESCARTADO')">Descartar</button>`;
-        const rowStyle = descartado ? 'background:#f9fafb;opacity:.6;' : '';
+        const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
+        const numEsc = d.numero_documento.replace(/'/g, "\\'");
         return `<tr style="${rowStyle}">
-          <td>${btnAccion}</td>
+          <td style="text-align:center">
+            <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
+              data-num="${d.numero_documento.replace(/"/g,'&quot;')}"
+              data-estado="${d.estado}"
+              onchange="PROV.actualizarBarraSeleccion()"/>
+          </td>
           <td title="${(d.proveedor||"").replace(/"/g,"&quot;")}">${d.proveedor || "—"}</td>
           <td>${d.tipo_doc || "—"}</td>
           <td style="font-size:11px">${(d.centro_costos || "—").replace("CC.GLOBAL MOTRIZ ","")}</td>
           <td style="font-family:monospace;font-size:12px">${d.numero_documento}</td>
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
-          <td class="obs-cell" title="${obs}" onclick="PROV.editarObservacion('${d.numero_documento}','${obs}')">${obsCorta || "—"}</td>
+          <td class="obs-cell" title="${obs}" onclick="PROV.editarObservacion('${numEsc}','${obs}')">${obsCorta || "—"}</td>
         </tr>`;
       }).join("");
+      // Resetear barra y check-all al recargar
+      actualizarBarraSeleccion();
+      const chkAll = document.getElementById("check-all-docs");
+      if (chkAll) chkAll.checked = false;
     }
 
     document.getElementById("pag-info-doc").textContent =
@@ -121,29 +128,53 @@ const PROV = (() => {
     document.getElementById("btn-next-doc").disabled = paginaDoc >= totalPagDoc;
   }
 
-  // ── Cambiar estado (descartar / reactivar) ───────
-  async function cambiarEstado(numDoc, nuevoEstado) {
-    const accion = nuevoEstado === "DESCARTADO" ? "descartar" : "reactivar";
+  // ── Barra de selección ───────────────────────────
+  function actualizarBarraSeleccion() {
+    const checks  = [...document.querySelectorAll(".row-check:checked")];
+    const bar     = document.getElementById("sel-bar");
+    const countEl = document.getElementById("sel-count");
+    if (!bar) return;
+    if (!checks.length) { bar.style.display = "none"; return; }
+    bar.style.display = "flex";
+    const nActivo     = checks.filter(c => c.dataset.estado === "ACTIVO").length;
+    const nDescartado = checks.filter(c => c.dataset.estado === "DESCARTADO").length;
+    countEl.textContent = `${checks.length} seleccionado${checks.length > 1 ? "s" : ""}` +
+      (nActivo     ? `  ·  ${nActivo} activo${nActivo > 1 ? "s" : ""}`         : "") +
+      (nDescartado ? `  ·  ${nDescartado} descartado${nDescartado > 1 ? "s" : ""}` : "");
+    const btnDesc  = document.getElementById("btn-desc-sel");
+    const btnReact = document.getElementById("btn-react-sel");
+    if (btnDesc)  btnDesc.style.display  = nActivo     ? "" : "none";
+    if (btnReact) btnReact.style.display = nDescartado ? "" : "none";
+  }
+
+  // ── Cambiar estado en bloque ─────────────────────
+  async function cambiarEstadoSeleccionados(nuevoEstado) {
+    const checks = [...document.querySelectorAll(".row-check:checked")]
+      .filter(c => c.dataset.estado !== nuevoEstado);
+    if (!checks.length) return;
+
+    const verbo = nuevoEstado === "DESCARTADO" ? "descartar" : "reactivar";
     const { isConfirmed } = await Swal.fire({
-      title: `¿${nuevoEstado === "DESCARTADO" ? "Descartar" : "Reactivar"} documento?`,
-      text: numDoc,
+      title: `¿${nuevoEstado === "DESCARTADO" ? "Descartar" : "Reactivar"} ${checks.length} documento${checks.length > 1 ? "s" : ""}?`,
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: `Sí, ${accion}`,
+      confirmButtonText: `Sí, ${verbo}`,
       confirmButtonColor: nuevoEstado === "DESCARTADO" ? "#ef4444" : "#2B7A9E",
       cancelButtonText: "Cancelar",
     });
     if (!isConfirmed) return;
 
-    const res = await apiFetch(`/proveedores-pagar/documentos/${encodeURIComponent(numDoc)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: nuevoEstado }),
-    });
-    if (!res || !res.ok) {
-      Swal.fire("Error", "No se pudo actualizar el estado.", "error");
-      return;
+    let errores = 0;
+    for (const cb of checks) {
+      const res = await apiFetch(`/proveedores-pagar/documentos/${encodeURIComponent(cb.dataset.num)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+      if (!res || !res.ok) errores++;
     }
+    if (errores) Swal.fire("Atención", `${errores} documentos no se pudieron actualizar.`, "warning");
+    else Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1500, showConfirmButton: false });
     await cargarDocumentos(paginaDoc);
     await cargarTotal();
   }
@@ -506,6 +537,20 @@ const PROV = (() => {
     document.getElementById("btn-prev-doc")?.addEventListener("click", () => cargarDocumentos(paginaDoc - 1));
     document.getElementById("btn-next-doc")?.addEventListener("click", () => cargarDocumentos(paginaDoc + 1));
 
+    // Selección masiva
+    document.getElementById("check-all-docs")?.addEventListener("change", e => {
+      document.querySelectorAll(".row-check").forEach(c => { c.checked = e.target.checked; });
+      actualizarBarraSeleccion();
+    });
+    document.getElementById("btn-desc-sel")?.addEventListener("click",  () => cambiarEstadoSeleccionados("DESCARTADO"));
+    document.getElementById("btn-react-sel")?.addEventListener("click", () => cambiarEstadoSeleccionados("ACTIVO"));
+    document.getElementById("btn-desel-all")?.addEventListener("click", () => {
+      document.querySelectorAll(".row-check").forEach(c => { c.checked = false; });
+      const ca = document.getElementById("check-all-docs");
+      if (ca) ca.checked = false;
+      actualizarBarraSeleccion();
+    });
+
     // Resumen
     document.getElementById("btn-filtrar-res")?.addEventListener("click",  cargarResumen);
     document.getElementById("btn-guardar-todos")?.addEventListener("click", guardarTodos);
@@ -522,6 +567,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { cambiarEstado, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
+  return { actualizarBarraSeleccion, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
 
 })();
