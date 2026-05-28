@@ -421,7 +421,7 @@ const PROV = (() => {
     if (!vals) return;
 
     document.getElementById("import-info-prov").textContent =
-      `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevos} nuevos · ${vals.actualizados} actualizados · ${vals.descartados_automaticos} auto-descartados`;
+      `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevos} nuevos · ${vals.actualizados} actualizados · ${vals.eliminados} eliminados`;
 
     await cargarFiltros();
     await cargarTotal();
@@ -430,7 +430,7 @@ const PROV = (() => {
     Swal.fire({
       icon: "success",
       title: "Importación completada",
-      html: `<b>${vals.nuevos}</b> nuevos<br><b>${vals.actualizados}</b> actualizados<br><b>${vals.descartados_automaticos}</b> auto-descartados`,
+      html: `<b>${vals.nuevos}</b> nuevos<br><b>${vals.actualizados}</b> actualizados<br><b>${vals.eliminados}</b> eliminados (pagados/resueltos)`,
       timer: 3500,
       showConfirmButton: false,
     });
