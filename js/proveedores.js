@@ -40,6 +40,20 @@ const PROV = (() => {
     };
   }
 
+  // ── Prioridad: mapeo número ↔ texto ─────────────
+  const PRIOR_OPTS = [
+    { val: "",  label: "—"    },
+    { val: "1", label: "BAJA" },
+    { val: "2", label: "MEDIA"},
+    { val: "3", label: "ALTA" },
+  ];
+  function priorSelect(currentVal, provEnc) {
+    const opts = PRIOR_OPTS.map(o =>
+      `<option value="${o.val}"${String(currentVal||"") === o.val ? " selected" : ""}>${o.label}</option>`
+    ).join("");
+    return `<select class="select-prior" data-campo="prioridad" data-proveedor="${provEnc}">${opts}</select>`;
+  }
+
   // ── Cargar filtros dinámicos ─────────────────────
   async function cargarFiltros() {
     const res = await apiFetch("/proveedores-pagar/filtros");
@@ -51,10 +65,7 @@ const PROV = (() => {
       if (!sel) return;
       const prev = sel.value;
       while (sel.options.length > 1) sel.remove(1);
-      (data.centros || []).forEach(c => {
-        const o = new Option(c, c);
-        sel.add(o);
-      });
+      (data.centros || []).forEach(c => sel.add(new Option(c, c)));
       if (prev) sel.value = prev;
     });
 
@@ -62,6 +73,14 @@ const PROV = (() => {
     if (selTipo) {
       while (selTipo.options.length > 1) selTipo.remove(1);
       (data.tipos || []).forEach(t => selTipo.add(new Option(t, t)));
+    }
+
+    // Datalist de proveedores para autocomplete
+    const dl = document.getElementById("dl-proveedores");
+    if (dl) {
+      dl.innerHTML = (data.proveedores || [])
+        .map(p => `<option value="${p.replace(/"/g, "&quot;")}">`)
+        .join("");
     }
   }
 
@@ -244,14 +263,20 @@ const PROV = (() => {
       const saldo  = parseFloat(r.total_saldo || 0);
       let rowClass = "";
       if (abonar > 0) rowClass = abonar >= saldo ? "pago-ok" : "pago-parcial";
-      const provEnc = encodeURIComponent(r.proveedor);
+      const provEnc  = encodeURIComponent(r.proveedor);
+      const totalFmt = saldo.toFixed(2);
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
         <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}">${r.proveedor}</td>
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
-        <td><input type="number" class="input-prior" value="${r.prioridad || ""}" placeholder="—" data-campo="prioridad" data-proveedor="${provEnc}"/></td>
-        <td><input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}"/></td>
+        <td>${priorSelect(r.prioridad, provEnc)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}"/>
+            <button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>
+          </div>
+        </td>
         <td><button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">Guardar</button></td>
       </tr>`;
     }).join("");
@@ -259,9 +284,8 @@ const PROV = (() => {
 
   // ── Guardar abono de un proveedor ────────────────
   async function guardarAbono(provEnc) {
-    const proveedor  = decodeURIComponent(provEnc);
     const tr         = document.querySelector(`tr[data-proveedor="${provEnc}"]`);
-    const prioridad  = tr?.querySelector("[data-campo='prioridad']")?.value;
+    const prioridad  = tr?.querySelector("[data-campo='prioridad']")?.value;   // viene del <select>
     const por_abonar = tr?.querySelector("[data-campo='por_abonar']")?.value;
 
     const res = await apiFetch(`/proveedores-pagar/resumen/${provEnc}`, {
