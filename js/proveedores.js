@@ -272,6 +272,15 @@ const PROV = (() => {
     cargarResumen();
   }
 
+  // ── Suma conceptos → inp-fijo → recalc disponible ──
+  function actualizarTotalFijo() {
+    const total = [...document.querySelectorAll("#tbody-conceptos .c-monto")]
+      .reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
+    const el = document.getElementById("inp-fijo");
+    if (el) el.value = total.toFixed(2);
+    recalcDisponible();
+  }
+
   // ── Recalcular disponible en tiempo real ─────────
   function recalcDisponible() {
     const caja   = parseFloat(document.getElementById("inp-caja")?.value)   || 0;
@@ -295,7 +304,7 @@ const PROV = (() => {
     document.getElementById("inp-colchon").value = data.colchon      ?? 2000;
     document.getElementById("inp-fijo").value    = data.por_pagar_fijo ?? "";
     renderConceptos(data.conceptos || []);
-    recalcDisponible();
+    actualizarTotalFijo();
   }
 
   // ── Renderizar conceptos ─────────────────────────
@@ -304,9 +313,9 @@ const PROV = (() => {
     tbody.innerHTML = lista.map((c, i) => `
       <tr data-idx="${i}">
         <td><input type="text"   class="c-concepto" value="${(c.concepto||"").replace(/"/g,"&quot;")}" placeholder="Concepto…"/></td>
-        <td><input type="number" class="c-monto"    value="${c.monto || ""}" step="0.01" placeholder="0.00"/></td>
+        <td><input type="number" class="c-monto"    value="${c.monto || ""}" step="0.01" placeholder="0.00" oninput="PROV.actualizarTotalFijo()"/></td>
         <td style="text-align:center"><input type="checkbox" class="c-pagado" ${c.pagado ? "checked" : ""}/></td>
-        <td><button class="btn-del-concepto" onclick="PROV.delConcepto(${i})">x</button></td>
+        <td><button class="btn-del-concepto" onclick="PROV.delConcepto(${i});PROV.actualizarTotalFijo()">x</button></td>
       </tr>`).join("");
   }
 
@@ -317,9 +326,9 @@ const PROV = (() => {
     tr.dataset.idx = i;
     tr.innerHTML = `
       <td><input type="text"   class="c-concepto" placeholder="Concepto…"/></td>
-      <td><input type="number" class="c-monto"    step="0.01" placeholder="0.00"/></td>
+      <td><input type="number" class="c-monto"    step="0.01" placeholder="0.00" oninput="PROV.actualizarTotalFijo()"/></td>
       <td style="text-align:center"><input type="checkbox" class="c-pagado"/></td>
-      <td><button class="btn-del-concepto" onclick="this.closest('tr').remove()">x</button></td>`;
+      <td><button class="btn-del-concepto" onclick="this.closest('tr').remove();PROV.actualizarTotalFijo()">x</button></td>`;
     tbody.appendChild(tr);
   }
 
@@ -516,6 +525,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { cambiarEstado, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, addConcepto, delConcepto };
+  return { cambiarEstado, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
 
 })();

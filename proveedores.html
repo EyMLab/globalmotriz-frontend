@@ -178,6 +178,25 @@
     .btn-add-concepto:hover { background:var(--row-even); }
     .btn-del-concepto { font-size:14px; background:none; border:none; color:#ef4444; cursor:pointer; padding:0 4px; line-height:1; }
 
+    /* ── Toolbar buttons (mismo estilo que control-taller) ───── */
+    .tabla-toolbar-right { margin-left: auto; display:flex; gap:8px; }
+    .btn-sm {
+      padding: 5px 13px;
+      border: 1.5px solid var(--primary);
+      border-radius: var(--r-input);
+      background: transparent;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-main);
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn-sm:hover { background: var(--primary); color:#fff; }
+    .btn-sm.btn-sm-sec { border-color: var(--text-light); color: var(--text-light); }
+    .btn-sm.btn-sm-sec:hover { background: var(--text-light); color:#fff; }
+
     /* ── Filtros del módulo (mismo patrón que filtros-taller) ── */
     .filtros-prov {
       background: var(--white);
@@ -303,8 +322,8 @@
       <div class="filtros-actions">
         <span class="fa-spacer"></span>
         <div class="filtros-btn-row">
-          <button class="btn-primary" id="btn-filtrar-prov">Buscar</button>
-          <button class="btn-primary" id="btn-limpiar-prov" style="border-color:var(--text-light);color:var(--text-light)">Limpiar</button>
+          <button class="btn-sm" id="btn-filtrar-prov">Buscar</button>
+          <button class="btn-sm btn-sm-sec" id="btn-limpiar-prov">Limpiar</button>
         </div>
       </div>
     </div>
@@ -350,7 +369,7 @@
           <option value="">Todos</option>
         </select>
       </div>
-      <button class="btn-primary" id="btn-filtrar-res" style="margin-top:18px">Buscar</button>
+      <button class="btn-sm" id="btn-filtrar-res" style="margin-top:18px">Buscar</button>
       <button class="btn-sm" id="btn-guardar-todos" style="margin-top:18px">Guardar todos</button>
     </div>
 
@@ -404,7 +423,7 @@
         <label style="font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px">Periodo</label>
         <input type="month" id="inp-periodo" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;font-family:var(--font-main)"/>
       </div>
-      <button class="btn-primary" id="btn-cargar-costos" style="margin-top:18px">Cargar</button>
+      <button class="btn-sm" id="btn-cargar-costos" style="margin-top:18px">Cargar</button>
     </div>
 
     <!-- Disponible destacado -->
@@ -425,8 +444,9 @@
           <input type="number" id="inp-colchon" step="0.01" value="2000" oninput="PROV.recalcDisponible()"/>
         </div>
         <div class="costos-field">
-          <label>Por pagar fijo (compromisos)</label>
-          <input type="number" id="inp-fijo" step="0.01" placeholder="0.00" oninput="PROV.recalcDisponible()"/>
+          <label>Por pagar fijo (suma de conceptos)</label>
+          <input type="number" id="inp-fijo" step="0.01" placeholder="0.00" readonly
+            style="background:#f9fafb;color:var(--text-light);cursor:default"/>
         </div>
       </div>
 
