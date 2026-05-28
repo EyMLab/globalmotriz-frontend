@@ -93,13 +93,16 @@ const PROV = (() => {
     }
   }
 
-  // ── Cargar conteo total activos ──────────────────
-  async function cargarTotal() {
-    const res = await apiFetch("/proveedores-pagar/documentos?estado=ACTIVO&limit=1");
-    if (!res || !res.ok) return;
-    const data = await safeJson(res);
-    const el = document.getElementById("c-total-prov");
-    if (el) el.textContent = data.total ?? "—";
+  // ── Actualizar contador según filtro activo ───────
+  function actualizarContador(total) {
+    const estado = document.getElementById("f-estado")?.value ?? "ACTIVO";
+    const el  = document.getElementById("c-total-prov");
+    const lbl = document.getElementById("lbl-total-prov");
+    if (el)  el.textContent  = total ?? "—";
+    if (lbl) lbl.textContent =
+      estado === "DESCARTADO" ? "docs descartados" :
+      estado === "ACTIVO"     ? "docs activos"      :
+                                "docs en total";
   }
 
   // ── Cargar tabla documentos ──────────────────────
@@ -156,6 +159,7 @@ const PROV = (() => {
       `Página ${paginaDoc} de ${totalPagDoc} (${data.total} docs)`;
     document.getElementById("btn-prev-doc").disabled = paginaDoc <= 1;
     document.getElementById("btn-next-doc").disabled = paginaDoc >= totalPagDoc;
+    actualizarContador(data.total);
   }
 
   // ── Barra de selección ───────────────────────────
@@ -206,7 +210,6 @@ const PROV = (() => {
     if (errores) Swal.fire("Atención", `${errores} documentos no se pudieron actualizar.`, "warning");
     else Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1500, showConfirmButton: false });
     await cargarDocumentos(paginaDoc);
-    await cargarTotal();
   }
 
   // ── Editar observación ───────────────────────────
@@ -499,7 +502,6 @@ const PROV = (() => {
       `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevos} nuevos · ${vals.actualizados} actualizados · ${vals.eliminados} eliminados`;
 
     await cargarFiltros();
-    await cargarTotal();
     await cargarDocumentos(1);
 
     Swal.fire({
@@ -564,7 +566,6 @@ const PROV = (() => {
     if (inpPeriodo) inpPeriodo.value = periodoActual();
 
     await cargarFiltros();
-    await cargarTotal();
     await cargarDocumentos(1);
 
     // Eventos toolbar
