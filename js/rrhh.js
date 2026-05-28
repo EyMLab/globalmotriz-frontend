@@ -119,9 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const fechaNac = formatFecha(e.fecha_nacimiento);
       const fechaIng = formatFecha(e.fecha_ingreso);
 
-      // Resumen compacto de tallas
-      const tallas = [e.talla_zapatos, e.talla_pantalon, e.talla_camiseta, e.talla_chompa]
-        .map(t => t || '—').join(' / ');
+      // Resumen compacto de tallas con etiquetas
+      const [tz, tp, tc, tch] = [e.talla_zapatos, e.talla_pantalon, e.talla_camiseta, e.talla_chompa].map(t => t || '—');
+      const tallas = `
+        <div style="display:grid;grid-template-columns:repeat(4,auto);gap:0 10px;font-size:11px;line-height:1.4;text-align:center;">
+          <span style="color:#9ca3af;font-weight:600;">Z</span>
+          <span style="color:#9ca3af;font-weight:600;">P</span>
+          <span style="color:#9ca3af;font-weight:600;">C</span>
+          <span style="color:#9ca3af;font-weight:600;">CH</span>
+          <span>${tz}</span><span>${tp}</span><span>${tc}</span><span>${tch}</span>
+        </div>`;
 
       const btnEditar = rolUsuario === 'admin'
         ? `<td class="user-actions"><button class="btn-obs" onclick="editarInfoEmpleado(${e.id})">Editar</button></td>`
@@ -135,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${fechaIng}</td>
         <td><span class="badge-localidad badge-${(e.localidad || 'MATRIZ').toLowerCase()}">${e.localidad || 'MATRIZ'}</span></td>
         <td>${e.cargo}</td>
-        <td style="font-size:12px;color:#374151;white-space:nowrap;">${tallas}</td>
+        <td style="white-space:nowrap;">${tallas}</td>
         <td><span class="badge ${e.activo ? 'badge-ok' : 'badge-off'}">${e.activo ? 'Activo' : 'Inactivo'}</span></td>
         ${btnEditar}
       `;
@@ -186,25 +193,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const chompa   = contarTallas('talla_chompa');
 
     Swal.fire({
-      title: '📊 Resumen de tallas',
+      title: 'Resumen de tallas',
       width: 700,
       html: `
         <p style="color:#6b7280;font-size:13px;margin-bottom:14px;">Empleados activos: <strong>${activos}</strong></p>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;text-align:left;">
           <div>
-            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:4px;">👟 Zapatos</p>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:4px;">Calzado</p>
             <table style="width:100%;font-size:13px;">${filasTallas(zapatos)}</table>
           </div>
           <div>
-            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#0891b2;border-bottom:2px solid #0891b2;padding-bottom:4px;">👖 Pantalón</p>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#0891b2;border-bottom:2px solid #0891b2;padding-bottom:4px;">Pantalón</p>
             <table style="width:100%;font-size:13px;">${filasTallas(pantalon)}</table>
           </div>
           <div>
-            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#16a34a;border-bottom:2px solid #16a34a;padding-bottom:4px;">👕 Camiseta</p>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#16a34a;border-bottom:2px solid #16a34a;padding-bottom:4px;">Camisa</p>
             <table style="width:100%;font-size:13px;">${filasTallas(camiseta)}</table>
           </div>
           <div>
-            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#dc2626;border-bottom:2px solid #dc2626;padding-bottom:4px;">🧥 Chompa</p>
+            <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:#dc2626;border-bottom:2px solid #dc2626;padding-bottom:4px;">Chompa</p>
             <table style="width:100%;font-size:13px;">${filasTallas(chompa)}</table>
           </div>
         </div>
