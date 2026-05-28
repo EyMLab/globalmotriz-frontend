@@ -190,6 +190,9 @@
     .conceptos-table input[type="checkbox"] { width:16px; height:16px; cursor:pointer; accent-color:var(--primary); }
     .btn-add-concepto { font-size:12px; padding:5px 14px; border:1px dashed var(--input-border); background:transparent; color:var(--primary); border-radius:var(--r-md); cursor:pointer; margin-top:10px; font-family:var(--font-main); }
     .btn-add-concepto:hover { background:var(--row-even); }
+    .prov-suggestion { padding:8px 12px; font-size:13px; cursor:pointer; font-family:var(--font-main); color:var(--text); border-bottom:1px solid var(--border-subtle); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .prov-suggestion:last-child { border-bottom:none; }
+    .prov-suggestion:hover, .prov-suggestion.active { background:#eff6ff; color:var(--primary); }
     .btn-del-concepto { font-size:14px; background:none; border:none; color:#ef4444; cursor:pointer; padding:0 4px; line-height:1; }
 
     /* ── Toolbar buttons (mismo estilo que control-taller) ───── */
@@ -322,8 +325,13 @@
         </div>
         <div class="fg">
           <label>Proveedor</label>
-          <input type="text" id="f-proveedor" placeholder="Buscar proveedor…" list="dl-proveedores" autocomplete="off"/>
-          <datalist id="dl-proveedores"></datalist>
+          <div style="position:relative">
+            <input type="text" id="f-proveedor" placeholder="Buscar proveedor…" autocomplete="off" style="width:155px"/>
+            <div id="prov-dropdown"
+              style="display:none;position:absolute;top:calc(100% + 2px);left:0;min-width:280px;z-index:200;
+                     background:var(--white);border:1px solid var(--border-subtle);border-radius:var(--r-md);
+                     box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;"></div>
+          </div>
         </div>
         <div class="fg">
           <label>Desde</label>

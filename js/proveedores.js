@@ -5,9 +5,10 @@
 const PROV = (() => {
 
   // ── Estado interno ──────────────────────────────
-  let paginaDoc     = 1;
-  let totalPagDoc   = 1;
-  let _disponible   = 0;   // disponible del mes actual
+  let paginaDoc        = 1;
+  let totalPagDoc      = 1;
+  let _disponible      = 0;
+  let _proveedoresList = [];   // lista para autocomplete
 
   // ── Helpers ─────────────────────────────────────
   function fmtMoney(v) {
@@ -84,13 +85,44 @@ const PROV = (() => {
       (data.tipos || []).forEach(t => selTipo.add(new Option(t, t)));
     }
 
-    // Datalist de proveedores para autocomplete
-    const dl = document.getElementById("dl-proveedores");
-    if (dl) {
-      dl.innerHTML = (data.proveedores || [])
-        .map(p => `<option value="${p.replace(/"/g, "&quot;")}">`)
-        .join("");
-    }
+    // Guardar lista para autocomplete personalizado
+    _proveedoresList = data.proveedores || [];
+  }
+
+  // ── Autocomplete proveedor ───────────────────────
+  function mostrarSugerencias() {
+    const input    = document.getElementById("f-proveedor");
+    const dropdown = document.getElementById("prov-dropdown");
+    if (!input || !dropdown) return;
+
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 1) { dropdown.style.display = "none"; return; }
+
+    const matches = _proveedoresList
+      .filter(p => p.toLowerCase().includes(q))
+      .slice(0, 12);
+
+    if (!matches.length) { dropdown.style.display = "none"; return; }
+
+    dropdown.innerHTML = matches.map(p => {
+      const enc = p.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+      // resaltar la parte que coincide
+      const re  = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})`, "gi");
+      const hl  = enc.replace(re, `<strong>$1</strong>`);
+      return `<div class="prov-suggestion" data-val="${enc}" onmousedown="PROV.seleccionarSugerencia(this)">${hl}</div>`;
+    }).join("");
+    dropdown.style.display = "block";
+  }
+
+  function seleccionarSugerencia(el) {
+    const input = document.getElementById("f-proveedor");
+    if (input) input.value = el.dataset.val;
+    document.getElementById("prov-dropdown").style.display = "none";
+  }
+
+  function ocultarDropdown() {
+    const d = document.getElementById("prov-dropdown");
+    if (d) d.style.display = "none";
   }
 
   // ── Actualizar contador según filtro activo ───────
@@ -586,7 +618,13 @@ const PROV = (() => {
       ["f-proveedor","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       cargarDocumentos(1);
     });
-    document.getElementById("f-proveedor")?.addEventListener("keydown", e => { if (e.key === "Enter") cargarDocumentos(1); });
+    const inpProv = document.getElementById("f-proveedor");
+    inpProv?.addEventListener("input",  mostrarSugerencias);
+    inpProv?.addEventListener("blur",   () => setTimeout(ocultarDropdown, 150));
+    inpProv?.addEventListener("keydown", e => {
+      if (e.key === "Enter")  { ocultarDropdown(); cargarDocumentos(1); }
+      if (e.key === "Escape") ocultarDropdown();
+    });
 
     // Paginación documentos
     document.getElementById("btn-prev-doc")?.addEventListener("click", () => cargarDocumentos(paginaDoc - 1));
@@ -622,6 +660,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { actualizarBarraSeleccion, editarObsClick, editarObservacion, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
+  return { actualizarBarraSeleccion, editarObsClick, editarObservacion, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
 
 })();
