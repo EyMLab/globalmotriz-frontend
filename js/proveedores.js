@@ -24,6 +24,14 @@ const PROV = (() => {
     return d.toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
   }
 
+  function fmtCentro(val) {
+    if (!val) return "—";
+    const v = val.toUpperCase();
+    if (v.includes("SUCURSAL")) return "SUCURSAL";
+    if (v.includes(" SA"))      return "MATRIZ";
+    return val.replace(/CC\.GLOBAL MOTRIZ\s*/i, "").trim() || val;
+  }
+
   function periodoActual() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -131,8 +139,8 @@ const PROV = (() => {
           </td>
           <td title="${(d.proveedor||"").replace(/"/g,"&quot;")}">${d.proveedor || "—"}</td>
           <td>${d.tipo_doc || "—"}</td>
-          <td style="font-size:11px">${(d.centro_costos || "—").replace("CC.GLOBAL MOTRIZ ","")}</td>
-          <td style="font-family:monospace;font-size:12px">${d.numero_documento}</td>
+          <td style="text-align:center">${fmtCentro(d.centro_costos)}</td>
+          <td>${d.numero_documento}</td>
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
           <td>${btnObs}</td>

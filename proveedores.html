@@ -69,6 +69,8 @@
       border-bottom: 1px solid var(--border-subtle);
       white-space: nowrap;
       color: var(--text);
+      font-family: var(--font-main);
+      font-size: 13px;
     }
     .prov-table tbody tr:last-child td { border-bottom: none; }
     .prov-table tbody tr:hover { filter: brightness(.96); }
@@ -351,10 +353,10 @@
             <th style="width:32px;text-align:center"><input type="checkbox" id="check-all-docs" title="Seleccionar todos" style="cursor:pointer;width:15px;height:15px;accent-color:#fff"/></th>
             <th>Proveedor</th>
             <th>Tipo</th>
-            <th>Centro</th>
+            <th style="text-align:center;width:90px">Centro</th>
             <th>N° Documento</th>
             <th>Fecha Emisión</th>
-            <th>Saldo</th>
+            <th style="text-align:right">Saldo</th>
             <th>Observación</th>
           </tr>
         </thead>
