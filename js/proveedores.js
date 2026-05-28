@@ -85,26 +85,25 @@ const PROV = (() => {
     const tbody = document.getElementById("tbody-docs");
 
     if (!res || !res.ok) {
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
       return;
     }
     const data = await safeJson(res);
     totalPagDoc = data.totalPaginas || 1;
 
     if (!data.documentos?.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
         const obs = (d.observacion || "").replace(/"/g, "&quot;");
         const obsCorta = obs.length > 40 ? obs.slice(0, 40) + "…" : obs;
-        const badge = descartado
-          ? `<span class="badge-descartado">DESCARTADO</span>`
-          : `<span class="badge-activo">ACTIVO</span>`;
         const btnAccion = descartado
           ? `<button class="btn-reactivar" onclick="PROV.cambiarEstado('${d.numero_documento}','ACTIVO')">Reactivar</button>`
           : `<button class="btn-descartar" onclick="PROV.cambiarEstado('${d.numero_documento}','DESCARTADO')">Descartar</button>`;
-        return `<tr class="${descartado ? "tr-descartado" : ""}">
+        const rowStyle = descartado ? 'background:#f9fafb;opacity:.6;' : '';
+        return `<tr style="${rowStyle}">
+          <td>${btnAccion}</td>
           <td title="${(d.proveedor||"").replace(/"/g,"&quot;")}">${d.proveedor || "—"}</td>
           <td>${d.tipo_doc || "—"}</td>
           <td style="font-size:11px">${(d.centro_costos || "—").replace("CC.GLOBAL MOTRIZ ","")}</td>
@@ -112,8 +111,6 @@ const PROV = (() => {
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
           <td class="obs-cell" title="${obs}" onclick="PROV.editarObservacion('${d.numero_documento}','${obs}')">${obsCorta || "—"}</td>
-          <td>${badge}</td>
-          <td>${btnAccion}</td>
         </tr>`;
       }).join("");
     }
