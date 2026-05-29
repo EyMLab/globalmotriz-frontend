@@ -641,7 +641,7 @@ const PROV = (() => {
     }
   }
 
-  // ── PDF: Resumen general ─────────────────────────
+  // ── PDF: Resumen general — siempre en una sola hoja ──
   async function pdfResumen() {
     if (!_resumenData?.proveedores?.length) {
       return Swal.fire("Sin datos", "Carga el resumen primero.", "info");
@@ -655,13 +655,31 @@ const PROV = (() => {
       const { jsPDF } = window.jspdf;
       const doc    = new jsPDF("p", "mm", "a4");
       const pageW  = doc.internal.pageSize.getWidth();
+      const pageH  = doc.internal.pageSize.getHeight();
       const mL = 14; const mR = 14;
+      const boxW   = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
       const priorMap = { "": "—", "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
+      const n = _resumenData.proveedores.length; // número de proveedores
+
+      // ── Auto-escalado: calcular font+padding para caber en 1 hoja ─────────
+      // Espacio ocupado: header PDF (28mm) + KPI cards (16mm) + gap (4mm) + tabla overhead (15mm) + margin (10mm)
+      const TOP_USED    = 28 + 16 + 4;  // header + kpi + gap
+      const TBL_FIXED   = 15;           // encabezado + fila totales + margen inferior tabla
+      const BOTTOM_USED = 10;
+      const availableH  = pageH - TOP_USED - TBL_FIXED - BOTTOM_USED;
+      const targetRowH  = availableH / n; // altura disponible por fila
+
+      let fs, pad; // fontSize y cellPadding de la tabla
+      if      (targetRowH >= 7.5) { fs = 8.5; pad = 2.5; }
+      else if (targetRowH >= 6)   { fs = 7.5; pad = 2;   }
+      else if (targetRowH >= 4.8) { fs = 6.5; pad = 1.5; }
+      else if (targetRowH >= 3.8) { fs = 5.5; pad = 1;   }
+      else                         { fs = 5;   pad = 0.8; }  // máx ~80 proveedores
 
       let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Resumen · ${hoyStr}`);
 
-      // ── KPI cards ─────────────────────────────────
+      // ── KPI cards compactas (16mm) ────────────────
       const totalDeudaVal = parseFloat(_resumenData.total_general || 0);
       const conPlanVal    = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar || 0), 0);
       const diferenciaVal = _disponible - conPlanVal;
@@ -671,22 +689,20 @@ const PROV = (() => {
         { label: "CON PLAN DE ABONO",  valor: fmtMoney(conPlanVal),    color: PDF_PRIMARY },
         { label: "DIFERENCIA",         valor: fmtMoney(diferenciaVal), color: diferenciaVal >= 0 ? [21, 128, 61] : [185, 28, 28] },
       ];
-      const boxW = pageW - mL - mR;
       const kpiW = boxW / 4;
       kpis.forEach((k, i) => {
         const x   = mL + i * kpiW;
         const gap = i > 0 ? 2 : 0;
-        doc.setFillColor(248, 250, 252);
-        doc.setDrawColor(226, 232, 240);
-        doc.roundedRect(x + gap, y, kpiW - gap, 20, 2, 2, "FD");
-        doc.setFont("Roboto", "bold"); doc.setFontSize(11); doc.setTextColor(...k.color);
-        doc.text(k.valor, x + gap + (kpiW - gap) / 2, y + 9, { align: "center" });
-        doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...PDF_GRAY);
-        doc.text(k.label, x + gap + (kpiW - gap) / 2, y + 16, { align: "center" });
+        doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x + gap, y, kpiW - gap, 16, 2, 2, "FD");
+        doc.setFont("Roboto", "bold"); doc.setFontSize(10); doc.setTextColor(...k.color);
+        doc.text(k.valor, x + gap + (kpiW - gap) / 2, y + 7, { align: "center" });
+        doc.setFont("Roboto", "normal"); doc.setFontSize(6); doc.setTextColor(...PDF_GRAY);
+        doc.text(k.label, x + gap + (kpiW - gap) / 2, y + 13, { align: "center" });
       });
-      y += 26;
+      y += 20; // 16mm card + 4mm gap
 
-      // ── Tabla proveedores ─────────────────────────
+      // ── Tabla proveedores (auto-escalada) ─────────
       const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
       const totalAbonar = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar   || 0), 0);
 
@@ -708,10 +724,19 @@ const PROV = (() => {
           { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
         ]],
         showFoot: "lastPage",
-        margin: { left: mL, right: mR, bottom: 16 },
-        styles: { fontSize: 8.5, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto" },
-        headStyles: { fillColor: PDF_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", font: "Roboto" },
-        footStyles: { fillColor: [241, 245, 249], textColor: PDF_DARK, fontStyle: "bold", font: "Roboto" },
+        margin: { left: mL, right: mR, bottom: 8 },
+        styles: {
+          fontSize: fs, cellPadding: pad,
+          lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto",
+        },
+        headStyles: {
+          fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
+          fontStyle: "bold", font: "Roboto", fontSize: fs,
+        },
+        footStyles: {
+          fillColor: [241, 245, 249], textColor: PDF_DARK,
+          fontStyle: "bold", font: "Roboto", fontSize: fs,
+        },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
           0: { cellWidth: 10, halign: "center" },
@@ -723,7 +748,11 @@ const PROV = (() => {
         },
       });
 
-      pdfNumerarPaginas(doc, hoyStr);
+      // Fecha de generación al pie (misma hoja)
+      const finalY = doc.lastAutoTable.finalY + 4;
+      doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...PDF_GRAY);
+      doc.text(`Generado: ${hoyStr}  ·  ${n} proveedores`, pageW - mR, finalY, { align: "right" });
+
       doc.save(`resumen_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
       Swal.close();
     } catch (err) {
