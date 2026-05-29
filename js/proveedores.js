@@ -9,6 +9,7 @@ const PROV = (() => {
   let totalPagDoc      = 1;
   let _disponible      = 0;
   let _proveedoresList = [];   // lista para autocomplete
+  let _resumenData     = null; // cache del último resumen cargado (para PDFs)
 
   // ── Helpers ─────────────────────────────────────
   function fmtMoney(v) {
@@ -298,6 +299,7 @@ const PROV = (() => {
 
     if (!resRes || !resRes.ok) return;
     const data   = await safeJson(resRes);
+    _resumenData = data;  // guardar para PDFs
     const costos = resCostos?.ok ? await safeJson(resCostos) : null;
 
     _disponible = costos?.disponible_proveedores ?? 0;
@@ -576,6 +578,348 @@ const PROV = (() => {
     a.click();
   }
 
+  // ═══════════════════════════════════════════════════
+  // PDF — helpers compartidos
+  // ═══════════════════════════════════════════════════
+  const PDF_PRIMARY = [30, 85, 112];
+  const PDF_ACCENT  = [234, 88, 12];
+  const PDF_GRAY    = [100, 116, 139];
+  const PDF_DARK    = [15, 23, 42];
+
+  function cargarImagenBase64(src) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext("2d").drawImage(img, 0, 0);
+        resolve(c.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  async function construirCabeceraPDF(doc, titulo, subtitulo) {
+    const pageW = doc.internal.pageSize.getWidth();
+    const mL = 14;
+    doc.setFillColor(...PDF_PRIMARY);
+    doc.rect(0, 0, pageW, 3, "F");
+    let logoX = mL;
+    try {
+      const logo = await cargarImagenBase64("img/logo.png");
+      if (logo) { doc.addImage(logo, "PNG", mL, 6, 30, 15); logoX = mL + 34; }
+    } catch { }
+    doc.setFont("Roboto", "bold");   doc.setFontSize(14); doc.setTextColor(...PDF_PRIMARY);
+    doc.text("GLOBAL MOTRIZ S.A.", logoX, 13);
+    doc.setFont("Roboto", "normal"); doc.setFontSize(8);  doc.setTextColor(...PDF_GRAY);
+    doc.text("Sistema de Gestión - Cuentas por Pagar", logoX, 18);
+    doc.setFont("Roboto", "bold");   doc.setFontSize(18); doc.setTextColor(...PDF_ACCENT);
+    doc.text(titulo, pageW - mL, 12, { align: "right" });
+    if (subtitulo) {
+      doc.setFont("Roboto", "normal"); doc.setFontSize(8.5); doc.setTextColor(...PDF_GRAY);
+      doc.text(subtitulo, pageW - mL, 18, { align: "right" });
+    }
+    doc.setDrawColor(...PDF_PRIMARY); doc.setLineWidth(0.4);
+    doc.line(mL, 24, pageW - mL, 24);
+    return 28;
+  }
+
+  function pdfNumerarPaginas(doc, hoyStr) {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const total = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setFont("Roboto", "normal"); doc.setFontSize(7); doc.setTextColor(...PDF_GRAY);
+      doc.text(`GlobalMotriz · Generado: ${hoyStr}`, 14, pageH - 6);
+      doc.text(`Página ${i} de ${total}`, pageW - 14, pageH - 6, { align: "right" });
+    }
+  }
+
+  // ── PDF: Resumen general ─────────────────────────
+  async function pdfResumen() {
+    if (!_resumenData?.proveedores?.length) {
+      return Swal.fire("Sin datos", "Carga el resumen primero.", "info");
+    }
+    if (!window.jspdf) {
+      return Swal.fire("Error", "La librería PDF no está disponible.", "error");
+    }
+
+    Swal.fire({ title: "Generando PDF...", didOpen: () => Swal.showLoading() });
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc    = new jsPDF("p", "mm", "a4");
+      const pageW  = doc.internal.pageSize.getWidth();
+      const mL = 14; const mR = 14;
+      const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const priorMap = { "": "—", "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
+
+      let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Resumen · ${hoyStr}`);
+
+      // ── KPI cards ─────────────────────────────────
+      const totalDeudaVal = parseFloat(_resumenData.total_general || 0);
+      const conPlanVal    = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar || 0), 0);
+      const diferenciaVal = _disponible - conPlanVal;
+      const kpis = [
+        { label: "TOTAL DEUDA ACTIVA", valor: fmtMoney(totalDeudaVal), color: PDF_PRIMARY },
+        { label: "DISPONIBLE DEL MES",  valor: fmtMoney(_disponible),   color: [21, 128, 61] },
+        { label: "CON PLAN DE ABONO",  valor: fmtMoney(conPlanVal),    color: PDF_PRIMARY },
+        { label: "DIFERENCIA",         valor: fmtMoney(diferenciaVal), color: diferenciaVal >= 0 ? [21, 128, 61] : [185, 28, 28] },
+      ];
+      const boxW = pageW - mL - mR;
+      const kpiW = boxW / 4;
+      kpis.forEach((k, i) => {
+        const x   = mL + i * kpiW;
+        const gap = i > 0 ? 2 : 0;
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x + gap, y, kpiW - gap, 20, 2, 2, "FD");
+        doc.setFont("Roboto", "bold"); doc.setFontSize(11); doc.setTextColor(...k.color);
+        doc.text(k.valor, x + gap + (kpiW - gap) / 2, y + 9, { align: "center" });
+        doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...PDF_GRAY);
+        doc.text(k.label, x + gap + (kpiW - gap) / 2, y + 16, { align: "center" });
+      });
+      y += 26;
+
+      // ── Tabla proveedores ─────────────────────────
+      const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
+      const totalAbonar = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar   || 0), 0);
+
+      doc.autoTable({
+        startY: y,
+        head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
+        body: _resumenData.proveedores.map((r, i) => [
+          i + 1,
+          r.proveedor,
+          r.cantidad_docs,
+          fmtMoney(r.total_saldo),
+          priorMap[String(r.prioridad || "")] || "—",
+          fmtMoney(r.por_abonar || 0),
+        ]),
+        foot: [[
+          { content: "TOTALES", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
+          { content: fmtMoney(totalSaldo),  styles: { fontStyle: "bold", halign: "right" } },
+          "",
+          { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
+        ]],
+        showFoot: "lastPage",
+        margin: { left: mL, right: mR, bottom: 16 },
+        styles: { fontSize: 8.5, cellPadding: 2.5, lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto" },
+        headStyles: { fillColor: PDF_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", font: "Roboto" },
+        footStyles: { fillColor: [241, 245, 249], textColor: PDF_DARK, fontStyle: "bold", font: "Roboto" },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: "auto" },
+          2: { cellWidth: 14, halign: "center" },
+          3: { cellWidth: 32, halign: "right" },
+          4: { cellWidth: 22, halign: "center" },
+          5: { cellWidth: 32, halign: "right" },
+        },
+      });
+
+      pdfNumerarPaginas(doc, hoyStr);
+      doc.save(`resumen_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
+      Swal.close();
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "No se pudo generar el PDF.", "error");
+    }
+  }
+
+  // ── PDF: Desglose por proveedor ──────────────────
+  async function pdfPorProveedor() {
+    if (!_resumenData?.proveedores?.length) {
+      return Swal.fire("Sin datos", "Carga el resumen primero.", "info");
+    }
+    if (!window.jspdf) {
+      return Swal.fire("Error", "La librería PDF no está disponible.", "error");
+    }
+
+    // ── Modal de selección ───────────────────────
+    const checklistHTML = _resumenData.proveedores.map(r => {
+      const enc = r.proveedor.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      return `<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:13px">
+        <input type="checkbox" class="prov-pdf-check" value="${enc}" checked
+          style="width:15px;height:15px;cursor:pointer;flex-shrink:0;accent-color:#2B7A9E"/>
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${enc}">${enc}</span>
+        <span style="color:#6b7280;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums">${fmtMoney(r.total_saldo)}</span>
+      </label>`;
+    }).join("");
+
+    const { isConfirmed, value: selProveedores } = await Swal.fire({
+      title: "Exportar por Proveedor",
+      width: 620,
+      html: `
+        <div style="text-align:left">
+          <p style="font-size:13px;color:#6b7280;margin:0 0 10px">
+            Selecciona los proveedores a incluir en el reporte (desglose de facturas activas):
+          </p>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button type="button"
+              onclick="document.querySelectorAll('.prov-pdf-check').forEach(c=>c.checked=true)"
+              style="font-size:12px;padding:4px 12px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;cursor:pointer;font-family:inherit">
+              Todos
+            </button>
+            <button type="button"
+              onclick="document.querySelectorAll('.prov-pdf-check').forEach(c=>c.checked=false)"
+              style="font-size:12px;padding:4px 12px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;cursor:pointer;font-family:inherit">
+              Ninguno
+            </button>
+          </div>
+          <div style="max-height:340px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">
+            ${checklistHTML}
+          </div>
+        </div>`,
+      showCancelButton: true,
+      confirmButtonText: "Generar PDF",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#2B7A9E",
+      cancelButtonColor: "#9ca3af",
+      focusConfirm: false,
+      preConfirm: () => {
+        const sel = [...document.querySelectorAll(".prov-pdf-check:checked")].map(c => c.value);
+        if (!sel.length) { Swal.showValidationMessage("Selecciona al menos un proveedor."); return false; }
+        return sel;
+      },
+    });
+    if (!isConfirmed) return;
+
+    Swal.fire({ title: "Generando PDF...", didOpen: () => Swal.showLoading() });
+    try {
+      // ── Traer documentos del backend ─────────────
+      const res = await apiFetch("/proveedores-pagar/documentos-detalle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proveedores: selProveedores }),
+      });
+      if (!res || !res.ok) throw new Error("Error al obtener documentos del servidor.");
+      const { documentos } = await safeJson(res);
+
+      // Agrupar por proveedor en el orden seleccionado
+      const grupos = {};
+      selProveedores.forEach(p => { grupos[p] = []; });
+      documentos.forEach(d => { if (grupos[d.proveedor] !== undefined) grupos[d.proveedor].push(d); });
+
+      // ── Generar PDF ───────────────────────────────
+      const { jsPDF } = window.jspdf;
+      const doc    = new jsPDF("p", "mm", "a4");
+      const pageW  = doc.internal.pageSize.getWidth();
+      const pageH  = doc.internal.pageSize.getHeight();
+      const mL = 14; const mR = 14;
+      const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+      let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Desglose por Proveedor · ${hoyStr}`);
+
+      // ── Recuadro resumen de selección ────────────
+      const resumenSel   = _resumenData.proveedores.filter(r => selProveedores.includes(r.proveedor));
+      const totalSelVal  = resumenSel.reduce((s, r) => s + parseFloat(r.total_saldo || 0), 0);
+      const boxW = pageW - mL - mR;
+      doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(mL, y, boxW, 12, 2, 2, "FD");
+      doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(...PDF_GRAY);
+      const labelTxt = `${selProveedores.length} proveedor${selProveedores.length > 1 ? "es" : ""}  ·  Total seleccionado: `;
+      doc.text(labelTxt, mL + 4, y + 7.5);
+      doc.setTextColor(...PDF_PRIMARY);
+      doc.text(fmtMoney(totalSelVal), mL + 4 + doc.getTextWidth(labelTxt), y + 7.5);
+      y += 18;
+
+      // ── Sección por proveedor ─────────────────────
+      for (let pi = 0; pi < selProveedores.length; pi++) {
+        const provName = selProveedores[pi];
+        const docs     = grupos[provName] || [];
+        const provInfo = _resumenData.proveedores.find(r => r.proveedor === provName);
+
+        // Salto de página si hay poco espacio (mínimo 55mm para banner + 1 fila)
+        if (pi > 0 && y > pageH - 60) {
+          doc.addPage();
+          y = 14;
+        }
+
+        // ── Banner del proveedor ──────────────────
+        doc.setFillColor(...PDF_PRIMARY);
+        doc.roundedRect(mL, y, boxW, 11, 2, 2, "F");
+        doc.setFont("Roboto", "bold"); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        // Truncar nombre si es muy largo
+        const maxNameW = boxW - 75;
+        let nameTxt = provName;
+        while (doc.getTextWidth(nameTxt) > maxNameW && nameTxt.length > 10) {
+          nameTxt = nameTxt.slice(0, -1);
+        }
+        if (nameTxt !== provName) nameTxt += "…";
+        doc.text(nameTxt, mL + 4, y + 7.3);
+        if (provInfo) {
+          const infoTxt = `${provInfo.cantidad_docs} docs  ·  Total: ${fmtMoney(provInfo.total_saldo)}  ·  Por abonar: ${fmtMoney(provInfo.por_abonar || 0)}`;
+          doc.setFontSize(7); doc.setFont("Roboto", "normal");
+          doc.text(infoTxt, pageW - mR - 4, y + 7.3, { align: "right" });
+        }
+        y += 13;
+
+        if (!docs.length) {
+          doc.setFont("Roboto", "normal"); doc.setFontSize(8); doc.setTextColor(...PDF_GRAY);
+          doc.text("Sin documentos activos.", mL + 4, y + 5);
+          y += 12;
+          continue;
+        }
+
+        // ── Tabla de documentos ──────────────────
+        const totalProv = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
+
+        doc.autoTable({
+          startY: y,
+          head: [["N° Documento", "Tipo", "Centro", "Fecha Emisión", "Saldo", "Observación"]],
+          body: docs.map(d => [
+            d.numero_documento,
+            d.tipo_doc || "—",
+            fmtCentro(d.centro_costos),
+            fmtFecha(d.fecha_emision),
+            fmtMoney(d.saldo),
+            d.observacion || "",
+          ]),
+          foot: [[
+            { content: "SUBTOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+            { content: fmtMoney(totalProv), styles: { fontStyle: "bold", halign: "right" } },
+            "",
+          ]],
+          showFoot: "lastPage",
+          margin: { left: mL, right: mR, bottom: 16 },
+          styles: {
+            fontSize: 7.5, cellPadding: 2,
+            lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto",
+            overflow: "ellipsize",
+          },
+          headStyles: {
+            fillColor: [52, 109, 139], textColor: [255, 255, 255],
+            fontStyle: "bold", font: "Roboto", fontSize: 7.5,
+          },
+          footStyles: {
+            fillColor: [241, 245, 249], textColor: PDF_DARK,
+            fontStyle: "bold", font: "Roboto",
+          },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 22 },
+            2: { cellWidth: 18, halign: "center" },
+            3: { cellWidth: 22, halign: "center" },
+            4: { cellWidth: 28, halign: "right" },
+            5: { cellWidth: "auto", overflow: "ellipsize" },
+          },
+        });
+
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      pdfNumerarPaginas(doc, hoyStr);
+      doc.save(`desglose_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
+      Swal.close();
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "No se pudo generar el PDF.", "error");
+    }
+  }
+
   // ── Tabs ─────────────────────────────────────────
   function initTabs() {
     document.querySelectorAll(".prov-tab").forEach(btn => {
@@ -647,6 +991,8 @@ const PROV = (() => {
     // Resumen
     document.getElementById("btn-filtrar-res")?.addEventListener("click",  cargarResumen);
     document.getElementById("btn-guardar-todos")?.addEventListener("click", guardarTodos);
+    document.getElementById("btn-pdf-resumen")?.addEventListener("click",   pdfResumen);
+    document.getElementById("btn-pdf-prov")?.addEventListener("click",      pdfPorProveedor);
 
     // Costos
     document.getElementById("btn-cargar-costos")?.addEventListener("click", () => {

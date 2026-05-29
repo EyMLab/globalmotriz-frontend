@@ -7,6 +7,10 @@
   <title>Cuentas por Pagar</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- jsPDF + autoTable + fuente Roboto para generación de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/roboto-font.js"></script>
   <style>
     /* ═══════════════════════════════════════════════
        Estilos específicos del módulo Cuentas x Pagar
@@ -401,6 +405,9 @@
       </div>
       <button class="btn-sm" id="btn-filtrar-res" style="margin-top:18px">Buscar</button>
       <button class="btn-sm" id="btn-guardar-todos" style="margin-top:18px">Guardar todos</button>
+      <div style="flex:1"></div>
+      <button class="btn-sm btn-sm-sec" id="btn-pdf-resumen" style="margin-top:18px">PDF Resumen</button>
+      <button class="btn-sm btn-sm-sec" id="btn-pdf-prov" style="margin-top:18px">Exportar por Proveedor</button>
     </div>
 
     <div class="resumen-indicadores">
