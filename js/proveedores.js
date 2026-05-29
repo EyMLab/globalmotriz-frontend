@@ -923,7 +923,7 @@ const PROV = (() => {
             d.observacion || "",
           ]),
           foot: [[
-            { content: "SUBTOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+            { content: "TOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
             { content: fmtMoney(totalProv), styles: { fontStyle: "bold", halign: "right" } },
             "",
           ]],
