@@ -1049,12 +1049,20 @@ const PROV = (() => {
           },
           alternateRowStyles: { fillColor: [249, 250, 251] },
           columnStyles: {
-            0: { cellWidth: 40 },                        // N° Doc
-            1: { cellWidth: 18 },                        // Tipo
-            2: { cellWidth: 22, halign: "center" },      // Centro — 22mm para que SUCURSAL no parta
+            0: { cellWidth: 38 },                        // N° Doc (38mm = suficiente para 001-001-000001234)
+            1: { cellWidth: 24 },                        // Tipo (24mm para que "NOTA DE CRÉDITO" entre)
+            2: { cellWidth: 22, halign: "center" },      // Centro
             3: { cellWidth: 21, halign: "center" },      // Fecha
-            4: { cellWidth: 26, halign: "right" },       // Saldo
-            5: { cellWidth: "auto" },                    // Observación — ocupa el resto, una sola línea
+            4: { cellWidth: 24, halign: "right" },       // Saldo
+            5: { cellWidth: "auto" },                    // Observación — resto, una sola línea
+          },
+          // Reducir fuente en col Tipo si el texto es más largo que "FACTURA"
+          didParseCell: (data) => {
+            if (data.section === "body" && data.column.index === 1) {
+              const len = String(data.cell.raw || "").length;
+              if      (len > 12) data.cell.styles.fontSize = 5.5;
+              else if (len > 8)  data.cell.styles.fontSize = 6.5;
+            }
           },
           didDrawPage: (data) => {
             // Mini-banner en páginas de continuación (compacto 7mm)
