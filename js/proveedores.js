@@ -807,68 +807,62 @@ const PROV = (() => {
       documentos.forEach(d => { if (grupos[d.proveedor] !== undefined) grupos[d.proveedor].push(d); });
 
       // ── Generar PDF ───────────────────────────────
+      // Sin encabezado global: cada proveedor en su propia página
+      // para poder recortar/imprimir individualmente.
       const { jsPDF } = window.jspdf;
-      const doc    = new jsPDF("p", "mm", "a4");
-      const pageW  = doc.internal.pageSize.getWidth();
-      const pageH  = doc.internal.pageSize.getHeight();
+      const doc   = new jsPDF("p", "mm", "a4");
+      const pageW = doc.internal.pageSize.getWidth();
       const mL = 14; const mR = 14;
+      const boxW  = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-      let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Desglose por Proveedor · ${hoyStr}`);
+      let isFirst = true;
 
-      // ── Recuadro resumen de selección ────────────
-      const resumenSel   = _resumenData.proveedores.filter(r => selProveedores.includes(r.proveedor));
-      const totalSelVal  = resumenSel.reduce((s, r) => s + parseFloat(r.total_saldo || 0), 0);
-      const boxW = pageW - mL - mR;
-      doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(mL, y, boxW, 12, 2, 2, "FD");
-      doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(...PDF_GRAY);
-      const labelTxt = `${selProveedores.length} proveedor${selProveedores.length > 1 ? "es" : ""}  ·  Total seleccionado: `;
-      doc.text(labelTxt, mL + 4, y + 7.5);
-      doc.setTextColor(...PDF_PRIMARY);
-      doc.text(fmtMoney(totalSelVal), mL + 4 + doc.getTextWidth(labelTxt), y + 7.5);
-      y += 18;
-
-      // ── Sección por proveedor ─────────────────────
       for (let pi = 0; pi < selProveedores.length; pi++) {
         const provName = selProveedores[pi];
         const docs     = grupos[provName] || [];
         const provInfo = _resumenData.proveedores.find(r => r.proveedor === provName);
 
-        // Salto de página si hay poco espacio (mínimo 55mm para banner + 1 fila)
-        if (pi > 0 && y > pageH - 60) {
-          doc.addPage();
-          y = 14;
-        }
+        // Cada proveedor comienza en una página nueva (limpia para recortar)
+        if (!isFirst) doc.addPage();
+        isFirst = false;
+        let y = 10;
 
-        // ── Banner del proveedor ──────────────────
+        // ── Banner principal del proveedor ────────
         doc.setFillColor(...PDF_PRIMARY);
-        doc.roundedRect(mL, y, boxW, 11, 2, 2, "F");
-        doc.setFont("Roboto", "bold"); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
-        // Truncar nombre si es muy largo
-        const maxNameW = boxW - 75;
+        doc.roundedRect(mL, y, boxW, 14, 2, 2, "F");
+
+        // Nombre (truncado si no cabe)
+        doc.setFont("Roboto", "bold"); doc.setFontSize(10);
         let nameTxt = provName;
-        while (doc.getTextWidth(nameTxt) > maxNameW && nameTxt.length > 10) {
+        while (doc.getTextWidth(nameTxt) > boxW - 90 && nameTxt.length > 8) {
           nameTxt = nameTxt.slice(0, -1);
         }
         if (nameTxt !== provName) nameTxt += "…";
-        doc.text(nameTxt, mL + 4, y + 7.3);
+        doc.setTextColor(255, 255, 255);
+        doc.text(nameTxt, mL + 4, y + 6.8);
+
+        // Fecha arriba derecha
+        doc.setFont("Roboto", "normal"); doc.setFontSize(7);
+        doc.text(hoyStr, pageW - mR - 4, y + 5.5, { align: "right" });
+
+        // Info (docs · total · por abonar) abajo derecha
         if (provInfo) {
           const infoTxt = `${provInfo.cantidad_docs} docs  ·  Total: ${fmtMoney(provInfo.total_saldo)}  ·  Por abonar: ${fmtMoney(provInfo.por_abonar || 0)}`;
-          doc.setFontSize(7); doc.setFont("Roboto", "normal");
-          doc.text(infoTxt, pageW - mR - 4, y + 7.3, { align: "right" });
+          doc.text(infoTxt, pageW - mR - 4, y + 11.5, { align: "right" });
         }
-        y += 13;
+        y += 17;
 
         if (!docs.length) {
-          doc.setFont("Roboto", "normal"); doc.setFontSize(8); doc.setTextColor(...PDF_GRAY);
-          doc.text("Sin documentos activos.", mL + 4, y + 5);
-          y += 12;
+          doc.setFont("Roboto", "normal"); doc.setFontSize(8.5); doc.setTextColor(...PDF_GRAY);
+          doc.text("Sin documentos activos.", mL + 4, y + 6);
           continue;
         }
 
-        // ── Tabla de documentos ──────────────────
+        // ── Tabla de documentos ───────────────────
         const totalProv = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
+        // Capturar para el closure del hook
+        const bannerName = nameTxt;
 
         doc.autoTable({
           startY: y,
@@ -887,7 +881,10 @@ const PROV = (() => {
             "",
           ]],
           showFoot: "lastPage",
-          margin: { left: mL, right: mR, bottom: 16 },
+          // Las filas nunca se cortan a mitad al pasar de página
+          rowPageBreak: "avoid",
+          // top:19 deja espacio para el mini-banner de continuación en páginas 2+
+          margin: { left: mL, right: mR, bottom: 12, top: 19 },
           styles: {
             fontSize: 7.5, cellPadding: 2,
             lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto",
@@ -910,12 +907,21 @@ const PROV = (() => {
             4: { cellWidth: 28, halign: "right" },
             5: { cellWidth: "auto", overflow: "ellipsize" },
           },
+          // En páginas de continuación: mini-banner con el nombre del proveedor
+          didDrawPage: (data) => {
+            if (data.pageNumber > 1) {
+              doc.setFillColor(52, 109, 139);
+              doc.roundedRect(mL, 8, boxW, 9, 1, 1, "F");
+              doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(255, 255, 255);
+              doc.text(bannerName, mL + 3, 14);
+              doc.setFont("Roboto", "normal"); doc.setFontSize(7);
+              doc.text("continuación · " + hoyStr, pageW - mR - 3, 14, { align: "right" });
+            }
+          },
         });
-
-        y = doc.lastAutoTable.finalY + 8;
       }
 
-      pdfNumerarPaginas(doc, hoyStr);
+      // Sin numeración global: cada sección es independiente
       doc.save(`desglose_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
       Swal.close();
     } catch (err) {
