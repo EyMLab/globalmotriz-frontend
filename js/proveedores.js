@@ -931,33 +931,40 @@ const PROV = (() => {
       const boxW   = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-      // Alturas aproximadas para calcular si el proveedor cabe en el espacio restante
-      const BANNER_H  = 17;   // banner + margen inferior
-      const ROW_H     = 6.5;  // altura de una fila de datos
-      const TBL_HDR   = 9;    // encabezado de tabla
-      const TBL_FTR   = 8;    // fila de subtotal
-      const BOTTOM_M  = 14;   // margen inferior de la página
-      const MIN_ROWS  = 4;    // filas mínimas visibles antes de decidir saltar página
+      // Constantes de layout compacto
+      const BANNER_H   = 10;   // banner más delgado
+      const ROW_H      = 7;    // altura fila (font 8pt)
+      const TBL_HDR    = 8;    // encabezado de tabla
+      const TBL_FTR    = 7;    // fila total
+      const BOTTOM_M   = 12;
+      const START_Y    = 10;
+      const PAGE_USE   = pageH - START_Y - BOTTOM_M; // espacio útil en hoja en blanco
 
-      let y = 10;
+      let y = START_Y;
 
       for (let pi = 0; pi < selProveedores.length; pi++) {
         const provName = selProveedores[pi];
         const docs     = grupos[provName] || [];
         const provInfo = _resumenData.proveedores.find(r => r.proveedor === provName);
 
+        // ── Lógica de salto de página ─────────────
         if (pi > 0) {
-          // Espacio mínimo necesario para empezar este proveedor con sentido
-          const rowsToShow  = Math.min(docs.length || 1, MIN_ROWS);
-          const minNecesario = BANNER_H + (docs.length ? TBL_HDR + rowsToShow * ROW_H + TBL_FTR : 0);
-          const disponible   = pageH - BOTTOM_M - y;
+          const estH      = BANNER_H + 2 + (docs.length ? TBL_HDR + docs.length * ROW_H + TBL_FTR : 8);
+          const remaining = pageH - BOTTOM_M - y;
+          let newPage;
 
-          if (disponible < minNecesario) {
-            // No cabe: página nueva
-            doc.addPage();
-            y = 10;
+          if (estH <= PAGE_USE) {
+            // El proveedor cabe entero en una hoja → solo mueve si no hay espacio aquí
+            newPage = estH > remaining;
           } else {
-            // Sí cabe: separador visual entre proveedores
+            // Proveedor muy grande (siempre multi-página) → mueve solo si queda poco
+            newPage = remaining < (BANNER_H + 2 + TBL_HDR + 5 * ROW_H);
+          }
+
+          if (newPage) {
+            doc.addPage();
+            y = START_Y;
+          } else {
             y += 3;
             doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.25);
             doc.line(mL, y, pageW - mR, y);
@@ -965,38 +972,41 @@ const PROV = (() => {
           }
         }
 
-        // ── Banner del proveedor ──────────────────
+        // ── Banner compacto (10mm) ────────────────
         doc.setFillColor(...PDF_PRIMARY);
-        doc.roundedRect(mL, y, boxW, 14, 2, 2, "F");
+        doc.roundedRect(mL, y, boxW, BANNER_H, 2, 2, "F");
 
-        doc.setFont("Roboto", "bold"); doc.setFontSize(10);
+        // Nombre del proveedor (izquierda, grande)
+        doc.setFont("Roboto", "bold"); doc.setFontSize(9);
         let nameTxt = provName;
-        while (doc.getTextWidth(nameTxt) > boxW - 90 && nameTxt.length > 8) {
-          nameTxt = nameTxt.slice(0, -1);
-        }
+        const maxNW = boxW * 0.55;
+        while (doc.getTextWidth(nameTxt) > maxNW && nameTxt.length > 6) nameTxt = nameTxt.slice(0, -1);
         if (nameTxt !== provName) nameTxt += "…";
         doc.setTextColor(255, 255, 255);
-        doc.text(nameTxt, mL + 4, y + 6.8);
+        doc.text(nameTxt, mL + 4, y + 7);
 
-        doc.setFont("Roboto", "normal"); doc.setFontSize(7);
-        doc.text(hoyStr, pageW - mR - 4, y + 5.5, { align: "right" });
+        // Fecha (derecha arriba, muy pequeña)
+        doc.setFont("Roboto", "normal"); doc.setFontSize(5.5); doc.setTextColor(185, 215, 235);
+        doc.text(hoyStr, pageW - mR - 4, y + 3.5, { align: "right" });
 
+        // Info (derecha abajo)
         if (provInfo) {
-          const infoTxt = `${provInfo.cantidad_docs} docs  ·  Total: ${fmtMoney(provInfo.total_saldo)}  ·  Por abonar: ${fmtMoney(provInfo.por_abonar || 0)}`;
-          doc.text(infoTxt, pageW - mR - 4, y + 11.5, { align: "right" });
+          const infoTxt = `${provInfo.cantidad_docs} docs  ·  ${fmtMoney(provInfo.total_saldo)}  ·  Por abonar: ${fmtMoney(provInfo.por_abonar || 0)}`;
+          doc.setFontSize(6.5); doc.setTextColor(255, 255, 255);
+          doc.text(infoTxt, pageW - mR - 4, y + 8.5, { align: "right" });
         }
-        y += 17;
+        y += BANNER_H + 2;
 
         if (!docs.length) {
           doc.setFont("Roboto", "normal"); doc.setFontSize(8.5); doc.setTextColor(...PDF_GRAY);
           doc.text("Sin documentos activos.", mL + 4, y + 5);
-          y += 12;
+          y += 10;
           continue;
         }
 
         // ── Tabla de documentos ───────────────────
         const totalProv  = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
-        const bannerName = nameTxt; // para el closure del hook
+        const bannerName = nameTxt;
 
         doc.autoTable({
           startY: y,
@@ -1016,19 +1026,19 @@ const PROV = (() => {
           ]],
           showFoot: "lastPage",
           rowPageBreak: "avoid",
-          margin: { left: mL, right: mR, bottom: BOTTOM_M, top: 19 },
+          margin: { left: mL, right: mR, bottom: BOTTOM_M, top: 17 },
           styles: {
-            fontSize: 7.5, cellPadding: 2,
-            lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto",
-            overflow: "ellipsize",
+            fontSize: 8, cellPadding: 2,
+            lineColor: [226, 232, 240], lineWidth: 0.2, font: "helvetica",
+            fontStyle: "bold",
           },
           headStyles: {
             fillColor: [52, 109, 139], textColor: [255, 255, 255],
-            fontStyle: "bold", font: "Roboto", fontSize: 7.5,
+            fontStyle: "bold", font: "helvetica", fontSize: 7.5,
           },
           footStyles: {
             fillColor: [241, 245, 249], textColor: PDF_DARK,
-            fontStyle: "bold", font: "Roboto",
+            fontStyle: "bold", font: "helvetica",
           },
           alternateRowStyles: { fillColor: [248, 250, 252] },
           columnStyles: {
@@ -1040,19 +1050,18 @@ const PROV = (() => {
             5: { cellWidth: "auto", overflow: "ellipsize" },
           },
           didDrawPage: (data) => {
-            // Mini-banner en páginas de continuación del mismo proveedor
+            // Mini-banner en páginas de continuación (compacto 7mm)
             if (data.pageNumber > 1) {
               doc.setFillColor(52, 109, 139);
-              doc.roundedRect(mL, 8, boxW, 9, 1, 1, "F");
-              doc.setFont("Roboto", "bold"); doc.setFontSize(8.5); doc.setTextColor(255, 255, 255);
-              doc.text(bannerName, mL + 3, 14);
-              doc.setFont("Roboto", "normal"); doc.setFontSize(7);
-              doc.text("continuación · " + hoyStr, pageW - mR - 3, 14, { align: "right" });
+              doc.roundedRect(mL, 7, boxW, 7, 1, 1, "F");
+              doc.setFont("Roboto", "bold"); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+              doc.text(bannerName, mL + 3, 12);
+              doc.setFont("Roboto", "normal"); doc.setFontSize(6);
+              doc.text("continuación · " + hoyStr, pageW - mR - 3, 12, { align: "right" });
             }
           },
         });
 
-        // Actualizar y para el siguiente proveedor
         y = doc.lastAutoTable.finalY + 3;
       }
 
