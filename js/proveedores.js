@@ -549,12 +549,70 @@ const PROV = (() => {
     await cargarFiltros();
     await cargarDocumentos(1);
 
+    // Construir modal de detalle
+    const fmtSaldo = v => "$" + parseFloat(v || 0).toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const seccionNuevos = vals.detalle_nuevos?.length ? `
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
+          Documentos nuevos (${vals.nuevos})
+        </div>
+        <div style="max-height:180px;overflow-y:auto;border:1px solid #d1fae5;border-radius:6px">
+          ${vals.detalle_nuevos.map(d => `
+            <div style="padding:5px 10px;border-bottom:1px solid #f0fdf4;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center">
+              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                <span style="font-weight:600;color:#111827">${d.numero_documento}</span>
+                <span style="color:#6b7280"> — ${d.proveedor}</span>
+              </span>
+              <span style="white-space:nowrap;font-weight:700;color:#059669">${fmtSaldo(d.saldo)}</span>
+            </div>`).join("")}
+        </div>
+      </div>` : "";
+
+    const seccionEliminados = vals.detalle_eliminados?.length ? `
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
+          Documentos eliminados (${vals.eliminados})
+        </div>
+        <div style="max-height:180px;overflow-y:auto;border:1px solid #fecaca;border-radius:6px">
+          ${vals.detalle_eliminados.map(d => `
+            <div style="padding:5px 10px;border-bottom:1px solid #fef2f2;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center">
+              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                <span style="font-weight:600;color:#111827">${d.numero_documento}</span>
+                <span style="color:#6b7280"> — ${d.proveedor}</span>
+              </span>
+              <span style="white-space:nowrap;font-size:11px;font-weight:600;
+                color:${d.estado === "DESCARTADO" ? "#6b7280" : "#b91c1c"};
+                background:${d.estado === "DESCARTADO" ? "#f3f4f6" : "#fef2f2"};
+                padding:1px 6px;border-radius:99px">${d.estado}</span>
+            </div>`).join("")}
+        </div>
+      </div>` : "";
+
+    const sinDetalle = !seccionNuevos && !seccionEliminados;
+
     Swal.fire({
       icon: "success",
       title: "Importación completada",
-      html: `<b>${vals.nuevos}</b> nuevos<br><b>${vals.actualizados}</b> actualizados<br><b>${vals.eliminados}</b> eliminados (pagados/resueltos)`,
-      timer: 3500,
-      showConfirmButton: false,
+      width: sinDetalle ? 420 : 560,
+      html: `
+        <div style="text-align:left">
+          <div style="display:flex;gap:10px;margin-bottom:${sinDetalle ? 0 : 14}px;flex-wrap:wrap">
+            <span style="padding:4px 10px;background:#f0fdf4;border-radius:99px;font-size:12px;font-weight:600;color:#15803d">
+              ${vals.nuevos} nuevo${vals.nuevos !== 1 ? "s" : ""}
+            </span>
+            <span style="padding:4px 10px;background:#eff6ff;border-radius:99px;font-size:12px;font-weight:600;color:#1d4ed8">
+              ${vals.actualizados} actualizado${vals.actualizados !== 1 ? "s" : ""}
+            </span>
+            <span style="padding:4px 10px;background:#fef2f2;border-radius:99px;font-size:12px;font-weight:600;color:#b91c1c">
+              ${vals.eliminados} eliminado${vals.eliminados !== 1 ? "s" : ""}
+            </span>
+          </div>
+          ${seccionNuevos}
+          ${seccionEliminados}
+        </div>`,
+      confirmButtonText: "Entendido",
+      confirmButtonColor: "#2B7A9E",
     });
   }
 
