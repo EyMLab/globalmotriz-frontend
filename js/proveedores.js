@@ -336,7 +336,7 @@ const PROV = (() => {
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
         <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}">${r.proveedor}</td>
-        <td><input type="text" class="input-ref" value="${refEnc}" placeholder="ej. toners" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}"/></td>
+        <td><input type="text" class="input-ref" value="${refEnc}" placeholder="" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}"/></td>
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
         <td>${priorSelect(r.prioridad, provEnc)}</td>
