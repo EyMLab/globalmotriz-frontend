@@ -933,7 +933,7 @@ const PROV = (() => {
 
       // Constantes de layout compacto
       const BANNER_H   = 10;   // banner más delgado
-      const ROW_H      = 7;    // altura fila (font 8pt)
+      const ROW_H      = 6.5; // altura fila una sola línea (7.5pt + pad 2)
       const TBL_HDR    = 8;    // encabezado de tabla
       const TBL_FTR    = 7;    // fila total
       const BOTTOM_M   = 12;
@@ -1028,26 +1028,33 @@ const PROV = (() => {
           rowPageBreak: "avoid",
           margin: { left: mL, right: mR, bottom: BOTTOM_M, top: 17 },
           styles: {
-            fontSize: 8, cellPadding: 2,
-            lineColor: [226, 232, 240], lineWidth: 0.2, font: "helvetica",
-            fontStyle: "bold",
+            // Fuente normal (no bold): más legible, menos tosca
+            fontSize: 7.5, cellPadding: 2,
+            lineColor: [226, 232, 240], lineWidth: 0.3, font: "helvetica",
+            fontStyle: "normal",
+            // TODAS las celdas en una sola línea — nunca wrap
+            overflow: "ellipsize",
+            minCellHeight: 0,
           },
           headStyles: {
             fillColor: [52, 109, 139], textColor: [255, 255, 255],
             fontStyle: "bold", font: "helvetica", fontSize: 7.5,
           },
+          bodyStyles: {
+            fontStyle: "normal",
+          },
           footStyles: {
             fillColor: [241, 245, 249], textColor: PDF_DARK,
             fontStyle: "bold", font: "helvetica",
           },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
           columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 18, halign: "center" },
-            3: { cellWidth: 22, halign: "center" },
-            4: { cellWidth: 28, halign: "right" },
-            5: { cellWidth: "auto", overflow: "ellipsize" },
+            0: { cellWidth: 40 },                        // N° Doc
+            1: { cellWidth: 18 },                        // Tipo
+            2: { cellWidth: 22, halign: "center" },      // Centro — 22mm para que SUCURSAL no parta
+            3: { cellWidth: 21, halign: "center" },      // Fecha
+            4: { cellWidth: 26, halign: "right" },       // Saldo
+            5: { cellWidth: "auto" },                    // Observación — ocupa el resto, una sola línea
           },
           didDrawPage: (data) => {
             // Mini-banner en páginas de continuación (compacto 7mm)
