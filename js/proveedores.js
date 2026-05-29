@@ -332,9 +332,11 @@ const PROV = (() => {
       if (abonar > 0) rowClass = abonar >= saldo ? "pago-ok" : "pago-parcial";
       const provEnc  = encodeURIComponent(r.proveedor);
       const totalFmt = saldo.toFixed(2);
+      const refEnc   = (r.referencia || "").replace(/"/g, "&quot;");
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
         <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}">${r.proveedor}</td>
+        <td><input type="text" class="input-ref" value="${refEnc}" placeholder="ej. toners" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}"/></td>
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
         <td>${priorSelect(r.prioridad, provEnc)}</td>
@@ -352,8 +354,9 @@ const PROV = (() => {
   // ── Guardar abono de un proveedor ────────────────
   async function guardarAbono(provEnc) {
     const tr         = document.querySelector(`tr[data-proveedor="${provEnc}"]`);
-    const prioridad  = tr?.querySelector("[data-campo='prioridad']")?.value;   // viene del <select>
+    const prioridad  = tr?.querySelector("[data-campo='prioridad']")?.value;
     const por_abonar = tr?.querySelector("[data-campo='por_abonar']")?.value;
+    const referencia = tr?.querySelector("[data-campo='referencia']")?.value.trim() || null;
 
     const res = await apiFetch(`/proveedores-pagar/resumen/${provEnc}`, {
       method: "PATCH",
@@ -361,6 +364,7 @@ const PROV = (() => {
       body: JSON.stringify({
         prioridad:  prioridad  ? parseInt(prioridad)    : null,
         por_abonar: por_abonar ? parseFloat(por_abonar) : null,
+        referencia,
       }),
     });
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo guardar.", "error"); return; }
@@ -376,12 +380,14 @@ const PROV = (() => {
       const provEnc = tr.dataset.proveedor;
       const prioridad  = tr.querySelector("[data-campo='prioridad']")?.value;
       const por_abonar = tr.querySelector("[data-campo='por_abonar']")?.value;
+      const referencia = tr.querySelector("[data-campo='referencia']")?.value.trim() || null;
       const res = await apiFetch(`/proveedores-pagar/resumen/${provEnc}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prioridad:  prioridad  ? parseInt(prioridad)    : null,
           por_abonar: por_abonar ? parseFloat(por_abonar) : null,
+          referencia,
         }),
       });
       if (!res || !res.ok) errores++;
@@ -766,17 +772,18 @@ const PROV = (() => {
 
       doc.autoTable({
         startY: y,
-        head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
+        head: [["#", "Proveedor", "Referencia", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
         body: _resumenData.proveedores.map((r, i) => [
           i + 1,
           r.proveedor,
+          r.referencia || "",
           r.cantidad_docs,
           fmtMoney(r.total_saldo),
           priorMap[String(r.prioridad || "")] || "—",
           fmtMoney(r.por_abonar || 0),
         ]),
         foot: [[
-          { content: "TOTALES", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
+          { content: "TOTALES", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
           { content: fmtMoney(totalSaldo),  styles: { fontStyle: "bold", halign: "right" } },
           "",
           { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
@@ -801,11 +808,12 @@ const PROV = (() => {
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
           0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: "auto" },
-          2: { cellWidth: 14, halign: "center" },
-          3: { cellWidth: 32, halign: "right" },
-          4: { cellWidth: 22, halign: "center" },
-          5: { cellWidth: 32, halign: "right" },
+          1: { cellWidth: "auto" },          // Proveedor (flexible)
+          2: { cellWidth: 28 },              // Referencia
+          3: { cellWidth: 12, halign: "center" }, // Docs
+          4: { cellWidth: 30, halign: "right" },  // Total Saldo
+          5: { cellWidth: 20, halign: "center" }, // Prioridad
+          6: { cellWidth: 28, halign: "right" },  // Por Abonar
         },
         // Pintar de rojo suave las filas con prioridad ALTA (valor "3")
         didParseCell: (data) => {
