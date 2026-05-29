@@ -791,6 +791,10 @@ const PROV = (() => {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
           fontStyle: "bold", font: "Roboto", fontSize: fs,
         },
+        bodyStyles: {
+          // Negrita en todo el cuerpo para mejor lectura al imprimir
+          fontStyle: "bold", font: "Roboto",
+        },
         footStyles: {
           fillColor: [241, 245, 249], textColor: PDF_DARK,
           fontStyle: "bold", font: "Roboto", fontSize: fs,
@@ -803,6 +807,16 @@ const PROV = (() => {
           3: { cellWidth: 32, halign: "right" },
           4: { cellWidth: 22, halign: "center" },
           5: { cellWidth: 32, halign: "right" },
+        },
+        // Pintar de rojo suave las filas con prioridad ALTA (valor "3")
+        didParseCell: (data) => {
+          if (data.section === "body") {
+            const prov = _resumenData.proveedores[data.row.index];
+            if (String(prov?.prioridad || "") === "3") {
+              data.cell.styles.fillColor = [254, 226, 226]; // rojo muy suave
+              data.cell.styles.textColor = [127, 29, 29];   // rojo oscuro legible
+            }
+          }
         },
       });
 
