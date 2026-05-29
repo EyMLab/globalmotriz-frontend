@@ -785,19 +785,18 @@ const PROV = (() => {
         margin: { left: mL, right: mR, bottom: 8 },
         styles: {
           fontSize: fs, cellPadding: pad,
-          lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto",
+          lineColor: [226, 232, 240], lineWidth: 0.2, font: "helvetica",
         },
         headStyles: {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
-          fontStyle: "bold", font: "Roboto", fontSize: fs,
+          fontStyle: "bold", font: "helvetica", fontSize: fs,
         },
         bodyStyles: {
-          // Negrita en todo el cuerpo para mejor lectura al imprimir
-          fontStyle: "bold", font: "Roboto",
+          fontStyle: "bold", font: "helvetica",
         },
         footStyles: {
           fillColor: [241, 245, 249], textColor: PDF_DARK,
-          fontStyle: "bold", font: "Roboto", fontSize: fs,
+          fontStyle: "bold", font: "helvetica", fontSize: fs,
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
