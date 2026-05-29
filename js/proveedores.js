@@ -807,32 +807,52 @@ const PROV = (() => {
       documentos.forEach(d => { if (grupos[d.proveedor] !== undefined) grupos[d.proveedor].push(d); });
 
       // ── Generar PDF ───────────────────────────────
-      // Sin encabezado global: cada proveedor en su propia página
-      // para poder recortar/imprimir individualmente.
       const { jsPDF } = window.jspdf;
-      const doc   = new jsPDF("p", "mm", "a4");
-      const pageW = doc.internal.pageSize.getWidth();
+      const doc    = new jsPDF("p", "mm", "a4");
+      const pageW  = doc.internal.pageSize.getWidth();
+      const pageH  = doc.internal.pageSize.getHeight();
       const mL = 14; const mR = 14;
-      const boxW  = pageW - mL - mR;
+      const boxW   = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-      let isFirst = true;
+      // Alturas aproximadas para calcular si el proveedor cabe en el espacio restante
+      const BANNER_H  = 17;   // banner + margen inferior
+      const ROW_H     = 6.5;  // altura de una fila de datos
+      const TBL_HDR   = 9;    // encabezado de tabla
+      const TBL_FTR   = 8;    // fila de subtotal
+      const BOTTOM_M  = 14;   // margen inferior de la página
+      const MIN_ROWS  = 4;    // filas mínimas visibles antes de decidir saltar página
+
+      let y = 10;
 
       for (let pi = 0; pi < selProveedores.length; pi++) {
         const provName = selProveedores[pi];
         const docs     = grupos[provName] || [];
         const provInfo = _resumenData.proveedores.find(r => r.proveedor === provName);
 
-        // Cada proveedor comienza en una página nueva (limpia para recortar)
-        if (!isFirst) doc.addPage();
-        isFirst = false;
-        let y = 10;
+        if (pi > 0) {
+          // Espacio mínimo necesario para empezar este proveedor con sentido
+          const rowsToShow  = Math.min(docs.length || 1, MIN_ROWS);
+          const minNecesario = BANNER_H + (docs.length ? TBL_HDR + rowsToShow * ROW_H + TBL_FTR : 0);
+          const disponible   = pageH - BOTTOM_M - y;
 
-        // ── Banner principal del proveedor ────────
+          if (disponible < minNecesario) {
+            // No cabe: página nueva
+            doc.addPage();
+            y = 10;
+          } else {
+            // Sí cabe: separador visual entre proveedores
+            y += 3;
+            doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.25);
+            doc.line(mL, y, pageW - mR, y);
+            y += 4;
+          }
+        }
+
+        // ── Banner del proveedor ──────────────────
         doc.setFillColor(...PDF_PRIMARY);
         doc.roundedRect(mL, y, boxW, 14, 2, 2, "F");
 
-        // Nombre (truncado si no cabe)
         doc.setFont("Roboto", "bold"); doc.setFontSize(10);
         let nameTxt = provName;
         while (doc.getTextWidth(nameTxt) > boxW - 90 && nameTxt.length > 8) {
@@ -842,11 +862,9 @@ const PROV = (() => {
         doc.setTextColor(255, 255, 255);
         doc.text(nameTxt, mL + 4, y + 6.8);
 
-        // Fecha arriba derecha
         doc.setFont("Roboto", "normal"); doc.setFontSize(7);
         doc.text(hoyStr, pageW - mR - 4, y + 5.5, { align: "right" });
 
-        // Info (docs · total · por abonar) abajo derecha
         if (provInfo) {
           const infoTxt = `${provInfo.cantidad_docs} docs  ·  Total: ${fmtMoney(provInfo.total_saldo)}  ·  Por abonar: ${fmtMoney(provInfo.por_abonar || 0)}`;
           doc.text(infoTxt, pageW - mR - 4, y + 11.5, { align: "right" });
@@ -855,14 +873,14 @@ const PROV = (() => {
 
         if (!docs.length) {
           doc.setFont("Roboto", "normal"); doc.setFontSize(8.5); doc.setTextColor(...PDF_GRAY);
-          doc.text("Sin documentos activos.", mL + 4, y + 6);
+          doc.text("Sin documentos activos.", mL + 4, y + 5);
+          y += 12;
           continue;
         }
 
         // ── Tabla de documentos ───────────────────
-        const totalProv = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
-        // Capturar para el closure del hook
-        const bannerName = nameTxt;
+        const totalProv  = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
+        const bannerName = nameTxt; // para el closure del hook
 
         doc.autoTable({
           startY: y,
@@ -881,10 +899,8 @@ const PROV = (() => {
             "",
           ]],
           showFoot: "lastPage",
-          // Las filas nunca se cortan a mitad al pasar de página
           rowPageBreak: "avoid",
-          // top:19 deja espacio para el mini-banner de continuación en páginas 2+
-          margin: { left: mL, right: mR, bottom: 12, top: 19 },
+          margin: { left: mL, right: mR, bottom: BOTTOM_M, top: 19 },
           styles: {
             fontSize: 7.5, cellPadding: 2,
             lineColor: [226, 232, 240], lineWidth: 0.2, font: "Roboto",
@@ -907,8 +923,8 @@ const PROV = (() => {
             4: { cellWidth: 28, halign: "right" },
             5: { cellWidth: "auto", overflow: "ellipsize" },
           },
-          // En páginas de continuación: mini-banner con el nombre del proveedor
           didDrawPage: (data) => {
+            // Mini-banner en páginas de continuación del mismo proveedor
             if (data.pageNumber > 1) {
               doc.setFillColor(52, 109, 139);
               doc.roundedRect(mL, 8, boxW, 9, 1, 1, "F");
@@ -919,9 +935,11 @@ const PROV = (() => {
             }
           },
         });
+
+        // Actualizar y para el siguiente proveedor
+        y = doc.lastAutoTable.finalY + 3;
       }
 
-      // Sin numeración global: cada sección es independiente
       doc.save(`desglose_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
       Swal.close();
     } catch (err) {
