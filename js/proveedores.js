@@ -393,8 +393,12 @@ const PROV = (() => {
 
   // ── Suma conceptos → inp-fijo → recalc disponible ──
   function actualizarTotalFijo() {
-    const total = [...document.querySelectorAll("#tbody-conceptos .c-monto")]
-      .reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
+    // Solo suma los conceptos que NO están marcados como pagados
+    const total = [...document.querySelectorAll("#tbody-conceptos tr")].reduce((s, tr) => {
+      const pagado = tr.querySelector(".c-pagado")?.checked;
+      if (pagado) return s;   // ya pagado → no se descuenta del disponible
+      return s + (parseFloat(tr.querySelector(".c-monto")?.value) || 0);
+    }, 0);
     const el = document.getElementById("inp-fijo");
     if (el) el.value = total.toFixed(2);
     recalcDisponible();
@@ -433,7 +437,7 @@ const PROV = (() => {
       <tr data-idx="${i}">
         <td><input type="text"   class="c-concepto" value="${(c.concepto||"").replace(/"/g,"&quot;")}" placeholder="Concepto…"/></td>
         <td><input type="number" class="c-monto"    value="${c.monto || ""}" step="0.01" placeholder="0.00" oninput="PROV.actualizarTotalFijo()"/></td>
-        <td style="text-align:center"><input type="checkbox" class="c-pagado" ${c.pagado ? "checked" : ""}/></td>
+        <td style="text-align:center"><input type="checkbox" class="c-pagado" ${c.pagado ? "checked" : ""} onchange="PROV.actualizarTotalFijo()"/></td>
         <td><button class="btn-del-concepto" onclick="PROV.delConcepto(${i});PROV.actualizarTotalFijo()">x</button></td>
       </tr>`).join("");
   }
@@ -446,7 +450,7 @@ const PROV = (() => {
     tr.innerHTML = `
       <td><input type="text"   class="c-concepto" placeholder="Concepto…"/></td>
       <td><input type="number" class="c-monto"    step="0.01" placeholder="0.00" oninput="PROV.actualizarTotalFijo()"/></td>
-      <td style="text-align:center"><input type="checkbox" class="c-pagado"/></td>
+      <td style="text-align:center"><input type="checkbox" class="c-pagado" onchange="PROV.actualizarTotalFijo()"/></td>
       <td><button class="btn-del-concepto" onclick="this.closest('tr').remove();PROV.actualizarTotalFijo()">x</button></td>`;
     tbody.appendChild(tr);
   }
