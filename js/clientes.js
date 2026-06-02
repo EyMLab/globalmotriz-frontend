@@ -148,14 +148,14 @@ const CLIE = (() => {
     const tbody = document.getElementById("tbody-docs");
 
     if (!res || !res.ok) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
       return;
     }
     const data = await safeJson(res);
     totalPagDoc = data.totalPaginas || 1;
 
     if (!data.documentos?.length) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
@@ -180,6 +180,8 @@ const CLIE = (() => {
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td style="text-align:center">${fmtDiasVenc(d.dias_vencimiento)}</td>
           <td class="num-right">${fmtMoney(d.cargos)}</td>
+          <td class="num-right">${fmtMoney(d.cobrado)}</td>
+          <td class="num-right">${fmtMoney(d.retencion)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
           <td>${btnObs}</td>
         </tr>`;
