@@ -157,24 +157,27 @@ const CLIE = (() => {
     const tbody = document.getElementById("tbody-docs");
 
     if (!res || !res.ok) {
-      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
       return;
     }
     const data = await safeJson(res);
     totalPagDoc = data.totalPaginas || 1;
 
     if (!data.documentos?.length) {
-      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
         const obsEnc = (d.observacion || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
         const numEnc = d.numero_documento.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
         const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
-        const tieneObs = !!(d.observacion || "").trim();
-        const btnObs = `<button class="btn-obs${tieneObs ? "" : " btn-obs-vacia"}"
-          data-num="${numEnc}" data-obs="${obsEnc}"
-          onclick="CLIE.editarObsClick(this)">${tieneObs ? "Ver / Editar" : "Agregar"}</button>`;
+        const tieneObs  = !!(d.observacion || "").trim();
+        const tieneResp = !!(d.responsable || "").trim();
+        const tieneGestion = tieneObs || tieneResp;
+        const respEnc = (d.responsable || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        const btnGestion = `<button class="btn-obs${tieneGestion ? "" : " btn-obs-vacia"}"
+          data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}"
+          onclick="CLIE.editarGestionClick(this)">${tieneGestion ? "Ver / Editar" : "Agregar"}</button>`;
         return `<tr style="${rowStyle}">
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
@@ -192,10 +195,7 @@ const CLIE = (() => {
           <td class="num-right">${fmtMoney(d.cobrado)}</td>
           <td class="num-right">${fmtMoney(d.retencion)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
-          <td><input type="text" class="input-resp" value="${(d.responsable||"").replace(/"/g,"&quot;")}" placeholder="—"
-            data-num="${numEnc}" style="width:100px;padding:3px 6px;border:1px solid var(--input-border);border-radius:var(--r-md);font-size:12px;font-family:var(--font-main)"
-            onblur="CLIE.guardarResponsable(this)"/></td>
-          <td>${btnObs}</td>
+          <td>${btnGestion}</td>
         </tr>`;
       }).join("");
       actualizarBarraSeleccion();
@@ -263,26 +263,25 @@ const CLIE = (() => {
     editarObservacion(btn.dataset.num, btn.dataset.obs || "");
   }
 
-  async function guardarResponsable(input) {
-    const numDoc = input.dataset.num;
-    const valor  = input.value.trim();
-    await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(numDoc)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ responsable: valor }),
-    });
+  function editarGestionClick(btn) {
+    editarGestion(btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "");
   }
 
-  async function editarObservacion(numDoc, obsActual) {
-    const { value, isConfirmed } = await Swal.fire({
-      title: "Observación",
+  async function editarGestion(numDoc, obsActual, respActual) {
+    const { isConfirmed, value: vals } = await Swal.fire({
+      title: "Gestión del documento",
       width: 540,
       html: `
         <div style="text-align:left">
           <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Documento</div>
           <div style="font-family:monospace;font-size:13px;color:#1e40af;background:#eff6ff;padding:6px 10px;border-radius:6px;margin-bottom:14px">${numDoc}</div>
-          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Texto de observación</div>
-          <textarea id="swal-obs" rows="5"
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Responsable</div>
+          <input type="text" id="swal-resp" value="${respActual}" placeholder="Nombre del responsable…"
+            style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#111827;margin-bottom:14px"
+            onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.15)'"
+            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"/>
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Observación</div>
+          <textarea id="swal-obs" rows="4"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.5;outline:none;color:#111827"
             onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.15)'"
             onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"
@@ -294,14 +293,20 @@ const CLIE = (() => {
       cancelButtonText: "Cancelar",
       cancelButtonColor: "#9ca3af",
       focusConfirm: false,
-      preConfirm: () => document.getElementById("swal-obs").value.trim(),
+      preConfirm: () => ({
+        responsable: document.getElementById("swal-resp").value.trim(),
+        observacion: document.getElementById("swal-obs").value.trim(),
+      }),
     });
-    if (!isConfirmed) return;
+    if (!isConfirmed || !vals) return;
+
+    const resp = vals.responsable ?? "";
+    const obs  = vals.observacion ?? "";
 
     const res = await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(numDoc)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ observacion: value }),
+      body: JSON.stringify({ observacion: obs, responsable: resp }),
     });
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo guardar.", "error"); return; }
     cargarDocumentos(paginaDoc);
@@ -1084,6 +1089,6 @@ const CLIE = (() => {
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { actualizarBarraSeleccion, editarObsClick, seleccionarSugerencia, guardarAbono, guardarTodos, guardarResponsable };
+  return { actualizarBarraSeleccion, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos };
 
 })();
