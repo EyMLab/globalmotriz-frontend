@@ -55,7 +55,6 @@ const CLIE = (() => {
       responsable:   document.getElementById("f-responsable")?.value || "",
       dias_desde:    document.getElementById("f-dias-desde")?.value || "",
       dias_hasta:    document.getElementById("f-dias-hasta")?.value || "",
-      solo_vencidos: document.getElementById("f-solo-vencidos")?.checked ? "true" : "",
     };
   }
 
@@ -1080,7 +1079,6 @@ const CLIE = (() => {
     document.getElementById("btn-limpiar-cli")?.addEventListener("click", () => {
       ["f-estado","f-centro","f-tipo","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
       ["f-cliente","f-desde","f-hasta","f-dias-desde","f-dias-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-      const sv = document.getElementById("f-solo-vencidos"); if (sv) sv.checked = false;
       _sortBy = "cliente"; _sortDir = "ASC";
       document.querySelectorAll(".sortable").forEach(th => { th.classList.remove("sort-asc","sort-desc"); const a = th.querySelector(".sort-arrow"); if(a) a.textContent="▲"; });
       cargarDocumentos(1);

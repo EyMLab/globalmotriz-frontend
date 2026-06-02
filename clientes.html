@@ -176,8 +176,7 @@
   <div class="prov-tab-panel active" id="panel-documentos">
 
     <div class="filtros-prov">
-      <!-- Fila 1: Filtros principales -->
-      <div class="filtros-row">
+      <div class="filtros-row" style="padding-bottom:0">
         <div class="fg">
           <label>Estado</label>
           <select id="f-estado">
@@ -187,13 +186,13 @@
           </select>
         </div>
         <div class="fg">
-          <label>Centro de Costos</label>
+          <label>Localidad</label>
           <select id="f-centro">
             <option value="">Todos</option>
           </select>
         </div>
         <div class="fg">
-          <label>Tipo Documento</label>
+          <label>Tipo Doc</label>
           <select id="f-tipo">
             <option value="">Todos</option>
           </select>
@@ -201,7 +200,7 @@
         <div class="fg">
           <label>Cliente</label>
           <div style="position:relative">
-            <input type="text" id="f-cliente" placeholder="Buscar cliente…" autocomplete="off" style="width:155px"/>
+            <input type="text" id="f-cliente" placeholder="Buscar…" autocomplete="off" style="width:130px"/>
             <div id="cli-dropdown"
               style="display:none;position:absolute;top:calc(100% + 2px);left:0;min-width:280px;z-index:200;
                      background:var(--white);border:1px solid var(--border-subtle);border-radius:var(--r-md);
@@ -214,36 +213,23 @@
             <option value="">Todos</option>
           </select>
         </div>
-      </div>
-      <!-- Fila 2: Fechas, días vencidos y solo vencidos -->
-      <div class="filtros-row" style="padding-top:0">
         <div class="fg">
-          <label>Fecha emisión desde</label>
+          <label>Fecha desde</label>
           <input type="date" id="f-desde"/>
         </div>
         <div class="fg">
-          <label>Fecha emisión hasta</label>
+          <label>Fecha hasta</label>
           <input type="date" id="f-hasta"/>
         </div>
         <div class="fg">
-          <label>Días venc. desde</label>
-          <input type="number" id="f-dias-desde" placeholder="0" min="0" style="width:80px;padding:7px 8px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;box-sizing:border-box;font-family:var(--font-main)"/>
+          <label>Antigüedad (días)</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="number" id="f-dias-desde" placeholder="Min" min="0" style="width:55px;padding:7px 6px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;box-sizing:border-box;font-family:var(--font-main);text-align:center"/>
+            <span style="color:var(--text-light);font-size:12px">a</span>
+            <input type="number" id="f-dias-hasta" placeholder="Max" min="0" style="width:55px;padding:7px 6px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;box-sizing:border-box;font-family:var(--font-main);text-align:center"/>
+          </div>
         </div>
-        <div class="fg">
-          <label>Días venc. hasta</label>
-          <input type="number" id="f-dias-hasta" placeholder="∞" min="0" style="width:80px;padding:7px 8px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;box-sizing:border-box;font-family:var(--font-main)"/>
-        </div>
-        <div class="fg" style="justify-content:flex-end">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;height:36px;margin-top:auto">
-            <input type="checkbox" id="f-solo-vencidos" style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer"/>
-            Solo vencidos (+30d)
-          </label>
-        </div>
-      </div>
-      <!-- Botones -->
-      <div class="filtros-actions">
-        <span class="fa-spacer"></span>
-        <div class="filtros-btn-row">
+        <div style="display:flex;gap:6px;align-items:flex-end;margin-left:auto">
           <button class="btn-sm" id="btn-filtrar-cli">Buscar</button>
           <button class="btn-sm btn-sm-sec" id="btn-limpiar-cli">Limpiar</button>
         </div>
