@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'cotizaciones':   'Cotizaciones',
       'control-taller': 'ControlTaller',
       'proveedores':    'Proveedores',
+      'clientes':       'Clientes',
       'lpr':            'Taller',
       'cumpleanos':     'Cumpleaños',
       'rrhh':           'RRHH',
@@ -44,8 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
     const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Facturas';
 
-    // Admin: bloqueo si intenta acceder a Proveedores sin ser admin
-    if (rol !== 'admin' && pagina === 'Proveedores') {
+    // Admin: bloqueo si intenta acceder a Proveedores o Clientes sin ser admin
+    if (rol !== 'admin' && (pagina === 'Proveedores' || pagina === 'Clientes')) {
       window.location.href = 'dashboard.html';
       return;
     }
@@ -117,6 +118,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas x Pagar</a>`
       : "";
 
+    const enlaceClientes = rol === 'admin'
+      ? `<a href="clientes.html" class="${pagina === 'Clientes' ? 'active' : ''}">Cuentas x Cobrar</a>`
+      : "";
+
 
     // ============================================
     // Renderizado del navbar
@@ -165,7 +170,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>` : ''}
           ${enlaceFinanzas}
-          ${enlaceProveedores}
+          ${(enlaceProveedores || enlaceClientes) ? `
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn ${['Proveedores','Clientes'].includes(pagina) ? 'active' : ''}">Contabilidad <span class="nav-arrow">&#9662;</span></button>
+            <div class="nav-dropdown-menu">
+              ${enlaceProveedores}
+              ${enlaceClientes}
+            </div>
+          </div>` : ''}
           ${enlaceUsuarios}
         </nav>
 

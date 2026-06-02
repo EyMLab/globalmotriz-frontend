@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="img/logo.png"/>
+  <title>Cuentas por Cobrar</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/roboto-font.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════
+       Estilos del módulo Cuentas x Cobrar
+    ═══════════════════════════════════════════════ */
+
+    .prov-tabs { display:flex; gap:4px; border-bottom:2px solid var(--border-subtle); margin-bottom:18px; }
+    .prov-tab { padding:10px 24px; border:none; background:none; font-size:14px; font-weight:600; color:var(--text-light); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .15s; font-family:var(--font-main); }
+    .prov-tab:hover { color:var(--primary); }
+    .prov-tab.active { color:var(--primary-dark); border-bottom-color:var(--primary); }
+    .prov-tab-panel { display:none; }
+    .prov-tab-panel.active { display:block; }
+
+    .import-strip { display:flex; align-items:center; gap:14px; padding:6px 4px 14px; }
+    .import-strip-info { font-size:12px; color:var(--text-light); flex:1; }
+    .total-indicador { display:flex; align-items:baseline; gap:6px; margin-left:auto; padding-left:20px; border-left:2px solid var(--border-subtle); }
+    .ti-num { font-size:22px; font-weight:800; color:var(--primary-dark); line-height:1; }
+    .ti-lbl { font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
+
+    .prov-table-wrap { overflow-x:auto; border-radius:var(--r-md); box-shadow:var(--shadow-card); border:1px solid var(--border-subtle); }
+    .prov-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .prov-table th { background:var(--primary-dark); color:#fff; padding:8px 10px; text-align:left; font-weight:600; white-space:nowrap; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; vertical-align:middle; }
+    .prov-table td { padding:6px 10px; border-bottom:1px solid var(--border-subtle); white-space:nowrap; color:var(--text); font-family:var(--font-main); font-size:13px; text-align:left; vertical-align:middle; }
+    .prov-table tbody tr:last-child td { border-bottom:none; }
+    .prov-table tbody tr:hover { filter:brightness(.96); }
+    .prov-table .num-right { text-align:right; font-variant-numeric:tabular-nums; }
+    .prov-table .obs-cell { max-width:200px; overflow:hidden; text-overflow:ellipsis; cursor:pointer; color:var(--primary); text-decoration-line:underline; text-decoration-style:dotted; text-underline-offset:3px; }
+    .tr-descartado td { opacity:.5; }
+
+    .badge-activo { background:#dcfce7; color:#14532d; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; }
+    .badge-descartado { background:#f3f4f6; color:#6b7280; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; }
+
+    /* Badges de antigüedad */
+    .badge-venc { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; display:inline-block; min-width:40px; text-align:center; }
+    .badge-venc-rojo    { background:#fef2f2; color:#b91c1c; }
+    .badge-venc-naranja { background:#fff7ed; color:#c2410c; }
+    .badge-venc-amarillo{ background:#fefce8; color:#a16207; }
+    .badge-venc-verde   { background:#f0fdf4; color:#15803d; }
+
+    .btn-descartar { font-size:11px; padding:3px 9px; border:1px solid #fca5a5; background:#fef2f2; color:#b91c1c; border-radius:var(--r-md); cursor:pointer; white-space:nowrap; font-family:var(--font-main); }
+    .btn-reactivar { font-size:11px; padding:3px 9px; border:1px solid #6ee7b7; background:#ecfdf5; color:#065f46; border-radius:var(--r-md); cursor:pointer; white-space:nowrap; font-family:var(--font-main); }
+    .btn-descartar:hover { background:#fee2e2; }
+    .btn-reactivar:hover { background:#d1fae5; }
+    .btn-obs { font-size:11px; padding:3px 9px; border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8; border-radius:var(--r-md); cursor:pointer; white-space:nowrap; font-family:var(--font-main); }
+    .btn-obs:hover { background:#dbeafe; }
+    .btn-obs-vacia { border-color:#e5e7eb; background:#f9fafb; color:#9ca3af; }
+    .btn-obs-vacia:hover { background:#f3f4f6; color:#6b7280; }
+
+    .paginacion { display:flex; align-items:center; gap:10px; justify-content:center; margin-top:14px; font-size:13px; }
+    .paginacion button { padding:5px 14px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--white); cursor:pointer; font-size:12px; font-family:var(--font-main); }
+    .paginacion button:disabled { opacity:.4; cursor:default; }
+    .paginacion button:not(:disabled):hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .resumen-indicadores { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
+    .res-card { flex:1 1 150px; background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); padding:14px 16px; text-align:center; box-shadow:var(--shadow-card); border-top:3px solid var(--primary); }
+    .res-card .rc-num { font-size:22px; font-weight:800; color:var(--primary-dark); line-height:1; }
+    .res-card .rc-lbl { font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin-top:5px; }
+    .rc-cobrado { border-top-color:#22c55e; }
+    .rc-cobrado .rc-num { color:#15803d; }
+    .rc-vencidos { border-top-color:#ef4444; }
+    .rc-vencidos .rc-num { color:#b91c1c; }
+
+    .res-table-wrap { overflow-x:auto; border-radius:var(--r-md); box-shadow:var(--shadow-card); border:1px solid var(--border-subtle); }
+    .res-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .res-table th { background:var(--primary-dark); color:#fff; padding:8px 10px; text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; font-weight:600; white-space:nowrap; }
+    .res-table td { padding:7px 10px; border-bottom:1px solid var(--border-subtle); white-space:nowrap; }
+    .res-table tbody tr:last-child td { border-bottom:none; }
+    .res-table tbody tr:hover { filter:brightness(.97); }
+    .input-abonar { width:90px; padding:4px 8px; border:1px solid var(--input-border); border-radius:var(--r-md); font-size:13px; text-align:right; font-family:var(--font-main); }
+    .input-abonar:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(43,122,158,.12); }
+    .btn-guardar-abono { font-size:11px; padding:3px 8px; border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8; border-radius:var(--r-md); cursor:pointer; font-family:var(--font-main); }
+    .btn-guardar-abono:hover { background:#dbeafe; }
+    .input-ref { width:100px; padding:4px 8px; border:1px solid var(--input-border); border-radius:var(--r-md); font-size:12px; font-family:var(--font-main); }
+    .input-ref:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(43,122,158,.12); }
+    .btn-total-abonar { font-size:11px; padding:3px 7px; border:1px solid #d1d5db; background:#f9fafb; color:#374151; border-radius:var(--r-md); cursor:pointer; font-family:var(--font-main); white-space:nowrap; }
+    .btn-total-abonar:hover { background:#e5e7eb; }
+    .select-prior { width:80px; padding:4px 6px; border:1px solid var(--input-border); border-radius:var(--r-md); font-size:12px; font-family:var(--font-main); height:30px; }
+    .pago-ok td { background:#f0fdf4; }
+    .pago-parcial td { background:#fefce8; }
+
+    .prov-suggestion { padding:8px 12px; font-size:13px; cursor:pointer; font-family:var(--font-main); color:var(--text); border-bottom:1px solid var(--border-subtle); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .prov-suggestion:last-child { border-bottom:none; }
+    .prov-suggestion:hover, .prov-suggestion.active { background:#eff6ff; color:var(--primary); }
+
+    .tabla-toolbar-right { margin-left:auto; display:flex; gap:8px; }
+    .btn-sm { padding:5px 13px; border:1.5px solid var(--primary); border-radius:var(--r-input); background:transparent; color:var(--primary); font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font-main); transition:all .15s; white-space:nowrap; }
+    .btn-sm:hover { background:var(--primary); color:#fff; }
+    .btn-sm.btn-sm-sec { border-color:var(--text-light); color:var(--text-light); }
+    .btn-sm.btn-sm-sec:hover { background:var(--text-light); color:#fff; }
+
+    .filtros-prov { background:var(--white); border-radius:var(--r-lg); padding:14px 18px; margin-bottom:16px; box-shadow:var(--shadow-card); border:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:0; }
+    .filtros-prov .filtros-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; justify-content:center; padding-bottom:12px; }
+    .filtros-prov .filtros-actions { display:flex; align-items:center; gap:14px; padding-top:10px; border-top:1px solid var(--border-subtle); }
+    .filtros-prov .filtros-actions .fa-spacer { flex:1; }
+    .filtros-prov .fg { display:flex; flex-direction:column; gap:5px; }
+    .filtros-prov .fg label { font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+    .filtros-prov select,
+    .filtros-prov input[type="text"],
+    .filtros-prov input[type="date"] { padding:7px 10px; border:1px solid var(--input-border); border-radius:var(--r-input); font-size:13px; background:var(--white); color:var(--text); font-family:var(--font-main); height:36px; box-sizing:border-box; }
+    .filtros-prov select:focus, .filtros-prov input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(43,122,158,.12); }
+    .filtros-prov input[type="text"] { width:155px; }
+    .filtros-prov input[type="date"] { width:140px; }
+    .filtros-prov select { min-width:130px; }
+    .filtros-btn-row { display:flex; gap:8px; }
+
+    /* ── Antigüedad de cartera ─────────────────────── */
+    .aging-cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
+    .aging-card { flex:1 1 140px; border-radius:var(--r-lg); padding:16px 18px; text-align:center; box-shadow:var(--shadow-card); }
+    .aging-card .ac-num { font-size:26px; font-weight:800; line-height:1; }
+    .aging-card .ac-docs { font-size:12px; font-weight:600; margin-top:2px; }
+    .aging-card .ac-lbl { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-top:6px; }
+    .ac-rojo    { background:#fef2f2; border:2px solid #fca5a5; }
+    .ac-rojo .ac-num, .ac-rojo .ac-docs { color:#b91c1c; }
+    .ac-rojo .ac-lbl { color:#991b1b; }
+    .ac-naranja { background:#fff7ed; border:2px solid #fdba74; }
+    .ac-naranja .ac-num, .ac-naranja .ac-docs { color:#c2410c; }
+    .ac-naranja .ac-lbl { color:#9a3412; }
+    .ac-amarillo{ background:#fefce8; border:2px solid #fde047; }
+    .ac-amarillo .ac-num, .ac-amarillo .ac-docs { color:#a16207; }
+    .ac-amarillo .ac-lbl { color:#854d0e; }
+    .ac-verde   { background:#f0fdf4; border:2px solid #86efac; }
+    .ac-verde .ac-num, .ac-verde .ac-docs { color:#15803d; }
+    .ac-verde .ac-lbl { color:#166534; }
+  </style>
+</head>
+<body>
+
+<div id="nav-container"></div>
+
+<div class="dashboard-container">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap">
+    <h2 style="margin:0;font-size:22px;font-weight:700;color:var(--primary-dark)">Cuentas por Cobrar</h2>
+    <div class="tabla-toolbar-right" style="margin-left:auto">
+      <button class="btn-sm" id="btn-importar-cli">Importar</button>
+      <button class="btn-sm btn-sm-sec" id="btn-export-csv-cli">CSV</button>
+    </div>
+  </div>
+
+  <div class="import-strip">
+    <span class="import-strip-info" id="import-info-cli">Sin importaciones recientes</span>
+    <div class="total-indicador">
+      <span class="ti-num" id="c-total-cli">—</span>
+      <span class="ti-lbl" id="lbl-total-cli">docs activos</span>
+    </div>
+  </div>
+
+  <div class="prov-tabs">
+    <button class="prov-tab active" data-tab="documentos">Documentos</button>
+    <button class="prov-tab"        data-tab="resumen">Resumen</button>
+    <button class="prov-tab"        data-tab="antiguedad">Antigüedad de Cartera</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB: DOCUMENTOS
+  ═══════════════════════════════════════════════ -->
+  <div class="prov-tab-panel active" id="panel-documentos">
+
+    <div class="filtros-prov">
+      <div class="filtros-row">
+        <div class="fg">
+          <label>Estado</label>
+          <select id="f-estado">
+            <option value="ACTIVO">Activo</option>
+            <option value="DESCARTADO">Descartado</option>
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Centro de Costos</label>
+          <select id="f-centro">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Tipo Documento</label>
+          <select id="f-tipo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Cliente</label>
+          <div style="position:relative">
+            <input type="text" id="f-cliente" placeholder="Buscar cliente…" autocomplete="off" style="width:155px"/>
+            <div id="cli-dropdown"
+              style="display:none;position:absolute;top:calc(100% + 2px);left:0;min-width:280px;z-index:200;
+                     background:var(--white);border:1px solid var(--border-subtle);border-radius:var(--r-md);
+                     box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Desde</label>
+          <input type="date" id="f-desde"/>
+        </div>
+        <div class="fg">
+          <label>Hasta</label>
+          <input type="date" id="f-hasta"/>
+        </div>
+        <div class="fg" style="justify-content:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="f-solo-vencidos" style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer"/>
+            Solo vencidos
+          </label>
+        </div>
+      </div>
+      <div class="filtros-actions">
+        <span class="fa-spacer"></span>
+        <div class="filtros-btn-row">
+          <button class="btn-sm" id="btn-filtrar-cli">Buscar</button>
+          <button class="btn-sm btn-sm-sec" id="btn-limpiar-cli">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sel-bar" style="display:none;align-items:center;gap:12px;padding:8px 14px;margin-bottom:8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--r-md);flex-wrap:wrap;">
+      <span id="sel-count" style="font-size:13px;font-weight:600;color:#1d4ed8;flex:1"></span>
+      <button class="btn-descartar" id="btn-desc-sel">Descartar seleccionados</button>
+      <button class="btn-reactivar" id="btn-react-sel">Reactivar seleccionados</button>
+      <button class="btn-sm btn-sm-sec" id="btn-desel-all" style="font-size:11px;padding:3px 10px">Limpiar selección</button>
+    </div>
+
+    <div class="prov-table-wrap">
+      <table class="prov-table">
+        <thead>
+          <tr>
+            <th style="width:32px;text-align:center"><input type="checkbox" id="check-all-docs" title="Seleccionar todos" style="cursor:pointer;width:15px;height:15px;accent-color:#fff"/></th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th style="text-align:center;width:90px">Centro</th>
+            <th>N° Documento</th>
+            <th>Fecha Emisión</th>
+            <th style="text-align:center">Días Venc.</th>
+            <th style="text-align:right">Cargos</th>
+            <th style="text-align:right">Saldo</th>
+            <th>Observación</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-docs">
+          <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacion">
+      <button id="btn-prev-doc" disabled>‹ Anterior</button>
+      <span id="pag-info-doc" style="color:var(--text-light)">Página 1 de 1</span>
+      <button id="btn-next-doc" disabled>Siguiente ›</button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB: RESUMEN
+  ═══════════════════════════════════════════════ -->
+  <div class="prov-tab-panel" id="panel-resumen">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <div class="fg" style="display:flex;flex-direction:column;gap:5px">
+        <label style="font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px">Centro de Costos</label>
+        <select id="f-centro-res" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;font-family:var(--font-main)">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <button class="btn-sm" id="btn-filtrar-res" style="margin-top:18px">Buscar</button>
+      <button class="btn-sm" id="btn-guardar-todos" style="margin-top:18px">Guardar todos</button>
+      <div style="flex:1"></div>
+      <button class="btn-sm btn-sm-sec" id="btn-pdf-resumen" style="margin-top:18px">PDF Resumen</button>
+      <button class="btn-sm btn-sm-sec" id="btn-pdf-cli" style="margin-top:18px">Exportar por Cliente</button>
+    </div>
+
+    <div class="resumen-indicadores">
+      <div class="res-card">
+        <div class="rc-num" id="rc-total-cobrar">—</div>
+        <div class="rc-lbl">Total por cobrar</div>
+      </div>
+      <div class="res-card rc-cobrado">
+        <div class="rc-num" id="rc-total-cobrado">—</div>
+        <div class="rc-lbl">Total cobrado</div>
+      </div>
+      <div class="res-card">
+        <div class="rc-num" id="rc-con-plan">—</div>
+        <div class="rc-lbl">Con plan de cobro</div>
+      </div>
+      <div class="res-card rc-vencidos" id="rc-vencidos-card">
+        <div class="rc-num" id="rc-docs-vencidos">—</div>
+        <div class="rc-lbl">Docs vencidos</div>
+      </div>
+    </div>
+
+    <div class="res-table-wrap">
+      <table class="res-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>RUC</th>
+            <th>Tel</th>
+            <th style="text-align:center">Docs</th>
+            <th style="text-align:right">Total Saldo</th>
+            <th style="text-align:center">Prioridad</th>
+            <th style="text-align:right">Por Cobrar</th>
+            <th>Referencia</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resumen">
+          <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB: ANTIGÜEDAD DE CARTERA
+  ═══════════════════════════════════════════════ -->
+  <div class="prov-tab-panel" id="panel-antiguedad">
+
+    <div class="aging-cards">
+      <div class="aging-card ac-rojo">
+        <div class="ac-num" id="ag-monto-90">$0.00</div>
+        <div class="ac-docs" id="ag-docs-90">0 docs</div>
+        <div class="ac-lbl">> 90 días</div>
+      </div>
+      <div class="aging-card ac-naranja">
+        <div class="ac-num" id="ag-monto-3090">$0.00</div>
+        <div class="ac-docs" id="ag-docs-3090">0 docs</div>
+        <div class="ac-lbl">31 – 90 días</div>
+      </div>
+      <div class="aging-card ac-amarillo">
+        <div class="ac-num" id="ag-monto-130">$0.00</div>
+        <div class="ac-docs" id="ag-docs-130">0 docs</div>
+        <div class="ac-lbl">1 – 30 días</div>
+      </div>
+      <div class="aging-card ac-verde">
+        <div class="ac-num" id="ag-monto-dia">$0.00</div>
+        <div class="ac-docs" id="ag-docs-dia">0 docs</div>
+        <div class="ac-lbl">Al día</div>
+      </div>
+    </div>
+
+    <div class="res-table-wrap">
+      <table class="res-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th style="text-align:right">Total Saldo</th>
+            <th style="text-align:center">> 90d</th>
+            <th style="text-align:center">31-90d</th>
+            <th style="text-align:center">1-30d</th>
+            <th style="text-align:center">Al día</th>
+            <th style="text-align:center">Max Días</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-antiguedad">
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">Carga el resumen primero.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/clientes.js"></script>
+</body>
+</html>
