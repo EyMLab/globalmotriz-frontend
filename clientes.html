@@ -207,6 +207,12 @@
           <label>Hasta</label>
           <input type="date" id="f-hasta"/>
         </div>
+        <div class="fg">
+          <label>Responsable</label>
+          <select id="f-responsable">
+            <option value="">Todos</option>
+          </select>
+        </div>
         <div class="fg" style="justify-content:flex-end">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
             <input type="checkbox" id="f-solo-vencidos" style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer"/>
@@ -245,11 +251,12 @@
             <th style="text-align:right">Cobrado</th>
             <th style="text-align:right">Retención</th>
             <th style="text-align:right">Saldo</th>
+            <th>Responsable</th>
             <th>Observación</th>
           </tr>
         </thead>
         <tbody id="tbody-docs">
-          <tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
+          <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
         </tbody>
       </table>
     </div>

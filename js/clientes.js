@@ -50,6 +50,7 @@ const CLIE = (() => {
       centro_costos: document.getElementById("f-centro")?.value    || "",
       fecha_desde:   document.getElementById("f-desde")?.value     || "",
       fecha_hasta:   document.getElementById("f-hasta")?.value     || "",
+      responsable:   document.getElementById("f-responsable")?.value || "",
       solo_vencidos: document.getElementById("f-solo-vencidos")?.checked ? "true" : "",
     };
   }
@@ -86,6 +87,14 @@ const CLIE = (() => {
     if (selTipo) {
       while (selTipo.options.length > 1) selTipo.remove(1);
       (data.tipos || []).forEach(t => selTipo.add(new Option(t, t)));
+    }
+
+    const selResp = document.getElementById("f-responsable");
+    if (selResp) {
+      const prev = selResp.value;
+      while (selResp.options.length > 1) selResp.remove(1);
+      (data.responsables || []).forEach(r => selResp.add(new Option(r, r)));
+      if (prev) selResp.value = prev;
     }
 
     _clientesList = data.clientes || [];
@@ -148,14 +157,14 @@ const CLIE = (() => {
     const tbody = document.getElementById("tbody-docs");
 
     if (!res || !res.ok) {
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:#ef4444">Error al cargar datos.</td></tr>`;
       return;
     }
     const data = await safeJson(res);
     totalPagDoc = data.totalPaginas || 1;
 
     if (!data.documentos?.length) {
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--text-light)">Sin resultados.</td></tr>`;
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
@@ -183,6 +192,9 @@ const CLIE = (() => {
           <td class="num-right">${fmtMoney(d.cobrado)}</td>
           <td class="num-right">${fmtMoney(d.retencion)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
+          <td><input type="text" class="input-resp" value="${(d.responsable||"").replace(/"/g,"&quot;")}" placeholder="—"
+            data-num="${numEnc}" style="width:100px;padding:3px 6px;border:1px solid var(--input-border);border-radius:var(--r-md);font-size:12px;font-family:var(--font-main)"
+            onblur="CLIE.guardarResponsable(this)"/></td>
           <td>${btnObs}</td>
         </tr>`;
       }).join("");
@@ -249,6 +261,16 @@ const CLIE = (() => {
 
   function editarObsClick(btn) {
     editarObservacion(btn.dataset.num, btn.dataset.obs || "");
+  }
+
+  async function guardarResponsable(input) {
+    const numDoc = input.dataset.num;
+    const valor  = input.value.trim();
+    await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(numDoc)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ responsable: valor }),
+    });
   }
 
   async function editarObservacion(numDoc, obsActual) {
@@ -1025,7 +1047,7 @@ const CLIE = (() => {
 
     document.getElementById("btn-filtrar-cli")?.addEventListener("click", () => cargarDocumentos(1));
     document.getElementById("btn-limpiar-cli")?.addEventListener("click", () => {
-      ["f-estado","f-centro","f-tipo"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
+      ["f-estado","f-centro","f-tipo","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
       ["f-cliente","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       const sv = document.getElementById("f-solo-vencidos"); if (sv) sv.checked = false;
       cargarDocumentos(1);
@@ -1062,6 +1084,6 @@ const CLIE = (() => {
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { actualizarBarraSeleccion, editarObsClick, seleccionarSugerencia, guardarAbono, guardarTodos };
+  return { actualizarBarraSeleccion, editarObsClick, seleccionarSugerencia, guardarAbono, guardarTodos, guardarResponsable };
 
 })();
