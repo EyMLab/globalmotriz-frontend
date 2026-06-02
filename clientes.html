@@ -116,6 +116,12 @@
     .filtros-prov select { min-width:130px; }
     .filtros-btn-row { display:flex; gap:8px; }
 
+    /* ── Sorting headers ──────────────────────────── */
+    .sortable { cursor:pointer; user-select:none; position:relative; padding-right:18px !important; }
+    .sortable:hover { background:rgba(255,255,255,.1); }
+    .sort-arrow { position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:10px; opacity:.4; }
+    .sortable.sort-asc .sort-arrow, .sortable.sort-desc .sort-arrow { opacity:1; }
+
     /* ── Antigüedad de cartera ─────────────────────── */
     .aging-cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
     .aging-card { flex:1 1 140px; border-radius:var(--r-lg); padding:16px 18px; text-align:center; box-shadow:var(--shadow-card); }
@@ -215,6 +221,14 @@
             <option value="">Todos</option>
           </select>
         </div>
+        <div class="fg">
+          <label>Días Venc. desde</label>
+          <input type="number" id="f-dias-desde" placeholder="0" min="0" style="width:70px;padding:7px 8px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;box-sizing:border-box;font-family:var(--font-main)"/>
+        </div>
+        <div class="fg">
+          <label>Días Venc. hasta</label>
+          <input type="number" id="f-dias-hasta" placeholder="∞" min="0" style="width:70px;padding:7px 8px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;box-sizing:border-box;font-family:var(--font-main)"/>
+        </div>
         <div class="fg" style="justify-content:flex-end">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
             <input type="checkbox" id="f-solo-vencidos" style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer"/>
@@ -243,16 +257,16 @@
         <thead>
           <tr>
             <th style="width:32px;text-align:center"><input type="checkbox" id="check-all-docs" title="Seleccionar todos" style="cursor:pointer;width:15px;height:15px;accent-color:#fff"/></th>
-            <th>Cliente</th>
-            <th>Tipo</th>
-            <th style="text-align:center;width:90px">Centro</th>
-            <th>N° Documento</th>
-            <th>Fecha Emisión</th>
-            <th style="text-align:center">Días Venc.</th>
-            <th style="text-align:right">Cargos</th>
-            <th style="text-align:right">Cobrado</th>
-            <th style="text-align:right">Retención</th>
-            <th style="text-align:right">Saldo</th>
+            <th class="sortable" data-sort="cliente" onclick="CLIE.ordenar('cliente')">Cliente<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="tipo_doc" onclick="CLIE.ordenar('tipo_doc')">Tipo<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="centro_costos" style="text-align:center;width:90px" onclick="CLIE.ordenar('centro_costos')">Centro<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="numero_documento" onclick="CLIE.ordenar('numero_documento')">N° Documento<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="fecha_emision" onclick="CLIE.ordenar('fecha_emision')">Fecha Emisión<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="dias_vencimiento" style="text-align:center" onclick="CLIE.ordenar('dias_vencimiento')">Días Venc.<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="cargos" style="text-align:right" onclick="CLIE.ordenar('cargos')">Cargos<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="cobrado" style="text-align:right" onclick="CLIE.ordenar('cobrado')">Cobrado<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="retencion" style="text-align:right" onclick="CLIE.ordenar('retencion')">Retención<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort="saldo" style="text-align:right" onclick="CLIE.ordenar('saldo')">Saldo<span class="sort-arrow">▲</span></th>
             <th>Gestión</th>
           </tr>
         </thead>

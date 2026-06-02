@@ -8,6 +8,8 @@ const CLIE = (() => {
   let totalPagDoc   = 1;
   let _clientesList = [];
   let _resumenData  = null;
+  let _sortBy       = "cliente";
+  let _sortDir      = "ASC";
 
   // ── Helpers ─────────────────────────────────────
   function fmtMoney(v) {
@@ -51,6 +53,8 @@ const CLIE = (() => {
       fecha_desde:   document.getElementById("f-desde")?.value     || "",
       fecha_hasta:   document.getElementById("f-hasta")?.value     || "",
       responsable:   document.getElementById("f-responsable")?.value || "",
+      dias_desde:    document.getElementById("f-dias-desde")?.value || "",
+      dias_hasta:    document.getElementById("f-dias-hasta")?.value || "",
       solo_vencidos: document.getElementById("f-solo-vencidos")?.checked ? "true" : "",
     };
   }
@@ -135,6 +139,28 @@ const CLIE = (() => {
     if (d) d.style.display = "none";
   }
 
+  function ordenar(col) {
+    if (_sortBy === col) {
+      _sortDir = _sortDir === "ASC" ? "DESC" : "ASC";
+    } else {
+      _sortBy  = col;
+      _sortDir = "ASC";
+    }
+    // Actualizar visual de flechas
+    document.querySelectorAll(".sortable").forEach(th => {
+      th.classList.remove("sort-asc", "sort-desc");
+      const arrow = th.querySelector(".sort-arrow");
+      if (arrow) arrow.textContent = "▲";
+    });
+    const activeTh = document.querySelector(`.sortable[data-sort="${col}"]`);
+    if (activeTh) {
+      activeTh.classList.add(_sortDir === "ASC" ? "sort-asc" : "sort-desc");
+      const arrow = activeTh.querySelector(".sort-arrow");
+      if (arrow) arrow.textContent = _sortDir === "ASC" ? "▲" : "▼";
+    }
+    cargarDocumentos(1);
+  }
+
   function actualizarContador(total) {
     const estado = document.getElementById("f-estado")?.value ?? "ACTIVO";
     const el  = document.getElementById("c-total-cli");
@@ -150,7 +176,7 @@ const CLIE = (() => {
   async function cargarDocumentos(pag = 1) {
     paginaDoc = pag;
     const f = leerFiltros();
-    const qs = new URLSearchParams({ page: pag, limit: 50, ...f });
+    const qs = new URLSearchParams({ page: pag, limit: 50, sort_by: _sortBy, sort_dir: _sortDir, ...f });
     Object.keys(f).forEach(k => { if (!f[k]) qs.delete(k); });
 
     const res = await apiFetch(`/clientes-cobrar/documentos?${qs}`);
@@ -1053,8 +1079,10 @@ const CLIE = (() => {
     document.getElementById("btn-filtrar-cli")?.addEventListener("click", () => cargarDocumentos(1));
     document.getElementById("btn-limpiar-cli")?.addEventListener("click", () => {
       ["f-estado","f-centro","f-tipo","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
-      ["f-cliente","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      ["f-cliente","f-desde","f-hasta","f-dias-desde","f-dias-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       const sv = document.getElementById("f-solo-vencidos"); if (sv) sv.checked = false;
+      _sortBy = "cliente"; _sortDir = "ASC";
+      document.querySelectorAll(".sortable").forEach(th => { th.classList.remove("sort-asc","sort-desc"); const a = th.querySelector(".sort-arrow"); if(a) a.textContent="▲"; });
       cargarDocumentos(1);
     });
     const inpCli = document.getElementById("f-cliente");
@@ -1089,6 +1117,6 @@ const CLIE = (() => {
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { actualizarBarraSeleccion, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos };
+  return { actualizarBarraSeleccion, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos, ordenar };
 
 })();
