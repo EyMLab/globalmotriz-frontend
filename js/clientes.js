@@ -1122,6 +1122,132 @@ const CLIE = (() => {
     }
   }
 
+  // ═══════════════════════════════════════════════════
+  // Dashboard
+  // ═══════════════════════════════════════════════════
+  const PALETTE = [
+    "#2563eb","#7c3aed","#db2777","#ea580c","#16a34a","#0891b2","#4f46e5",
+    "#c026d3","#d97706","#059669","#6366f1","#e11d48","#0d9488","#8b5cf6",
+    "#f59e0b","#10b981","#3b82f6","#ec4899","#14b8a6","#f97316",
+  ];
+  const EG_COLORS = {
+    "REVISAR":"#2563eb","CRÉDITO":"#d97706","EMPLEADO":"#16a34a",
+    "ANULAR":"#dc2626","SEGURO":"#7c3aed","PARTICULAR":"#0891b2","SIN ESTADO":"#94a3b8",
+  };
+  const _charts = {};
+
+  function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
+
+  function fmtMes(yyyymm) {
+    const [y, m] = yyyymm.split("-");
+    const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    return `${meses[parseInt(m)-1]} ${y.slice(2)}`;
+  }
+
+  async function cargarDashboard() {
+    const centro = document.getElementById("f-centro-res")?.value || "";
+    const qs = centro ? `?centro_costos=${encodeURIComponent(centro)}` : "";
+    const res = await apiFetch(`/clientes-cobrar/dashboard${qs}`);
+    if (!res || !res.ok) return;
+    const d = await safeJson(res);
+
+    // ── KPI cards ────────────────────────────────
+    const t = d.totales;
+    const cards = [
+      { label:"Total Documentos", val: t.total_docs, fmt: false },
+      { label:"Total Cargos", val: t.total_cargos, fmt: true },
+      { label:"Total Cobrado", val: t.total_cobrado, fmt: true, color:"#16a34a" },
+      { label:"Retenciones", val: t.total_retencion, fmt: true, color:"#7c3aed" },
+      { label:"Saldo Pendiente", val: t.total_saldo, fmt: true, color:"#dc2626" },
+    ];
+    document.getElementById("dash-fin-grid").innerHTML = cards.map(c => {
+      const topColor = c.color || "";
+      return `<div class="dash-fin-card"${topColor ? ` style="border-top-color:${topColor}"` : ""}>
+        <div class="dfn"${topColor ? ` style="color:${topColor}"` : ""}>${c.fmt ? fmtMoney(c.val) : c.val}</div>
+        <div class="dfl">${c.label}</div>
+      </div>`;
+    }).join("");
+
+    // ── Donut: Estado Gestión ─────────────────────
+    destroyChart("chart-estado-gestion");
+    const egLabels = d.por_estado_gestion.map(r => r.estado_gestion);
+    const egData   = d.por_estado_gestion.map(r => r.cantidad);
+    const egColors = egLabels.map(l => EG_COLORS[l] || "#94a3b8");
+    _charts["chart-estado-gestion"] = new Chart(document.getElementById("chart-estado-gestion"), {
+      type: "doughnut",
+      data: { labels: egLabels, datasets: [{ data: egData, backgroundColor: egColors, borderWidth: 2, borderColor: "#fff" }] },
+      options: { responsive: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } },
+    });
+
+    // ── Bar: Aging ────────────────────────────────
+    destroyChart("chart-aging");
+    const ag = d.aging;
+    _charts["chart-aging"] = new Chart(document.getElementById("chart-aging"), {
+      type: "bar",
+      data: {
+        labels: ["> 90 días", "31-90 días", "1-30 días", "Al día"],
+        datasets: [
+          { label: "Monto", data: [ag.monto_90, ag.monto_3090, ag.monto_130, ag.monto_dia], backgroundColor: ["#dc2626","#ea580c","#d97706","#16a34a"] },
+        ],
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => "$" + v.toLocaleString() } } } },
+    });
+
+    // ── HBar: Top clientes ────────────────────────
+    destroyChart("chart-clientes");
+    _charts["chart-clientes"] = new Chart(document.getElementById("chart-clientes"), {
+      type: "bar",
+      data: {
+        labels: d.por_cliente.map(r => r.cliente.length > 25 ? r.cliente.slice(0,25) + "…" : r.cliente),
+        datasets: [{ label: "Saldo", data: d.por_cliente.map(r => parseFloat(r.total_saldo)), backgroundColor: PALETTE.slice(0, d.por_cliente.length) }],
+      },
+      options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => "$" + v.toLocaleString() } } } },
+    });
+
+    // ── Donut: Tipo doc ───────────────────────────
+    destroyChart("chart-tipo-doc");
+    _charts["chart-tipo-doc"] = new Chart(document.getElementById("chart-tipo-doc"), {
+      type: "doughnut",
+      data: {
+        labels: d.por_tipo_doc.map(r => r.tipo_doc || "—"),
+        datasets: [{ data: d.por_tipo_doc.map(r => r.cantidad), backgroundColor: PALETTE.slice(0, d.por_tipo_doc.length), borderWidth: 2, borderColor: "#fff" }],
+      },
+      options: { responsive: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } },
+    });
+
+    // ── Donut: Localidad ──────────────────────────
+    destroyChart("chart-localidad");
+    _charts["chart-localidad"] = new Chart(document.getElementById("chart-localidad"), {
+      type: "doughnut",
+      data: {
+        labels: d.por_localidad.map(r => fmtCentro(r.centro_costos)),
+        datasets: [{ data: d.por_localidad.map(r => parseFloat(r.total_saldo)), backgroundColor: ["#2563eb","#16a34a","#d97706","#7c3aed"], borderWidth: 2, borderColor: "#fff" }],
+      },
+      options: { responsive: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } },
+    });
+
+    // ── Line+Bar: Por mes ─────────────────────────
+    destroyChart("chart-mes");
+    _charts["chart-mes"] = new Chart(document.getElementById("chart-mes"), {
+      type: "bar",
+      data: {
+        labels: d.por_mes.map(r => fmtMes(r.mes)),
+        datasets: [
+          { label: "Saldo", data: d.por_mes.map(r => parseFloat(r.total_saldo)), backgroundColor: "rgba(37,99,235,.6)", borderColor: "#2563eb", borderWidth: 1 },
+          { label: "Docs", data: d.por_mes.map(r => r.cantidad), type: "line", borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,.1)", yAxisID: "y1", tension: .3, pointRadius: 3 },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } },
+        scales: {
+          y: { position: "left", ticks: { callback: v => "$" + v.toLocaleString() } },
+          y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } },
+        },
+      },
+    });
+  }
+
   // ── Tabs ────────────────────────────────────────
   function initTabs() {
     document.querySelectorAll(".prov-tab").forEach(btn => {
@@ -1132,6 +1258,7 @@ const CLIE = (() => {
         const panel = document.getElementById(`panel-${btn.dataset.tab}`);
         if (panel) panel.classList.add("active");
 
+        if (btn.dataset.tab === "dashboard") cargarDashboard();
         if (btn.dataset.tab === "resumen") cargarResumen();
         if (btn.dataset.tab === "antiguedad") {
           if (!_resumenData) {

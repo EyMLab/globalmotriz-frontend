@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <!-- Parche para compatibilidad de fuentes personalizadas con jsPDF v2+ -->
   <script>window.jsPDF = window.jspdf.jsPDF;</script>
   <script src="js/roboto-font.js"></script>
@@ -149,6 +150,19 @@
     .btn-gestion:hover { border-color:var(--primary); color:var(--primary); background:#eff6ff; }
     .btn-gestion.tiene-datos { border-color:#2B7A9E; color:#2B7A9E; background:#eff6ff; }
 
+    /* ── Dashboard ─────────────────────────────────── */
+    .dash-fin-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+    .dash-fin-card { flex:1 1 140px; background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); padding:14px 16px; text-align:center; box-shadow:var(--shadow-card); border-top:3px solid var(--primary); }
+    .dash-fin-card .dfn { font-size:20px; font-weight:800; color:var(--primary-dark); line-height:1; }
+    .dash-fin-card .dfl { font-size:10px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin-top:5px; }
+    .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    @media(max-width:900px) { .dash-grid { grid-template-columns:1fr; } }
+    .dash-grid-full { grid-column:1/-1; }
+    .dash-chart-card { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow-card); }
+    .dash-chart-card h3 { margin:0; padding:10px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:var(--primary-dark); color:#fff; }
+    .dash-chart-body { padding:16px; }
+    .dash-chart-body canvas { max-height:300px; }
+
     /* ── Antigüedad de cartera ─────────────────────── */
     .aging-cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
     .aging-card { flex:1 1 140px; border-radius:var(--r-lg); padding:16px 18px; text-align:center; box-shadow:var(--shadow-card); }
@@ -193,6 +207,7 @@
 
   <div class="prov-tabs">
     <button class="prov-tab active" data-tab="documentos">Documentos</button>
+    <button class="prov-tab"        data-tab="dashboard">Dashboard</button>
     <button class="prov-tab"        data-tab="resumen">Resumen</button>
     <button class="prov-tab"        data-tab="antiguedad">Antigüedad de Cartera</button>
   </div>
@@ -329,6 +344,44 @@
       <button id="btn-prev-doc" disabled>‹ Anterior</button>
       <span id="pag-info-doc" style="color:var(--text-light)">Página 1 de 1</span>
       <button id="btn-next-doc" disabled>Siguiente ›</button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB: DASHBOARD
+  ═══════════════════════════════════════════════ -->
+  <div class="prov-tab-panel" id="panel-dashboard">
+
+    <!-- KPI cards financieros -->
+    <div class="dash-fin-grid" id="dash-fin-grid"></div>
+
+    <!-- Gráficos -->
+    <div class="dash-grid">
+      <div class="dash-chart-card">
+        <h3>Distribución por Estado</h3>
+        <div class="dash-chart-body"><canvas id="chart-estado-gestion"></canvas></div>
+      </div>
+      <div class="dash-chart-card">
+        <h3>Antigüedad de Cartera</h3>
+        <div class="dash-chart-body"><canvas id="chart-aging"></canvas></div>
+      </div>
+      <div class="dash-chart-card">
+        <h3>Top 15 Clientes por Saldo</h3>
+        <div class="dash-chart-body"><canvas id="chart-clientes"></canvas></div>
+      </div>
+      <div class="dash-chart-card">
+        <h3>Por Tipo de Documento</h3>
+        <div class="dash-chart-body"><canvas id="chart-tipo-doc"></canvas></div>
+      </div>
+      <div class="dash-chart-card">
+        <h3>Por Localidad</h3>
+        <div class="dash-chart-body"><canvas id="chart-localidad"></canvas></div>
+      </div>
+      <div class="dash-chart-card dash-grid-full">
+        <h3>Saldo por Mes de Emisión</h3>
+        <div class="dash-chart-body"><canvas id="chart-mes"></canvas></div>
+      </div>
     </div>
 
   </div>
