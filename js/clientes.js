@@ -11,6 +11,27 @@ const CLIE = (() => {
   let _sortBy       = "cliente";
   let _sortDir      = "ASC";
 
+  // ── Columnas toggle ─────────────────────────────
+  const COLS = [
+    { id: "cliente",          label: "Cliente",       def: true },
+    { id: "tipo_doc",         label: "Tipo",          def: true },
+    { id: "centro_costos",    label: "Localidad",     def: true },
+    { id: "numero_documento", label: "N° Documento",  def: true },
+    { id: "fecha_emision",    label: "F. Emisión",    def: true },
+    { id: "dias_vencimiento", label: "Días",          def: true },
+    { id: "estado_gestion",   label: "Estado",        def: true },
+    { id: "cargos",           label: "Cargos",        def: true },
+    { id: "cobrado",          label: "Cobrado",       def: false },
+    { id: "retencion",        label: "Retención",     def: false },
+    { id: "saldo",            label: "Saldo",         def: true },
+    { id: "responsable",      label: "Responsable",   def: false },
+    { id: "observacion",      label: "Observación",   def: false },
+  ];
+  const colVisible = {};
+  COLS.forEach(c => { colVisible[c.id] = c.def; });
+
+  const ESTADOS_GESTION = ["REVISAR","CRÉDITO","EMPLEADO","ANULAR","SEGURO","PARTICULAR"];
+
   // ── Helpers ─────────────────────────────────────
   function fmtMoney(v) {
     const n = parseFloat(v);
@@ -43,6 +64,55 @@ const CLIE = (() => {
     return `<span class="badge-venc badge-venc-verde">${d}d</span>`;
   }
 
+  function fmtEstadoGestion(val) {
+    if (!val) return '<span style="color:var(--text-light)">—</span>';
+    const cls = {
+      "REVISAR":"eg-revisar","CRÉDITO":"eg-credito","EMPLEADO":"eg-empleado",
+      "ANULAR":"eg-anular","SEGURO":"eg-seguro","PARTICULAR":"eg-particular",
+    };
+    return `<span class="eg-badge ${cls[val] || ""}">${val}</span>`;
+  }
+
+  // ── Columnas visibility ─────────────────────────
+  function aplicarColumnas() {
+    COLS.forEach(c => {
+      const disp = colVisible[c.id] ? "" : "none";
+      document.querySelectorAll(`[data-col="${c.id}"]`).forEach(el => { el.style.display = disp; });
+    });
+  }
+
+  function initColumnToggle() {
+    const panel = document.getElementById("cols-panel");
+    const container = document.getElementById("cols-checks");
+    if (!panel || !container) return;
+    container.innerHTML = COLS.map(c =>
+      `<label><input type="checkbox" data-col-id="${c.id}" ${colVisible[c.id] ? "checked" : ""}/> ${c.label}</label>`
+    ).join("");
+    container.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("change", () => {
+        colVisible[inp.dataset.colId] = inp.checked;
+        aplicarColumnas();
+      });
+    });
+    document.getElementById("btn-cols")?.addEventListener("click", e => {
+      e.stopPropagation();
+      panel.classList.toggle("open");
+    });
+    document.addEventListener("click", e => {
+      if (!panel.contains(e.target) && e.target.id !== "btn-cols") panel.classList.remove("open");
+    });
+    document.getElementById("cols-all")?.addEventListener("click", () => {
+      COLS.forEach(c => { colVisible[c.id] = true; });
+      container.querySelectorAll("input").forEach(i => { i.checked = true; });
+      aplicarColumnas();
+    });
+    document.getElementById("cols-default")?.addEventListener("click", () => {
+      COLS.forEach(c => { colVisible[c.id] = c.def; });
+      container.querySelectorAll("input").forEach(i => { i.checked = colVisible[i.dataset.colId]; });
+      aplicarColumnas();
+    });
+  }
+
   // ── Filtros ─────────────────────────────────────
   function leerFiltros() {
     return {
@@ -52,8 +122,9 @@ const CLIE = (() => {
       centro_costos: document.getElementById("f-centro")?.value    || "",
       fecha_desde:   document.getElementById("f-desde")?.value     || "",
       fecha_hasta:   document.getElementById("f-hasta")?.value     || "",
-      responsable:   document.getElementById("f-responsable")?.value || "",
-      dias_desde:    document.getElementById("f-dias-desde")?.value || "",
+      responsable:      document.getElementById("f-responsable")?.value || "",
+      estado_gestion:   document.getElementById("f-estado-gestion")?.value || "",
+      dias_desde:       document.getElementById("f-dias-desde")?.value || "",
       dias_hasta:    document.getElementById("f-dias-hasta")?.value || "",
     };
   }
@@ -195,14 +266,11 @@ const CLIE = (() => {
         const descartado = d.estado === "DESCARTADO";
         const obsEnc = (d.observacion || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
         const numEnc = d.numero_documento.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
-        const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
-        const tieneObs  = !!(d.observacion || "").trim();
-        const tieneResp = !!(d.responsable || "").trim();
-        const tieneGestion = tieneObs || tieneResp;
         const respEnc = (d.responsable || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-        const btnGestion = `<button class="btn-obs${tieneGestion ? "" : " btn-obs-vacia"}"
-          data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}"
-          onclick="CLIE.editarGestionClick(this)">${tieneGestion ? "Ver / Editar" : "Agregar"}</button>`;
+        const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
+        const tieneGestion = !!(d.observacion || "").trim() || !!(d.responsable || "").trim() || !!(d.estado_gestion || "").trim();
+        const btnIcon = tieneGestion ? "⚙" : "+";
+        const btnClass = tieneGestion ? "btn-gestion tiene-datos" : "btn-gestion";
         return `<tr style="${rowStyle}">
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
@@ -210,20 +278,24 @@ const CLIE = (() => {
               data-estado="${d.estado}"
               onchange="CLIE.actualizarBarraSeleccion()"/>
           </td>
-          <td title="${(d.cliente||"").replace(/"/g,"&quot;")}">${d.cliente || "—"}</td>
-          <td>${d.tipo_doc || "—"}</td>
-          <td style="text-align:center">${fmtCentro(d.centro_costos)}</td>
-          <td>${d.numero_documento}</td>
-          <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
-          <td style="text-align:center">${fmtDiasVenc(d.dias_vencimiento)}</td>
-          <td class="num-right">${fmtMoney(d.cargos)}</td>
-          <td class="num-right">${fmtMoney(d.cobrado)}</td>
-          <td class="num-right">${fmtMoney(d.retencion)}</td>
-          <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
-          <td>${btnGestion}</td>
+          <td data-col="cliente" title="${(d.cliente||"").replace(/"/g,"&quot;")}">${d.cliente || "—"}</td>
+          <td data-col="tipo_doc">${d.tipo_doc || "—"}</td>
+          <td data-col="centro_costos" style="text-align:center">${fmtCentro(d.centro_costos)}</td>
+          <td data-col="numero_documento">${d.numero_documento}</td>
+          <td data-col="fecha_emision" style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
+          <td data-col="dias_vencimiento" style="text-align:center">${fmtDiasVenc(d.dias_vencimiento)}</td>
+          <td data-col="estado_gestion" style="text-align:center">${fmtEstadoGestion(d.estado_gestion)}</td>
+          <td data-col="cargos" class="num-right">${fmtMoney(d.cargos)}</td>
+          <td data-col="cobrado" class="num-right">${fmtMoney(d.cobrado)}</td>
+          <td data-col="retencion" class="num-right">${fmtMoney(d.retencion)}</td>
+          <td data-col="saldo" class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
+          <td data-col="responsable" style="font-size:12px;color:var(--text-light)">${d.responsable || "—"}</td>
+          <td data-col="observacion" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-light)">${d.observacion || "—"}</td>
+          <td style="text-align:center"><button class="${btnClass}" data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}" data-eg="${(d.estado_gestion||"").replace(/"/g,"&quot;")}" onclick="CLIE.editarGestionClick(this)" title="Gestión">${btnIcon}</button></td>
         </tr>`;
       }).join("");
       actualizarBarraSeleccion();
+      aplicarColumnas();
       const chkAll = document.getElementById("check-all-docs");
       if (chkAll) chkAll.checked = false;
     }
@@ -284,15 +356,15 @@ const CLIE = (() => {
     await cargarDocumentos(paginaDoc);
   }
 
-  function editarObsClick(btn) {
-    editarObservacion(btn.dataset.num, btn.dataset.obs || "");
-  }
-
   function editarGestionClick(btn) {
-    editarGestion(btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "");
+    editarGestion(btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "", btn.dataset.eg || "");
   }
 
-  async function editarGestion(numDoc, obsActual, respActual) {
+  async function editarGestion(numDoc, obsActual, respActual, egActual) {
+    const optsEG = ["", ...ESTADOS_GESTION].map(e =>
+      `<option value="${e}"${e === egActual ? " selected" : ""}>${e || "— Sin estado —"}</option>`
+    ).join("");
+
     const { isConfirmed, value: vals } = await Swal.fire({
       title: "Gestión del documento",
       width: 540,
@@ -300,16 +372,20 @@ const CLIE = (() => {
         <div style="text-align:left">
           <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Documento</div>
           <div style="font-family:monospace;font-size:13px;color:#1e40af;background:#eff6ff;padding:6px 10px;border-radius:6px;margin-bottom:14px">${numDoc}</div>
-          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Responsable</div>
-          <input type="text" id="swal-resp" value="${respActual}" placeholder="Nombre del responsable…"
-            style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#111827;margin-bottom:14px"
-            onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.15)'"
-            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"/>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Estado</div>
+              <select id="swal-eg" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#111827;height:38px">${optsEG}</select>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Responsable</div>
+              <input type="text" id="swal-resp" value="${respActual}" placeholder="Nombre…"
+                style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#111827"/>
+            </div>
+          </div>
           <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Observación</div>
           <textarea id="swal-obs" rows="4"
             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.5;outline:none;color:#111827"
-            onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.15)'"
-            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"
           >${obsActual}</textarea>
         </div>`,
       showCancelButton: true,
@@ -319,21 +395,24 @@ const CLIE = (() => {
       cancelButtonColor: "#9ca3af",
       focusConfirm: false,
       preConfirm: () => ({
+        estado_gestion: document.getElementById("swal-eg").value,
         responsable: document.getElementById("swal-resp").value.trim(),
         observacion: document.getElementById("swal-obs").value.trim(),
       }),
     });
     if (!isConfirmed || !vals) return;
 
-    const resp = vals.responsable ?? "";
-    const obs  = vals.observacion ?? "";
-
     const res = await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(numDoc)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ observacion: obs, responsable: resp }),
+      body: JSON.stringify({
+        observacion: vals.observacion,
+        responsable: vals.responsable,
+        estado_gestion: vals.estado_gestion || null,
+      }),
     });
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo guardar.", "error"); return; }
+    await cargarFiltros();
     cargarDocumentos(paginaDoc);
   }
 
@@ -1068,6 +1147,7 @@ const CLIE = (() => {
   // ── Init ────────────────────────────────────────
   async function init() {
     initTabs();
+    initColumnToggle();
 
     await cargarFiltros();
     await cargarDocumentos(1);
@@ -1077,7 +1157,7 @@ const CLIE = (() => {
 
     document.getElementById("btn-filtrar-cli")?.addEventListener("click", () => cargarDocumentos(1));
     document.getElementById("btn-limpiar-cli")?.addEventListener("click", () => {
-      ["f-estado","f-centro","f-tipo","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
+      ["f-estado","f-centro","f-tipo","f-responsable","f-estado-gestion"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
       ["f-cliente","f-desde","f-hasta","f-dias-desde","f-dias-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       _sortBy = "cliente"; _sortDir = "ASC";
       document.querySelectorAll(".sortable").forEach(th => { th.classList.remove("sort-asc","sort-desc"); const a = th.querySelector(".sort-arrow"); if(a) a.textContent="▲"; });

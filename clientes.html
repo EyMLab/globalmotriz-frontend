@@ -121,6 +121,34 @@
     .sort-arrow { font-size:9px; opacity:.4; margin-left:3px; }
     .sortable.sort-asc .sort-arrow, .sortable.sort-desc .sort-arrow { opacity:1; }
 
+    /* ── Column toggle panel ──────────────────────── */
+    .cols-panel {
+      display:none; position:absolute; top:calc(100% + 4px); right:0; z-index:300;
+      background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg);
+      box-shadow:0 8px 24px rgba(0,0,0,.15); padding:12px 14px; min-width:180px;
+    }
+    .cols-panel.open { display:block; }
+    .cols-panel h4 { font-size:11px; font-weight:700; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin:0 0 8px; }
+    .cols-panel label { display:flex; align-items:center; gap:6px; padding:3px 0; font-size:13px; cursor:pointer; color:var(--text); }
+    .cols-panel label input { width:15px; height:15px; accent-color:var(--primary); cursor:pointer; }
+    .cols-panel-footer { display:flex; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border-subtle); }
+    .cols-panel-footer a { font-size:12px; color:var(--primary); cursor:pointer; text-decoration:none; font-weight:600; }
+    .cols-panel-footer a:hover { text-decoration:underline; }
+
+    /* ── Estado gestión badges ─────────────────────── */
+    .eg-badge { padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
+    .eg-revisar    { background:#eff6ff; color:#1d4ed8; }
+    .eg-credito    { background:#fefce8; color:#a16207; }
+    .eg-empleado   { background:#f0fdf4; color:#15803d; }
+    .eg-anular     { background:#fef2f2; color:#b91c1c; }
+    .eg-seguro     { background:#faf5ff; color:#7c3aed; }
+    .eg-particular { background:#f0f9ff; color:#0369a1; }
+
+    /* ── Gestión icon button ──────────────────────── */
+    .btn-gestion { width:28px; height:28px; border-radius:var(--r-md); border:1px solid var(--input-border); background:var(--white); cursor:pointer; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; color:var(--text-light); transition:all .12s; }
+    .btn-gestion:hover { border-color:var(--primary); color:var(--primary); background:#eff6ff; }
+    .btn-gestion.tiene-datos { border-color:#2B7A9E; color:#2B7A9E; background:#eff6ff; }
+
     /* ── Antigüedad de cartera ─────────────────────── */
     .aging-cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
     .aging-card { flex:1 1 140px; border-radius:var(--r-lg); padding:16px 18px; text-align:center; box-shadow:var(--shadow-card); }
@@ -213,6 +241,18 @@
           </select>
         </div>
         <div class="fg">
+          <label>Estado Gestión</label>
+          <select id="f-estado-gestion">
+            <option value="">Todos</option>
+            <option value="REVISAR">Revisar</option>
+            <option value="CRÉDITO">Crédito</option>
+            <option value="EMPLEADO">Empleado</option>
+            <option value="ANULAR">Anular</option>
+            <option value="SEGURO">Seguro</option>
+            <option value="PARTICULAR">Particular</option>
+          </select>
+        </div>
+        <div class="fg">
           <label>Fecha desde</label>
           <input type="date" id="f-desde"/>
         </div>
@@ -242,22 +282,41 @@
       <button class="btn-sm btn-sm-sec" id="btn-desel-all" style="font-size:11px;padding:3px 10px">Limpiar selección</button>
     </div>
 
+    <!-- Toolbar tabla -->
+    <div style="display:flex;align-items:center;margin-bottom:8px">
+      <div style="flex:1"></div>
+      <div style="position:relative">
+        <button class="btn-sm btn-sm-sec" id="btn-cols">⚙ Columnas</button>
+        <div class="cols-panel" id="cols-panel">
+          <h4>Mostrar columnas</h4>
+          <div id="cols-checks"></div>
+          <div class="cols-panel-footer">
+            <a id="cols-all">Mostrar todas</a>
+            <a id="cols-default">Restablecer</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="prov-table-wrap">
-      <table class="prov-table">
+      <table class="prov-table" id="tabla-docs">
         <thead>
           <tr>
             <th style="width:32px;text-align:center"><input type="checkbox" id="check-all-docs" title="Seleccionar todos" style="cursor:pointer;width:15px;height:15px;accent-color:#fff"/></th>
-            <th class="sortable" data-sort="cliente" onclick="CLIE.ordenar('cliente')">Cliente<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="tipo_doc" onclick="CLIE.ordenar('tipo_doc')">Tipo<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="centro_costos" style="text-align:center;width:90px" onclick="CLIE.ordenar('centro_costos')">Centro<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="numero_documento" onclick="CLIE.ordenar('numero_documento')">N° Documento<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="fecha_emision" onclick="CLIE.ordenar('fecha_emision')">Fecha Emisión<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="dias_vencimiento" style="text-align:center" onclick="CLIE.ordenar('dias_vencimiento')">Días Venc.<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="cargos" style="text-align:right" onclick="CLIE.ordenar('cargos')">Cargos<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="cobrado" style="text-align:right" onclick="CLIE.ordenar('cobrado')">Cobrado<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="retencion" style="text-align:right" onclick="CLIE.ordenar('retencion')">Retención<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="saldo" style="text-align:right" onclick="CLIE.ordenar('saldo')">Saldo<span class="sort-arrow">▲</span></th>
-            <th>Gestión</th>
+            <th class="sortable" data-col="cliente" data-sort="cliente" onclick="CLIE.ordenar('cliente')">Cliente<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="tipo_doc" data-sort="tipo_doc" onclick="CLIE.ordenar('tipo_doc')">Tipo<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="centro_costos" data-sort="centro_costos" style="text-align:center;width:90px" onclick="CLIE.ordenar('centro_costos')">Localidad<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="numero_documento" data-sort="numero_documento" onclick="CLIE.ordenar('numero_documento')">N° Documento<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="fecha_emision" data-sort="fecha_emision" onclick="CLIE.ordenar('fecha_emision')">F. Emisión<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="dias_vencimiento" data-sort="dias_vencimiento" style="text-align:center" onclick="CLIE.ordenar('dias_vencimiento')">Días<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="estado_gestion" data-sort="estado_gestion" style="text-align:center" onclick="CLIE.ordenar('estado_gestion')">Estado<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="cargos" data-sort="cargos" style="text-align:right" onclick="CLIE.ordenar('cargos')">Cargos<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="cobrado" data-sort="cobrado" style="text-align:right" onclick="CLIE.ordenar('cobrado')">Cobrado<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="retencion" data-sort="retencion" style="text-align:right" onclick="CLIE.ordenar('retencion')">Retención<span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-col="saldo" data-sort="saldo" style="text-align:right" onclick="CLIE.ordenar('saldo')">Saldo<span class="sort-arrow">▲</span></th>
+            <th data-col="responsable">Responsable</th>
+            <th data-col="observacion">Observación</th>
+            <th style="text-align:center">Gestión</th>
           </tr>
         </thead>
         <tbody id="tbody-docs">
