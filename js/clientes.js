@@ -10,6 +10,8 @@ const CLIE = (() => {
   let _resumenData  = null;
   let _sortBy       = "cliente";
   let _sortDir      = "ASC";
+  let _cardActiva   = null;   // estado gestión seleccionado via tarjeta
+  let _tabActivo    = "documentos";
 
   // ── Columnas toggle ─────────────────────────────
   const COLS = [
@@ -113,6 +115,47 @@ const CLIE = (() => {
     });
   }
 
+  // ── Tarjetas de estado (card-filtro) ──────────────
+  function activarCard(valor) {
+    const container = document.getElementById("cards-estado");
+    if (_cardActiva === valor) {
+      _cardActiva = null;
+      container.classList.remove("cards-con-activa");
+      container.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+    } else {
+      _cardActiva = valor;
+      container.classList.add("cards-con-activa");
+      container.querySelectorAll(".estado-card").forEach(b => {
+        b.classList.toggle("card-activa", b.dataset.card === valor);
+      });
+      // Limpiar filtro de estado gestión del dropdown (la card tiene prioridad)
+      const sel = document.getElementById("f-estado-gestion");
+      if (sel) sel.value = "";
+    }
+    recargarTabActivo();
+  }
+
+  async function actualizarCards() {
+    const res = await apiFetch("/clientes-cobrar/dashboard");
+    if (!res || !res.ok) return;
+    const d = await safeJson(res);
+    const map = {};
+    (d.por_estado_gestion || []).forEach(r => { map[r.estado_gestion] = r.cantidad; });
+    document.getElementById("ec-n-revisar").textContent    = map["REVISAR"]    || 0;
+    document.getElementById("ec-n-credito").textContent    = map["CRÉDITO"]    || 0;
+    document.getElementById("ec-n-empleado").textContent   = map["EMPLEADO"]   || 0;
+    document.getElementById("ec-n-anular").textContent     = map["ANULAR"]     || 0;
+    document.getElementById("ec-n-seguro").textContent     = map["SEGURO"]     || 0;
+    document.getElementById("ec-n-particular").textContent = map["PARTICULAR"] || 0;
+    document.getElementById("ec-n-sinestado").textContent  = map["SIN ESTADO"] || 0;
+  }
+
+  function recargarTabActivo() {
+    if (_tabActivo === "documentos")  cargarDocumentos(1);
+    if (_tabActivo === "dashboard")   cargarDashboard();
+    if (_tabActivo === "antiguedad")  { if (!_resumenData) cargarResumenInterno().then(cargarAntiguedad); else cargarAntiguedad(); }
+  }
+
   // ── Filtros ─────────────────────────────────────
   function leerFiltros() {
     return {
@@ -123,7 +166,7 @@ const CLIE = (() => {
       fecha_desde:   document.getElementById("f-desde")?.value     || "",
       fecha_hasta:   document.getElementById("f-hasta")?.value     || "",
       responsable:      document.getElementById("f-responsable")?.value || "",
-      estado_gestion:   document.getElementById("f-estado-gestion")?.value || "",
+      estado_gestion:   _cardActiva || "",
       dias_desde:       document.getElementById("f-dias-desde")?.value || "",
       dias_hasta:    document.getElementById("f-dias-hasta")?.value || "",
     };
@@ -414,6 +457,7 @@ const CLIE = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo guardar.", "error"); return; }
     await cargarFiltros();
     cargarDocumentos(paginaDoc);
+    actualizarCards();
   }
 
   // ── Cargar resumen ──────────────────────────────
@@ -523,6 +567,15 @@ const CLIE = (() => {
     if (errores > 0) Swal.fire("Atención", `${errores} filas no se guardaron.`, "warning");
     else Swal.fire({ icon:"success", title:"Guardado", timer:1500, showConfirmButton:false });
     cargarResumen();
+  }
+
+  // ── Resumen interno (para antigüedad) ─────────────
+  async function cargarResumenInterno() {
+    const centro = document.getElementById("f-centro")?.value || "";
+    const qs = centro ? `?centro_costos=${encodeURIComponent(centro)}` : "";
+    const resRes = await apiFetch(`/clientes-cobrar/resumen${qs}`);
+    if (!resRes || !resRes.ok) return;
+    _resumenData = await safeJson(resRes);
   }
 
   // ── Antigüedad de cartera ───────────────────────
@@ -1255,17 +1308,13 @@ const CLIE = (() => {
         document.querySelectorAll(".prov-tab").forEach(b => b.classList.remove("active"));
         document.querySelectorAll(".prov-tab-panel").forEach(p => p.classList.remove("active"));
         btn.classList.add("active");
+        _tabActivo = btn.dataset.tab;
         const panel = document.getElementById(`panel-${btn.dataset.tab}`);
         if (panel) panel.classList.add("active");
 
         if (btn.dataset.tab === "dashboard") cargarDashboard();
-        if (btn.dataset.tab === "resumen") cargarResumen();
         if (btn.dataset.tab === "antiguedad") {
-          if (!_resumenData) {
-            cargarResumen().then(() => cargarAntiguedad());
-          } else {
-            cargarAntiguedad();
-          }
+          cargarResumenInterno().then(() => cargarAntiguedad());
         }
       });
     });
@@ -1278,17 +1327,31 @@ const CLIE = (() => {
 
     await cargarFiltros();
     await cargarDocumentos(1);
+    actualizarCards();
+
+    // Card click events
+    document.querySelectorAll(".estado-card").forEach(btn => {
+      btn.addEventListener("click", () => activarCard(btn.dataset.card));
+    });
 
     document.getElementById("btn-importar-cli")?.addEventListener("click", importar);
     document.getElementById("btn-export-csv-cli")?.addEventListener("click", exportCSV);
 
-    document.getElementById("btn-filtrar-cli")?.addEventListener("click", () => cargarDocumentos(1));
+    document.getElementById("btn-filtrar-cli")?.addEventListener("click", () => {
+      _cardActiva = null;
+      document.getElementById("cards-estado")?.classList.remove("cards-con-activa");
+      document.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+      recargarTabActivo();
+    });
     document.getElementById("btn-limpiar-cli")?.addEventListener("click", () => {
-      ["f-estado","f-centro","f-tipo","f-responsable","f-estado-gestion"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
+      ["f-estado","f-centro","f-tipo","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
       ["f-cliente","f-desde","f-hasta","f-dias-desde","f-dias-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       _sortBy = "cliente"; _sortDir = "ASC";
+      _cardActiva = null;
+      document.getElementById("cards-estado")?.classList.remove("cards-con-activa");
+      document.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.querySelectorAll(".sortable").forEach(th => { th.classList.remove("sort-asc","sort-desc"); const a = th.querySelector(".sort-arrow"); if(a) a.textContent="▲"; });
-      cargarDocumentos(1);
+      recargarTabActivo();
     });
     const inpCli = document.getElementById("f-cliente");
     inpCli?.addEventListener("input",  mostrarSugerencias);
@@ -1314,8 +1377,6 @@ const CLIE = (() => {
       actualizarBarraSeleccion();
     });
 
-    document.getElementById("btn-filtrar-res")?.addEventListener("click",  cargarResumen);
-    document.getElementById("btn-guardar-todos")?.addEventListener("click", guardarTodos);
     document.getElementById("btn-pdf-resumen")?.addEventListener("click",   pdfResumen);
     document.getElementById("btn-pdf-cli")?.addEventListener("click",      pdfPorCliente);
   }
