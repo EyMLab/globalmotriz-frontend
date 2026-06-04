@@ -769,6 +769,23 @@ const CLIE = (() => {
     a.click();
   }
 
+  // ── Helper: descargar CSV con separador ; (Excel ES) ──
+  function descargarExcel(filename, cols, rows) {
+    const esc = v => {
+      const s = String(v ?? "");
+      return s.includes(";") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g,'""')}"` : s;
+    };
+    const header = cols.map(c => esc(c.label)).join(";");
+    const body = rows.map(r => cols.map(c => esc(c.fn(r))).join(";")).join("\n");
+    const bom = "﻿";
+    const blob = new Blob([bom + header + "\n" + body], { type: "text/csv;charset=utf-8" });
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(blob),
+      download: filename,
+    });
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+
   // ── Exportar Excel (Documentos) ───────────────────
   async function exportExcelDocs() {
     const f = leerFiltros();
@@ -779,46 +796,37 @@ const CLIE = (() => {
     const data = await safeJson(res);
     if (!data.documentos?.length) { Swal.fire("Sin datos", "No hay documentos para exportar.", "info"); return; }
 
-    const rows = data.documentos.map(d => ({
-      "Cliente": d.cliente, "Tipo": d.tipo_doc, "Localidad": fmtCentro(d.centro_costos),
-      "N° Documento": d.numero_documento, "F. Emisión": fmtFecha(d.fecha_emision),
-      "Días": d.dias_vencimiento, "Estado": d.estado_gestion || "",
-      "Cargos": parseFloat(d.cargos||0), "Cobrado": parseFloat(d.cobrado||0),
-      "Retención": parseFloat(d.retencion||0), "Saldo": parseFloat(d.saldo||0),
-      "Responsable": d.responsable || "", "Observación": d.observacion || "",
-    }));
-    // Crear y descargar usando un CSV con BOM para Excel
-    const cols = Object.keys(rows[0]);
-    const header = cols.join("\t");
-    const body = rows.map(r => cols.map(c => String(r[c] ?? "").replace(/\t/g," ")).join("\t")).join("\n");
-    const bom = "﻿";
-    const blob = new Blob([bom + header + "\n" + body], { type: "application/vnd.ms-excel;charset=utf-8" });
-    const a = Object.assign(document.createElement("a"), {
-      href: URL.createObjectURL(blob),
-      download: `cuentas_cobrar_${new Date().toISOString().slice(0,10)}.xls`,
-    });
-    a.click(); URL.revokeObjectURL(a.href);
+    const cols = [
+      { label:"Cliente",        fn: d => d.cliente },
+      { label:"Tipo",           fn: d => d.tipo_doc },
+      { label:"Localidad",      fn: d => fmtCentro(d.centro_costos) },
+      { label:"N° Documento",   fn: d => d.numero_documento },
+      { label:"F. Emisión",     fn: d => fmtFecha(d.fecha_emision) },
+      { label:"Días",           fn: d => d.dias_vencimiento },
+      { label:"Estado",         fn: d => d.estado_gestion || "" },
+      { label:"Cargos",         fn: d => d.cargos },
+      { label:"Cobrado",        fn: d => d.cobrado },
+      { label:"Retención",      fn: d => d.retencion },
+      { label:"Saldo",          fn: d => d.saldo },
+      { label:"Responsable",    fn: d => d.responsable || "" },
+      { label:"Observación",    fn: d => d.observacion || "" },
+    ];
+    descargarExcel(`cuentas_cobrar_${new Date().toISOString().slice(0,10)}.csv`, cols, data.documentos);
   }
 
   // ── Exportar Excel (Antigüedad) ─────────────────
   function exportExcelAntiguedad() {
     if (!_resumenData?.clientes?.length) { Swal.fire("Sin datos", "Carga la antigüedad primero.", "info"); return; }
     const sorted = [..._resumenData.clientes].sort((a, b) => (b.max_dias_vencido || 0) - (a.max_dias_vencido || 0));
-    const rows = sorted.map(r => ({
-      "Cliente": r.cliente, "Total Saldo": parseFloat(r.total_saldo||0),
-      "> 90d": r.vencido_90||0, "31-90d": r.vencido_30_90||0, "1-30d": r.vencido_1_30||0,
-      "Max Días": r.max_dias_vencido||0,
-    }));
-    const cols = Object.keys(rows[0]);
-    const header = cols.join("\t");
-    const body = rows.map(r => cols.map(c => String(r[c] ?? "")).join("\t")).join("\n");
-    const bom = "﻿";
-    const blob = new Blob([bom + header + "\n" + body], { type: "application/vnd.ms-excel;charset=utf-8" });
-    const a = Object.assign(document.createElement("a"), {
-      href: URL.createObjectURL(blob),
-      download: `antiguedad_cartera_${new Date().toISOString().slice(0,10)}.xls`,
-    });
-    a.click(); URL.revokeObjectURL(a.href);
+    const cols = [
+      { label:"Cliente",      fn: r => r.cliente },
+      { label:"Total Saldo",  fn: r => r.total_saldo },
+      { label:"> 90d",        fn: r => r.vencido_90 || 0 },
+      { label:"31-90d",       fn: r => r.vencido_30_90 || 0 },
+      { label:"1-30d",        fn: r => r.vencido_1_30 || 0 },
+      { label:"Max Días",     fn: r => r.max_dias_vencido || 0 },
+    ];
+    descargarExcel(`antiguedad_cartera_${new Date().toISOString().slice(0,10)}.csv`, cols, sorted);
   }
 
   // ═══════════════════════════════════════════════════
