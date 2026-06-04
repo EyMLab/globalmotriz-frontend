@@ -373,10 +373,17 @@
           <label>Hasta</label>
           <input type="date" id="f-hasta"/>
         </div>
-      </div>
-      <div class="filtros-actions">
-        <span class="fa-spacer"></span>
-        <div class="filtros-btn-row">
+        <div class="fg">
+          <label>Estado Gestión</label>
+          <select id="f-estado-gestion-prov">
+            <option value="">Todos</option>
+            <option value="CAJA CHICA">Caja Chica</option>
+            <option value="BANCOS">Bancos</option>
+            <option value="SANTIAGO">Santiago</option>
+            <option value="SIN ESTADO">Sin estado</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-end;margin-left:auto">
           <button class="btn-sm" id="btn-filtrar-prov">Buscar</button>
           <button class="btn-sm btn-sm-sec" id="btn-limpiar-prov">Limpiar</button>
         </div>

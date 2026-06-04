@@ -55,27 +55,23 @@ const PROV = (() => {
       container.querySelectorAll(".estado-card").forEach(b => {
         b.classList.toggle("card-activa", b.dataset.card === valor);
       });
+      // Limpiar dropdown para que no se mezclen
+      const sel = document.getElementById("f-estado-gestion-prov");
+      if (sel) sel.value = "";
     }
     cargarDocumentos(1);
   }
 
   async function actualizarCards() {
-    const res = await apiFetch("/proveedores-pagar/filtros");
+    const res = await apiFetch("/proveedores-pagar/cards");
     if (!res || !res.ok) return;
     const data = await safeJson(res);
-    // Contar por estado_gestion consultando documentos
-    const res2 = await apiFetch("/proveedores-pagar/documentos?estado=ACTIVO&limit=9999");
-    if (!res2 || !res2.ok) return;
-    const docs = (await safeJson(res2)).documentos || [];
     const map = {};
-    docs.forEach(d => {
-      const eg = d.estado_gestion || "SIN ESTADO";
-      map[eg] = (map[eg] || 0) + 1;
-    });
+    (data.cards || []).forEach(r => { map[r.estado_gestion] = r.cantidad; });
     const el = id => document.getElementById(id);
-    if (el("ec-n-cajachica"))     el("ec-n-cajachica").textContent     = map["CAJA CHICA"] || 0;
-    if (el("ec-n-bancos"))        el("ec-n-bancos").textContent        = map["BANCOS"]     || 0;
-    if (el("ec-n-santiago"))      el("ec-n-santiago").textContent      = map["SANTIAGO"]   || 0;
+    if (el("ec-n-cajachica"))      el("ec-n-cajachica").textContent      = map["CAJA CHICA"] || 0;
+    if (el("ec-n-bancos"))         el("ec-n-bancos").textContent         = map["BANCOS"]     || 0;
+    if (el("ec-n-santiago"))       el("ec-n-santiago").textContent       = map["SANTIAGO"]   || 0;
     if (el("ec-n-sinestado-prov")) el("ec-n-sinestado-prov").textContent = map["SIN ESTADO"] || 0;
   }
 
@@ -142,6 +138,9 @@ const PROV = (() => {
 
   // ── Filtros documentos ───────────────────────────
   function leerFiltros() {
+    // Card tiene prioridad sobre dropdown; si no hay card, usa el dropdown
+    const egCard = _cardActiva || "";
+    const egDrop = document.getElementById("f-estado-gestion-prov")?.value || "";
     return {
       estado:          document.getElementById("f-estado")?.value    || "",
       proveedor:       document.getElementById("f-proveedor")?.value.trim() || "",
@@ -149,7 +148,7 @@ const PROV = (() => {
       centro_costos:   document.getElementById("f-centro")?.value    || "",
       fecha_desde:     document.getElementById("f-desde")?.value     || "",
       fecha_hasta:     document.getElementById("f-hasta")?.value     || "",
-      estado_gestion:  _cardActiva || "",
+      estado_gestion:  egCard || egDrop,
     };
   }
 
@@ -1239,7 +1238,7 @@ const PROV = (() => {
       cargarDocumentos(1);
     });
     document.getElementById("btn-limpiar-prov")?.addEventListener("click", () => {
-      ["f-estado","f-centro","f-tipo"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
+      ["f-estado","f-centro","f-tipo","f-estado-gestion-prov"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
       ["f-proveedor","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       _cardActiva = null;
       document.getElementById("cards-estado-prov")?.classList.remove("cards-con-activa");
