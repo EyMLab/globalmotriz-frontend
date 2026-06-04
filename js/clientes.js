@@ -68,11 +68,7 @@ const CLIE = (() => {
 
   function fmtEstadoGestion(val) {
     if (!val) return '<span style="color:var(--text-light)">—</span>';
-    const cls = {
-      "REVISAR":"eg-revisar","CRÉDITO":"eg-credito","EMPLEADO":"eg-empleado",
-      "ANULAR":"eg-anular","SEGURO":"eg-seguro","PARTICULAR":"eg-particular",
-    };
-    return `<span class="eg-badge ${cls[val] || ""}">${val}</span>`;
+    return `<span style="font-size:11px;font-weight:600">${val}</span>`;
   }
 
   // ── Columnas visibility ─────────────────────────
@@ -210,6 +206,7 @@ const CLIE = (() => {
     if (selResp) {
       const prev = selResp.value;
       while (selResp.options.length > 1) selResp.remove(1);
+      selResp.add(new Option("— Sin responsable —", "__SIN__"));
       (data.responsables || []).forEach(r => selResp.add(new Option(r, r)));
       if (prev) selResp.value = prev;
     }
@@ -571,9 +568,10 @@ const CLIE = (() => {
 
   // ── Resumen interno (para antigüedad) ─────────────
   async function cargarResumenInterno() {
-    const centro = document.getElementById("f-centro")?.value || "";
-    const qs = centro ? `?centro_costos=${encodeURIComponent(centro)}` : "";
-    const resRes = await apiFetch(`/clientes-cobrar/resumen${qs}`);
+    const f = leerFiltros();
+    const qs = new URLSearchParams(f);
+    Object.keys(f).forEach(k => { if (!f[k]) qs.delete(k); });
+    const resRes = await apiFetch(`/clientes-cobrar/resumen?${qs}`);
     if (!resRes || !resRes.ok) return;
     _resumenData = await safeJson(resRes);
   }
@@ -587,19 +585,17 @@ const CLIE = (() => {
     }
 
     const clientes = _resumenData.clientes;
-    let monto90 = 0, monto3090 = 0, monto130 = 0, montoDia = 0;
-    let docs90 = 0, docs3090 = 0, docs130 = 0, docsDia = 0;
+    let monto90 = 0, monto3090 = 0, monto130 = 0;
+    let docs90 = 0, docs3090 = 0, docs130 = 0;
 
     for (const c of clientes) {
       const saldoPerDoc = parseFloat(c.total_saldo || 0) / (c.cantidad_docs || 1);
       docs90   += (c.vencido_90 || 0);
       docs3090 += (c.vencido_30_90 || 0);
       docs130  += (c.vencido_1_30 || 0);
-      docsDia  += (c.al_dia || 0);
       monto90   += saldoPerDoc * (c.vencido_90 || 0);
       monto3090 += saldoPerDoc * (c.vencido_30_90 || 0);
       monto130  += saldoPerDoc * (c.vencido_1_30 || 0);
-      montoDia  += saldoPerDoc * (c.al_dia || 0);
     }
 
     document.getElementById("ag-monto-90").textContent   = fmtMoney(monto90);
@@ -608,8 +604,6 @@ const CLIE = (() => {
     document.getElementById("ag-docs-3090").textContent   = `${docs3090} docs`;
     document.getElementById("ag-monto-130").textContent   = fmtMoney(monto130);
     document.getElementById("ag-docs-130").textContent    = `${docs130} docs`;
-    document.getElementById("ag-monto-dia").textContent   = fmtMoney(montoDia);
-    document.getElementById("ag-docs-dia").textContent    = `${docsDia} docs`;
 
     const sorted = [...clientes].sort((a, b) => (b.max_dias_vencido || 0) - (a.max_dias_vencido || 0));
 
@@ -628,7 +622,6 @@ const CLIE = (() => {
         <td style="text-align:center">${r.vencido_90 || 0}</td>
         <td style="text-align:center">${r.vencido_30_90 || 0}</td>
         <td style="text-align:center">${r.vencido_1_30 || 0}</td>
-        <td style="text-align:center">${r.al_dia || 0}</td>
         <td style="text-align:center">${maxBadge}</td>
       </tr>`;
     }).join("");
@@ -774,6 +767,58 @@ const CLIE = (() => {
       download: `clientes_cobrar_${new Date().toISOString().slice(0,10)}.csv`,
     });
     a.click();
+  }
+
+  // ── Exportar Excel (Documentos) ───────────────────
+  async function exportExcelDocs() {
+    const f = leerFiltros();
+    const qs = new URLSearchParams({ limit: 9999, sort_by: _sortBy, sort_dir: _sortDir, ...f });
+    Object.keys(f).forEach(k => { if (!f[k]) qs.delete(k); });
+    const res = await apiFetch(`/clientes-cobrar/documentos?${qs}`);
+    if (!res || !res.ok) return;
+    const data = await safeJson(res);
+    if (!data.documentos?.length) { Swal.fire("Sin datos", "No hay documentos para exportar.", "info"); return; }
+
+    const rows = data.documentos.map(d => ({
+      "Cliente": d.cliente, "Tipo": d.tipo_doc, "Localidad": fmtCentro(d.centro_costos),
+      "N° Documento": d.numero_documento, "F. Emisión": fmtFecha(d.fecha_emision),
+      "Días": d.dias_vencimiento, "Estado": d.estado_gestion || "",
+      "Cargos": parseFloat(d.cargos||0), "Cobrado": parseFloat(d.cobrado||0),
+      "Retención": parseFloat(d.retencion||0), "Saldo": parseFloat(d.saldo||0),
+      "Responsable": d.responsable || "", "Observación": d.observacion || "",
+    }));
+    // Crear y descargar usando un CSV con BOM para Excel
+    const cols = Object.keys(rows[0]);
+    const header = cols.join("\t");
+    const body = rows.map(r => cols.map(c => String(r[c] ?? "").replace(/\t/g," ")).join("\t")).join("\n");
+    const bom = "﻿";
+    const blob = new Blob([bom + header + "\n" + body], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(blob),
+      download: `cuentas_cobrar_${new Date().toISOString().slice(0,10)}.xls`,
+    });
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  // ── Exportar Excel (Antigüedad) ─────────────────
+  function exportExcelAntiguedad() {
+    if (!_resumenData?.clientes?.length) { Swal.fire("Sin datos", "Carga la antigüedad primero.", "info"); return; }
+    const sorted = [..._resumenData.clientes].sort((a, b) => (b.max_dias_vencido || 0) - (a.max_dias_vencido || 0));
+    const rows = sorted.map(r => ({
+      "Cliente": r.cliente, "Total Saldo": parseFloat(r.total_saldo||0),
+      "> 90d": r.vencido_90||0, "31-90d": r.vencido_30_90||0, "1-30d": r.vencido_1_30||0,
+      "Max Días": r.max_dias_vencido||0,
+    }));
+    const cols = Object.keys(rows[0]);
+    const header = cols.join("\t");
+    const body = rows.map(r => cols.map(c => String(r[c] ?? "")).join("\t")).join("\n");
+    const bom = "﻿";
+    const blob = new Blob([bom + header + "\n" + body], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(blob),
+      download: `antiguedad_cartera_${new Date().toISOString().slice(0,10)}.xls`,
+    });
+    a.click(); URL.revokeObjectURL(a.href);
   }
 
   // ═══════════════════════════════════════════════════
@@ -1198,9 +1243,10 @@ const CLIE = (() => {
   }
 
   async function cargarDashboard() {
-    const centro = document.getElementById("f-centro-res")?.value || "";
-    const qs = centro ? `?centro_costos=${encodeURIComponent(centro)}` : "";
-    const res = await apiFetch(`/clientes-cobrar/dashboard${qs}`);
+    const f = leerFiltros();
+    const qs = new URLSearchParams(f);
+    Object.keys(f).forEach(k => { if (!f[k]) qs.delete(k); });
+    const res = await apiFetch(`/clientes-cobrar/dashboard?${qs}`);
     if (!res || !res.ok) return;
     const d = await safeJson(res);
 
@@ -1379,6 +1425,8 @@ const CLIE = (() => {
 
     document.getElementById("btn-pdf-resumen")?.addEventListener("click",   pdfResumen);
     document.getElementById("btn-pdf-cli")?.addEventListener("click",      pdfPorCliente);
+    document.getElementById("btn-excel-docs")?.addEventListener("click",   exportExcelDocs);
+    document.getElementById("btn-excel-aging")?.addEventListener("click",  exportExcelAntiguedad);
   }
 
   document.addEventListener("DOMContentLoaded", init);

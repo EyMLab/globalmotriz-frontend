@@ -278,6 +278,7 @@
 
     <div style="display:flex;align-items:center;margin-bottom:8px">
       <div style="flex:1"></div>
+      <button class="btn-sm btn-sm-sec" id="btn-excel-docs">↓ Excel</button>
       <div style="position:relative">
         <button class="btn-sm btn-sm-sec" id="btn-cols">⚙ Columnas</button>
         <div class="cols-panel" id="cols-panel">
@@ -363,6 +364,10 @@
        TAB: ANTIGÜEDAD DE CARTERA
   ═══════════════════════════════════════════════ -->
   <div class="prov-tab-panel" id="panel-antiguedad">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <div style="flex:1"></div>
+      <button class="btn-sm btn-sm-sec" id="btn-excel-aging">↓ Excel</button>
+    </div>
     <div class="aging-cards">
       <div class="aging-card ac-rojo">
         <div class="ac-num" id="ag-monto-90">$0.00</div>
@@ -379,11 +384,6 @@
         <div class="ac-docs" id="ag-docs-130">0 docs</div>
         <div class="ac-lbl">1 – 30 días</div>
       </div>
-      <div class="aging-card ac-verde">
-        <div class="ac-num" id="ag-monto-dia">$0.00</div>
-        <div class="ac-docs" id="ag-docs-dia">0 docs</div>
-        <div class="ac-lbl">Al día</div>
-      </div>
     </div>
     <div class="res-table-wrap">
       <table class="res-table">
@@ -395,12 +395,11 @@
             <th style="text-align:center">> 90d</th>
             <th style="text-align:center">31-90d</th>
             <th style="text-align:center">1-30d</th>
-            <th style="text-align:center">Al día</th>
             <th style="text-align:center">Max Días</th>
           </tr>
         </thead>
         <tbody id="tbody-antiguedad">
-          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">Carga el dashboard primero.</td></tr>
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-light)">Carga la antigüedad primero.</td></tr>
         </tbody>
       </table>
     </div>
