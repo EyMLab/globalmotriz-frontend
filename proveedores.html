@@ -17,6 +17,24 @@
        Usa las mismas variables y patrones que control-taller
     ═══════════════════════════════════════════════ */
 
+    /* ── Estado cards ──────────────────────────────── */
+    .cards-estado { display:flex; gap:10px; flex-wrap:wrap; padding:6px 0 14px; }
+    .estado-card { flex:1 1 100px; min-width:90px; max-width:160px; border:2px solid var(--border-subtle); border-radius:var(--r-lg); padding:10px 12px; text-align:center; cursor:pointer; transition:all .15s; background:var(--white); box-shadow:var(--shadow-card); }
+    .estado-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
+    .estado-card .ec-num { font-size:24px; font-weight:800; line-height:1; }
+    .estado-card .ec-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+    .card-activa { box-shadow:0 0 0 3px currentColor !important; }
+    .cards-con-activa .estado-card:not(.card-activa) { opacity:.45; }
+    .ec-cajachica  { border-color:#86efac; color:#15803d; }
+    .ec-bancos     { border-color:#93c5fd; color:#1d4ed8; }
+    .ec-santiago   { border-color:#fde68a; color:#a16207; }
+    .ec-sinestado  { border-color:#e5e7eb; color:#6b7280; }
+
+    /* ── Gestión icon button ──────────────────────── */
+    .btn-gestion { width:28px; height:28px; border-radius:var(--r-md); border:1px solid var(--input-border); background:var(--white); cursor:pointer; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; color:var(--text-light); transition:all .12s; }
+    .btn-gestion:hover { border-color:var(--primary); color:var(--primary); background:#eff6ff; }
+    .btn-gestion.tiene-datos { border-color:#2B7A9E; color:#2B7A9E; background:#eff6ff; }
+
     /* ── Tabs (mismo estilo que taller-tab) ─────── */
     .prov-tabs {
       display: flex;
@@ -295,6 +313,14 @@
     </div>
   </div>
 
+  <!-- ── Tarjetas de estado (botones filtro) ─────── -->
+  <div class="cards-estado" id="cards-estado-prov">
+    <button class="estado-card ec-cajachica" data-card="CAJA CHICA"><div class="ec-num" id="ec-n-cajachica">0</div><div class="ec-lbl">Caja Chica</div></button>
+    <button class="estado-card ec-bancos"    data-card="BANCOS"><div class="ec-num" id="ec-n-bancos">0</div><div class="ec-lbl">Bancos</div></button>
+    <button class="estado-card ec-santiago"  data-card="SANTIAGO"><div class="ec-num" id="ec-n-santiago">0</div><div class="ec-lbl">Santiago</div></button>
+    <button class="estado-card ec-sinestado" data-card="SIN ESTADO"><div class="ec-num" id="ec-n-sinestado-prov">0</div><div class="ec-lbl">Sin estado</div></button>
+  </div>
+
   <!-- ── Tabs ─────────────────────────────────────── -->
   <div class="prov-tabs">
     <button class="prov-tab active" data-tab="documentos">Documentos</button>
@@ -376,11 +402,12 @@
             <th>N° Documento</th>
             <th>Fecha Emisión</th>
             <th style="text-align:right">Saldo</th>
-            <th>Observación</th>
+            <th style="text-align:center">Estado</th>
+            <th style="text-align:center">Gestión</th>
           </tr>
         </thead>
         <tbody id="tbody-docs">
-          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
+          <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
         </tbody>
       </table>
     </div>

@@ -10,6 +10,9 @@ const PROV = (() => {
   let _disponible      = 0;
   let _proveedoresList = [];   // lista para autocomplete
   let _resumenData     = null; // cache del último resumen cargado (para PDFs)
+  let _cardActiva      = null;
+
+  const ESTADOS_GESTION_PROV = ["CAJA CHICA", "BANCOS", "SANTIAGO"];
 
   // ── Helpers ─────────────────────────────────────
   function fmtMoney(v) {
@@ -39,15 +42,114 @@ const PROV = (() => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   }
 
+  // ── Tarjetas de estado ──────────────────────────
+  function activarCard(valor) {
+    const container = document.getElementById("cards-estado-prov");
+    if (_cardActiva === valor) {
+      _cardActiva = null;
+      container.classList.remove("cards-con-activa");
+      container.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+    } else {
+      _cardActiva = valor;
+      container.classList.add("cards-con-activa");
+      container.querySelectorAll(".estado-card").forEach(b => {
+        b.classList.toggle("card-activa", b.dataset.card === valor);
+      });
+    }
+    cargarDocumentos(1);
+  }
+
+  async function actualizarCards() {
+    const res = await apiFetch("/proveedores-pagar/filtros");
+    if (!res || !res.ok) return;
+    const data = await safeJson(res);
+    // Contar por estado_gestion consultando documentos
+    const res2 = await apiFetch("/proveedores-pagar/documentos?estado=ACTIVO&limit=9999");
+    if (!res2 || !res2.ok) return;
+    const docs = (await safeJson(res2)).documentos || [];
+    const map = {};
+    docs.forEach(d => {
+      const eg = d.estado_gestion || "SIN ESTADO";
+      map[eg] = (map[eg] || 0) + 1;
+    });
+    const el = id => document.getElementById(id);
+    if (el("ec-n-cajachica"))     el("ec-n-cajachica").textContent     = map["CAJA CHICA"] || 0;
+    if (el("ec-n-bancos"))        el("ec-n-bancos").textContent        = map["BANCOS"]     || 0;
+    if (el("ec-n-santiago"))      el("ec-n-santiago").textContent      = map["SANTIAGO"]   || 0;
+    if (el("ec-n-sinestado-prov")) el("ec-n-sinestado-prov").textContent = map["SIN ESTADO"] || 0;
+  }
+
+  // ── Gestión modal ──────────────────────────────
+  function editarGestionClick(btn) {
+    editarGestion(btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "", btn.dataset.eg || "");
+  }
+
+  async function editarGestion(numDoc, obsActual, respActual, egActual) {
+    const optsEG = ["", ...ESTADOS_GESTION_PROV].map(e =>
+      `<option value="${e}"${e === egActual ? " selected" : ""}>${e || "— Sin estado —"}</option>`
+    ).join("");
+
+    const { isConfirmed, value: vals } = await Swal.fire({
+      title: "Gestión del documento",
+      width: 540,
+      html: `
+        <div style="text-align:left">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Documento</div>
+          <div style="font-family:monospace;font-size:13px;color:#1e40af;background:#eff6ff;padding:6px 10px;border-radius:6px;margin-bottom:14px">${numDoc}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Estado</div>
+              <select id="swal-eg" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#111827;height:38px">${optsEG}</select>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Responsable</div>
+              <input type="text" id="swal-resp" value="${respActual}" placeholder="Nombre…"
+                style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#111827"/>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Observación</div>
+          <textarea id="swal-obs" rows="4"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.5;outline:none;color:#111827"
+          >${obsActual}</textarea>
+        </div>`,
+      showCancelButton: true,
+      confirmButtonText: "Guardar",
+      confirmButtonColor: "#2B7A9E",
+      cancelButtonText: "Cancelar",
+      cancelButtonColor: "#9ca3af",
+      focusConfirm: false,
+      preConfirm: () => ({
+        estado_gestion: document.getElementById("swal-eg").value,
+        responsable: document.getElementById("swal-resp").value.trim(),
+        observacion: document.getElementById("swal-obs").value.trim(),
+      }),
+    });
+    if (!isConfirmed || !vals) return;
+
+    const res = await apiFetch(`/proveedores-pagar/documentos/${encodeURIComponent(numDoc)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        observacion: vals.observacion,
+        responsable: vals.responsable,
+        estado_gestion: vals.estado_gestion || null,
+      }),
+    });
+    if (!res || !res.ok) { Swal.fire("Error", "No se pudo guardar.", "error"); return; }
+    cargarDocumentos(paginaDoc);
+    actualizarCards();
+  }
+
   // ── Filtros documentos ───────────────────────────
   function leerFiltros() {
     return {
-      estado:        document.getElementById("f-estado")?.value    || "",
-      proveedor:     document.getElementById("f-proveedor")?.value.trim() || "",
-      tipo_doc:      document.getElementById("f-tipo")?.value      || "",
-      centro_costos: document.getElementById("f-centro")?.value    || "",
-      fecha_desde:   document.getElementById("f-desde")?.value     || "",
-      fecha_hasta:   document.getElementById("f-hasta")?.value     || "",
+      estado:          document.getElementById("f-estado")?.value    || "",
+      proveedor:       document.getElementById("f-proveedor")?.value.trim() || "",
+      tipo_doc:        document.getElementById("f-tipo")?.value      || "",
+      centro_costos:   document.getElementById("f-centro")?.value    || "",
+      fecha_desde:     document.getElementById("f-desde")?.value     || "",
+      fecha_hasta:     document.getElementById("f-hasta")?.value     || "",
+      estado_gestion:  _cardActiva || "",
     };
   }
 
@@ -160,14 +262,13 @@ const PROV = (() => {
     } else {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
-        const obsEnc = (d.observacion || "")
-          .replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        const obsEnc = (d.observacion || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
         const numEnc = d.numero_documento.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+        const respEnc = (d.responsable || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
         const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
-        const tieneObs = !!(d.observacion || "").trim();
-        const btnObs = `<button class="btn-obs${tieneObs ? "" : " btn-obs-vacia"}"
-          data-num="${numEnc}" data-obs="${obsEnc}"
-          onclick="PROV.editarObsClick(this)">${tieneObs ? "Ver / Editar" : "Agregar"}</button>`;
+        const tieneGestion = !!(d.observacion || "").trim() || !!(d.responsable || "").trim() || !!(d.estado_gestion || "").trim();
+        const btnIcon = tieneGestion ? "⚙" : "+";
+        const btnClass = tieneGestion ? "btn-gestion tiene-datos" : "btn-gestion";
         return `<tr style="${rowStyle}">
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
@@ -181,7 +282,8 @@ const PROV = (() => {
           <td>${d.numero_documento}</td>
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
-          <td>${btnObs}</td>
+          <td style="text-align:center;font-size:11px;font-weight:600">${d.estado_gestion || "—"}</td>
+          <td style="text-align:center"><button class="${btnClass}" data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}" data-eg="${(d.estado_gestion||"").replace(/"/g,"&quot;")}" onclick="PROV.editarGestionClick(this)" title="Gestión">${btnIcon}</button></td>
         </tr>`;
       }).join("");
       // Resetear barra y check-all al recargar
@@ -1118,16 +1220,30 @@ const PROV = (() => {
 
     await cargarFiltros();
     await cargarDocumentos(1);
+    actualizarCards();
+
+    // Card click events
+    document.querySelectorAll("#cards-estado-prov .estado-card").forEach(btn => {
+      btn.addEventListener("click", () => activarCard(btn.dataset.card));
+    });
 
     // Eventos toolbar
     document.getElementById("btn-importar-prov")?.addEventListener("click", importar);
     document.getElementById("btn-export-csv-prov")?.addEventListener("click", exportCSV);
 
     // Eventos filtros documentos
-    document.getElementById("btn-filtrar-prov")?.addEventListener("click", () => cargarDocumentos(1));
+    document.getElementById("btn-filtrar-prov")?.addEventListener("click", () => {
+      _cardActiva = null;
+      document.getElementById("cards-estado-prov")?.classList.remove("cards-con-activa");
+      document.querySelectorAll("#cards-estado-prov .estado-card").forEach(b => b.classList.remove("card-activa"));
+      cargarDocumentos(1);
+    });
     document.getElementById("btn-limpiar-prov")?.addEventListener("click", () => {
       ["f-estado","f-centro","f-tipo"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
       ["f-proveedor","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      _cardActiva = null;
+      document.getElementById("cards-estado-prov")?.classList.remove("cards-con-activa");
+      document.querySelectorAll("#cards-estado-prov .estado-card").forEach(b => b.classList.remove("card-activa"));
       cargarDocumentos(1);
     });
     const inpProv = document.getElementById("f-proveedor");
@@ -1174,6 +1290,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { actualizarBarraSeleccion, editarObsClick, editarObservacion, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
+  return { actualizarBarraSeleccion, editarObsClick: editarGestionClick, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
 
 })();
