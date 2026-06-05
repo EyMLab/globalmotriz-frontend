@@ -63,7 +63,9 @@ const PROV = (() => {
   }
 
   async function actualizarCards() {
-    const res = await apiFetch("/proveedores-pagar/cards");
+    const estadoDoc = document.getElementById("f-estado")?.value || "";
+    const qs = estadoDoc ? `?estado=${encodeURIComponent(estadoDoc)}` : "";
+    const res = await apiFetch(`/proveedores-pagar/cards${qs}`);
     if (!res || !res.ok) return;
     const data = await safeJson(res);
     const map = {};
@@ -296,6 +298,7 @@ const PROV = (() => {
     document.getElementById("btn-prev-doc").disabled = paginaDoc <= 1;
     document.getElementById("btn-next-doc").disabled = paginaDoc >= totalPagDoc;
     actualizarContador(data.total);
+    actualizarCards();
   }
 
   // ── Barra de selección ───────────────────────────

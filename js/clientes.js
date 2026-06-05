@@ -132,11 +132,13 @@ const CLIE = (() => {
   }
 
   async function actualizarCards() {
-    const res = await apiFetch("/clientes-cobrar/dashboard");
+    const estadoDoc = document.getElementById("f-estado")?.value || "";
+    const qs = estadoDoc ? `?estado=${encodeURIComponent(estadoDoc)}` : "";
+    const res = await apiFetch(`/clientes-cobrar/cards${qs}`);
     if (!res || !res.ok) return;
-    const d = await safeJson(res);
+    const data = await safeJson(res);
     const map = {};
-    (d.por_estado_gestion || []).forEach(r => { map[r.estado_gestion] = r.cantidad; });
+    (data.cards || []).forEach(r => { map[r.estado_gestion] = r.cantidad; });
     document.getElementById("ec-n-revisar").textContent    = map["REVISAR"]    || 0;
     document.getElementById("ec-n-credito").textContent    = map["CRÉDITO"]    || 0;
     document.getElementById("ec-n-empleado").textContent   = map["EMPLEADO"]   || 0;
@@ -345,6 +347,7 @@ const CLIE = (() => {
     document.getElementById("btn-prev-doc").disabled = paginaDoc <= 1;
     document.getElementById("btn-next-doc").disabled = paginaDoc >= totalPagDoc;
     actualizarContador(data.total);
+    actualizarCards();
   }
 
   // ── Barra de selección ──────────────────────────
