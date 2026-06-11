@@ -644,7 +644,7 @@ const CLIE = (() => {
               style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;box-sizing:border-box;background:#f9fafb"/>
           </div>
           <p style="font-size:12px;color:#6b7280;margin:0">
-            Se leerá la hoja <b>"Worksheet 1"</b>. Los documentos que ya no aparezcan serán eliminados automáticamente.
+            Se leerá la hoja <b>"Worksheet 1"</b>. Los documentos que ya no aparezcan serán marcados como <b>COBRADO</b> automáticamente.
           </p>
         </div>`,
       confirmButtonText: "Importar",
@@ -677,7 +677,7 @@ const CLIE = (() => {
     if (!vals) return;
 
     document.getElementById("import-info-cli").textContent =
-      `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevos} nuevos · ${vals.actualizados} actualizados · ${vals.eliminados} eliminados`;
+      `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevos} nuevos · ${vals.actualizados} actualizados · ${vals.cobrados || 0} cobrados`;
 
     await cargarFiltros();
     await cargarDocumentos(1);
@@ -701,27 +701,26 @@ const CLIE = (() => {
         </div>
       </div>` : "";
 
-    const seccionEliminados = vals.detalle_eliminados?.length ? `
+    const seccionCobrados = vals.detalle_cobrados?.length ? `
       <div>
-        <div style="font-size:11px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
-          Documentos eliminados (${vals.eliminados})
+        <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
+          Documentos marcados como COBRADO (${vals.cobrados})
         </div>
-        <div style="max-height:180px;overflow-y:auto;border:1px solid #fecaca;border-radius:6px">
-          ${vals.detalle_eliminados.map(d => `
-            <div style="padding:5px 10px;border-bottom:1px solid #fef2f2;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <div style="max-height:180px;overflow-y:auto;border:1px solid #d1fae5;border-radius:6px">
+          ${vals.detalle_cobrados.map(d => `
+            <div style="padding:5px 10px;border-bottom:1px solid #f0fdf4;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center">
               <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                 <span style="font-weight:600;color:#111827">${d.numero_documento}</span>
                 <span style="color:#6b7280"> — ${d.cliente}</span>
               </span>
               <span style="white-space:nowrap;font-size:11px;font-weight:600;
-                color:${d.estado === "DESCARTADO" ? "#6b7280" : "#b91c1c"};
-                background:${d.estado === "DESCARTADO" ? "#f3f4f6" : "#fef2f2"};
-                padding:1px 6px;border-radius:99px">${d.estado}</span>
+                color:#15803d;background:#f0fdf4;
+                padding:1px 6px;border-radius:99px">COBRADO</span>
             </div>`).join("")}
         </div>
       </div>` : "";
 
-    const sinDetalle = !seccionNuevos && !seccionEliminados;
+    const sinDetalle = !seccionNuevos && !seccionCobrados;
 
     Swal.fire({
       icon: "success",
@@ -736,12 +735,12 @@ const CLIE = (() => {
             <span style="padding:4px 10px;background:#eff6ff;border-radius:99px;font-size:12px;font-weight:600;color:#1d4ed8">
               ${vals.actualizados} actualizado${vals.actualizados !== 1 ? "s" : ""}
             </span>
-            <span style="padding:4px 10px;background:#fef2f2;border-radius:99px;font-size:12px;font-weight:600;color:#b91c1c">
-              ${vals.eliminados} eliminado${vals.eliminados !== 1 ? "s" : ""}
+            <span style="padding:4px 10px;background:#f0fdf4;border-radius:99px;font-size:12px;font-weight:600;color:#15803d">
+              ${vals.cobrados || 0} cobrado${(vals.cobrados || 0) !== 1 ? "s" : ""}
             </span>
           </div>
           ${seccionNuevos}
-          ${seccionEliminados}
+          ${seccionCobrados}
         </div>`,
       confirmButtonText: "Entendido",
       confirmButtonColor: "#2B7A9E",
