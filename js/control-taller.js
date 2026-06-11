@@ -984,6 +984,7 @@ const CT = (() => {
     const fmtD = d => d ? new Date(d).toLocaleDateString("es-EC") : "—";
 
     function estadoCobro(d) {
+      if (d.estado_doc === "COBRADO_HISTORICO") return "HISTORICO";
       if (d.estado_doc === "DESCARTADO") return "DESCARTADO";
       if (d.estado_doc === "COBRADO" || (parseFloat(d.saldo) === 0 && parseFloat(d.cobrado) > 0)) return "COBRADO";
       if (parseFloat(d.cobrado) > 0 && parseFloat(d.saldo) > 0) return "PARCIAL";
@@ -994,6 +995,7 @@ const CT = (() => {
 
     const COLORES_COBRO = {
       COBRADO:    { bg:"#f0fdf4", border:"#22c55e", text:"#16a34a", badge:"#dcfce7" },
+      HISTORICO:  { bg:"#eff6ff", border:"#3b82f6", text:"#2563eb", badge:"#dbeafe" },
       PARCIAL:    { bg:"#fefce8", border:"#f59e0b", text:"#d97706", badge:"#fef9c3" },
       PENDIENTE:  { bg:"#fef2f2", border:"#ef4444", text:"#dc2626", badge:"#fee2e2" },
       DESCARTADO: { bg:"#f9fafb", border:"#d1d5db", text:"#6b7280", badge:"#f3f4f6" },
@@ -1035,16 +1037,19 @@ const CT = (() => {
     function renderTabla(data) {
       const tbody = document.getElementById("tbody-cobranza");
       const count = document.getElementById("cobro-tabla-count");
-      if (!data?.documentos?.length) {
+      const historicos = data?.historicos || [];
+      const docs = data?.documentos || [];
+      if (!docs.length && !historicos.length) {
         tbody.innerHTML = `<tr><td colspan="14" class="empty-cell" style="padding:40px;">Sin documentos</td></tr>`;
         count.textContent = "0 documentos";
         document.getElementById("pag-cobranza").innerHTML = "";
         return;
       }
       totalPag = data.totalPaginas || 1;
-      count.textContent = `${data.total} documentos · Página ${data.pagina} de ${totalPag}`;
+      const histTxt = historicos.length ? ` + ${historicos.length} cobrados históricos` : "";
+      count.textContent = `${data.total} documentos${histTxt} · Página ${data.pagina} de ${totalPag}`;
 
-      tbody.innerHTML = data.documentos.map(d => {
+      function renderRow(d) {
         const ec = estadoCobro(d);
         const c = COLORES_COBRO[ec] || COLORES_COBRO.SIN_INFO;
         const descartado = ec === "DESCARTADO";
@@ -1064,7 +1069,15 @@ const CT = (() => {
           <td class="num-right" style="color:${(d.dias||0)>90?'#dc2626':(d.dias||0)>30?'#d97706':'inherit'}">${d.dias??'—'}</td>
           <td><span style="padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;color:${c.text};background:${c.badge}">${ec}</span></td>
         </tr>`;
-      }).join("");
+      }
+      let html = docs.map(renderRow).join("");
+      if (historicos.length) {
+        html += `<tr style="background:#eff6ff;"><td colspan="14" style="padding:8px 12px;font-weight:700;color:#2563eb;font-size:12px;text-align:center;">
+          COBRADOS HISTÓRICOS (${historicos.length}) — Facturas cobradas antes del registro en el sistema
+        </td></tr>`;
+        html += historicos.map(renderRow).join("");
+      }
+      tbody.innerHTML = html;
 
       // Paginación
       const pagEl = document.getElementById("pag-cobranza");
@@ -1082,10 +1095,13 @@ const CT = (() => {
       const c = res.cards || {};
 
       // Cards
-      document.getElementById("cc-total").textContent     = c.total ?? "—";
-      document.getElementById("cc-cobrado").textContent   = c.cobrado ?? "—";
+      const histCount = parseInt(c.historico_count) || 0;
+      document.getElementById("cc-total").textContent     = (parseInt(c.total)||0) + histCount;
+      document.getElementById("cc-cobrado").textContent   = (parseInt(c.cobrado)||0) + histCount;
       document.getElementById("cc-parcial").textContent   = c.parcial ?? "—";
       document.getElementById("cc-pendiente").textContent = c.pendiente ?? "—";
+      const histEl = document.getElementById("cc-historico");
+      if (histEl) histEl.textContent = histCount;
 
       // Totales financieros
       const tc = parseFloat(c.total_cargos)||0;
