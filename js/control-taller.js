@@ -967,7 +967,7 @@ const CT = (() => {
   function recargarTabActiva() {
     const tab = document.querySelector(".taller-tab.active")?.dataset.tab || "ordenes";
     if      (tab === "ordenes")   cargarOrdenes(1);
-    else if (tab === "dashboard") DASH.cargar();
+    else if (tab === "dashboard") { DASH.cargar(); COBRO.cargarResumen(); }
     else if (tab === "resumen")   cargarResumen();
     else if (tab === "cobranza")  COBRO.cargar(1);
   }
@@ -1023,14 +1023,21 @@ const CT = (() => {
       pag = page;
       const params = buildParams(page);
       try {
-        const [dataRes, resumenRes] = await Promise.all([
-          apiFetch(`/taller/cobranza?${params}`).then(r => safeJson(r)),
-          apiFetch(`/taller/cobranza/resumen?localidad=${encodeURIComponent(leerFiltros().localidad)}&incluir_descartados=${document.getElementById("fc-descartados")?.checked?"1":"0"}`).then(r => safeJson(r)),
-        ]);
+        const dataRes = await apiFetch(`/taller/cobranza?${params}`).then(r => safeJson(r));
         renderTabla(dataRes);
-        renderResumen(resumenRes);
       } catch (e) {
-        console.error("Error cobranza:", e);
+        console.error("Error cobranza tabla:", e);
+      }
+    }
+
+    async function cargarResumen() {
+      try {
+        const f = leerFiltros();
+        const desc = document.getElementById("fc-descartados")?.checked ? "1" : "0";
+        const res = await apiFetch(`/taller/cobranza/resumen?localidad=${encodeURIComponent(f.localidad)}&incluir_descartados=${desc}`).then(r => safeJson(r));
+        renderResumen(res);
+      } catch (e) {
+        console.error("Error cobranza resumen:", e);
       }
     }
 
@@ -1219,8 +1226,15 @@ const CT = (() => {
       }
     }
 
+    function switchToCobranzaTab() {
+      document.querySelectorAll(".taller-tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".taller-tab-panel").forEach(p => p.classList.remove("active"));
+      const tabBtn = document.querySelector('.taller-tab[data-tab="cobranza"]');
+      if (tabBtn) tabBtn.classList.add("active");
+      document.getElementById("panel-cobranza")?.classList.add("active");
+    }
+
     function initEvents() {
-      // Cards como filtros
       document.getElementById("cobro-cards")?.addEventListener("click", e => {
         const btn = e.target.closest("[data-cobro-card]");
         if (!btn) return;
@@ -1235,6 +1249,7 @@ const CT = (() => {
           btn.classList.add("card-activa");
           document.getElementById("cobro-cards").classList.add("cards-con-activa");
         }
+        switchToCobranzaTab();
         cargar(1);
       });
 
@@ -1243,7 +1258,7 @@ const CT = (() => {
       document.getElementById("btn-export-cobranza")?.addEventListener("click", exportarExcel);
     }
 
-    return { cargar, initEvents };
+    return { cargar, cargarResumen, initEvents };
   })();
 
   // ── Init ──────────────────────────────────────────
@@ -1256,7 +1271,7 @@ const CT = (() => {
         btn.classList.add("active");
         document.getElementById(`panel-${btn.dataset.tab}`).classList.add("active");
         if (btn.dataset.tab === "resumen")   cargarResumen();
-        if (btn.dataset.tab === "dashboard") DASH.cargar();
+        if (btn.dataset.tab === "dashboard") { DASH.cargar(); COBRO.cargarResumen(); }
         if (btn.dataset.tab === "ordenes")   cargarOrdenes(1);
         if (btn.dataset.tab === "cobranza")  COBRO.cargar(1);
       });

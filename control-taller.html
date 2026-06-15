@@ -888,6 +888,62 @@
       </div>
 
     </div><!-- /dash-grid -->
+
+    <!-- ═══ SECCIÓN COBRANZA (dentro del dashboard) ═══ -->
+    <div style="margin-top:28px;padding-top:20px;border-top:3px solid var(--border-subtle);">
+      <h2 style="font-size:16px;font-weight:700;color:var(--text-main);margin:0 0 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:20px;">💰</span> Cobranza — Estado de Facturas
+      </h2>
+
+      <!-- Cards de estado de cobro -->
+      <div class="estado-cards" id="cobro-cards" style="margin-bottom:14px;">
+        <button class="estado-card" style="background:#eff6ff;color:#0369a1;border-color:#bae6fd;" data-cobro-card="TOTAL">
+          <div class="ec-num" id="cc-total">—</div><div class="ec-lbl">Total</div>
+        </button>
+        <button class="estado-card" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;" data-cobro-card="COBRADO">
+          <div class="ec-num" id="cc-cobrado">—</div><div class="ec-lbl">Cobrado</div>
+        </button>
+        <button class="estado-card" style="background:#fefce8;color:#d97706;border-color:#fde68a;" data-cobro-card="PARCIAL">
+          <div class="ec-num" id="cc-parcial">—</div><div class="ec-lbl">Parcial</div>
+        </button>
+        <button class="estado-card" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;" data-cobro-card="PENDIENTE">
+          <div class="ec-num" id="cc-pendiente">—</div><div class="ec-lbl">Pendiente</div>
+        </button>
+        <div class="estado-card" style="background:#eff6ff;color:#2563eb;border-color:#93c5fd;cursor:default;opacity:.85;">
+          <div class="ec-num" id="cc-historico">—</div><div class="ec-lbl">Hist. Cobrado</div>
+        </div>
+      </div>
+
+      <!-- Totales financieros de cobranza -->
+      <div class="resumen-card" style="margin-bottom:18px;">
+        <h3>Totales de Cobranza</h3>
+        <div class="fin-grid" id="cobro-fin-grid">
+          <div class="fin-item"><div class="fin-num" id="cf-cargos">—</div><div class="fin-lbl">Total Cargos</div></div>
+          <div class="fin-item"><div class="fin-num" id="cf-cobrado" style="color:#16a34a">—</div><div class="fin-lbl">Cobrado</div></div>
+          <div class="fin-item"><div class="fin-num" id="cf-retencion" style="color:#7c3aed">—</div><div class="fin-lbl">Retenciones</div></div>
+          <div class="fin-item"><div class="fin-num" id="cf-ncredito" style="color:#0891b2">—</div><div class="fin-lbl">N/Crédito</div></div>
+          <div class="fin-item"><div class="fin-num" id="cf-saldo" style="color:#dc2626">—</div><div class="fin-lbl">Saldo Pendiente</div></div>
+          <div class="fin-item"><div class="fin-num" id="cf-pct" style="color:#16a34a">—</div><div class="fin-lbl">% Cobrado</div></div>
+        </div>
+      </div>
+
+      <!-- Gráficas de cobranza -->
+      <div class="dash-grid">
+        <div class="dash-chart-card">
+          <h3>Estado de Cobro</h3>
+          <div class="dash-chart-body"><canvas id="chart-cobro-estado"></canvas></div>
+        </div>
+        <div class="dash-chart-card">
+          <h3>Saldo Pendiente por Aseguradora</h3>
+          <div class="dash-chart-body"><canvas id="chart-cobro-aseg"></canvas></div>
+        </div>
+        <div class="dash-chart-card">
+          <h3>Antigüedad del Saldo</h3>
+          <div class="dash-chart-body"><canvas id="chart-cobro-antiguedad"></canvas></div>
+        </div>
+      </div>
+    </div><!-- /sección cobranza en dashboard -->
+
   </div><!-- /panel-dashboard -->
 
   <!-- ═══════════════════════ TAB RESUMEN ══════════════════════ -->
@@ -990,25 +1046,6 @@
   <!-- ═══════════════════════ TAB COBRANZA ══════════════════════ -->
   <div class="taller-tab-panel" id="panel-cobranza">
 
-    <!-- Cards de estado de cobro -->
-    <div class="estado-cards" id="cobro-cards" style="margin-bottom:14px;">
-      <button class="estado-card" style="background:#eff6ff;color:#0369a1;border-color:#bae6fd;" data-cobro-card="TOTAL">
-        <div class="ec-num" id="cc-total">—</div><div class="ec-lbl">Total</div>
-      </button>
-      <button class="estado-card" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;" data-cobro-card="COBRADO">
-        <div class="ec-num" id="cc-cobrado">—</div><div class="ec-lbl">Cobrado</div>
-      </button>
-      <button class="estado-card" style="background:#fefce8;color:#d97706;border-color:#fde68a;" data-cobro-card="PARCIAL">
-        <div class="ec-num" id="cc-parcial">—</div><div class="ec-lbl">Parcial</div>
-      </button>
-      <button class="estado-card" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;" data-cobro-card="PENDIENTE">
-        <div class="ec-num" id="cc-pendiente">—</div><div class="ec-lbl">Pendiente</div>
-      </button>
-      <div class="estado-card" style="background:#eff6ff;color:#2563eb;border-color:#93c5fd;cursor:default;opacity:.85;">
-        <div class="ec-num" id="cc-historico">—</div><div class="ec-lbl">Hist. Cobrado</div>
-      </div>
-    </div>
-
     <!-- Filtros extra cobranza -->
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
       <div class="fg">
@@ -1055,35 +1092,6 @@
         </tbody>
       </table>
       <div class="pag-controls" id="pag-cobranza"></div>
-    </div>
-
-    <!-- Totales financieros de cobranza -->
-    <div class="resumen-card" style="margin:18px 0;">
-      <h3>Totales de Cobranza</h3>
-      <div class="fin-grid" id="cobro-fin-grid">
-        <div class="fin-item"><div class="fin-num" id="cf-cargos">—</div><div class="fin-lbl">Total Cargos</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-cobrado" style="color:#16a34a">—</div><div class="fin-lbl">Cobrado</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-retencion" style="color:#7c3aed">—</div><div class="fin-lbl">Retenciones</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-ncredito" style="color:#0891b2">—</div><div class="fin-lbl">N/Crédito</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-saldo" style="color:#dc2626">—</div><div class="fin-lbl">Saldo Pendiente</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-pct" style="color:#16a34a">—</div><div class="fin-lbl">% Cobrado</div></div>
-      </div>
-    </div>
-
-    <!-- Gráficas de cobranza -->
-    <div class="dash-grid">
-      <div class="dash-chart-card">
-        <h3>Estado de Cobro</h3>
-        <div class="dash-chart-body"><canvas id="chart-cobro-estado"></canvas></div>
-      </div>
-      <div class="dash-chart-card">
-        <h3>Saldo Pendiente por Aseguradora</h3>
-        <div class="dash-chart-body"><canvas id="chart-cobro-aseg"></canvas></div>
-      </div>
-      <div class="dash-chart-card">
-        <h3>Antigüedad del Saldo</h3>
-        <div class="dash-chart-body"><canvas id="chart-cobro-antiguedad"></canvas></div>
-      </div>
     </div>
 
   </div><!-- /panel-cobranza -->
