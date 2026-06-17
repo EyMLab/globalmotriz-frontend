@@ -383,6 +383,7 @@ const DASH = (() => {
     // Lee directamente del panel de filtros unificado (f-*)
     const localidad  = document.getElementById("f-localidad")?.value || "";
     const orden      = (document.getElementById("f-orden")?.value   || "").trim();
+    const factura    = (document.getElementById("f-factura")?.value || "").trim();
     const placa      = (document.getElementById("f-placa")?.value   || "").trim();
     const cliente    = (document.getElementById("f-cliente")?.value || "").trim();
     const fechaDesde = document.getElementById("f-desde")?.value    || "";
@@ -390,6 +391,7 @@ const DASH = (() => {
     const params = new URLSearchParams();
     if (localidad)  params.set("localidad",   localidad);
     if (orden)      params.set("orden",       orden);
+    if (factura)    params.set("factura",     factura);
     if (placa)      params.set("placa",       placa);
     if (cliente)    params.set("cliente",     cliente);
     if (fechaDesde) params.set("fecha_desde", fechaDesde);
@@ -552,6 +554,7 @@ const CT = (() => {
     return {
       localidad:   document.getElementById("f-localidad")?.value || "",
       orden:       document.getElementById("f-orden")?.value?.trim() || "",
+      factura:     document.getElementById("f-factura")?.value?.trim() || "",
       placa:       document.getElementById("f-placa")?.value?.trim() || "",
       cliente:     document.getElementById("f-cliente")?.value?.trim() || "",
       fecha_desde: document.getElementById("f-desde")?.value || "",
@@ -570,6 +573,7 @@ const CT = (() => {
 
     if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.orden)       p.set("orden",       f.orden);
+    if (f.factura)     p.set("factura",     f.factura);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -899,6 +903,7 @@ const CT = (() => {
     const p = new URLSearchParams();
     if (f.localidad)   p.set("localidad",   f.localidad);
     if (f.orden)       p.set("orden",       f.orden);
+    if (f.factura)     p.set("factura",     f.factura);
     if (f.placa)       p.set("placa",       f.placa);
     if (f.cliente)     p.set("cliente",     f.cliente);
     if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -966,10 +971,11 @@ const CT = (() => {
   // ── Recargar la pestaña activa con los filtros actuales ──
   function recargarTabActiva() {
     const tab = document.querySelector(".taller-tab.active")?.dataset.tab || "ordenes";
-    if      (tab === "ordenes")   cargarOrdenes(1);
-    else if (tab === "dashboard") { DASH.cargar(); COBRO.cargarResumen(); }
-    else if (tab === "resumen")   cargarResumen();
-    else if (tab === "cobranza")  COBRO.cargar(1);
+    if      (tab === "ordenes")        cargarOrdenes(1);
+    else if (tab === "dashboard")      DASH.cargar();
+    else if (tab === "resumen")        cargarResumen();
+    else if (tab === "facturas")       COBRO.cargar(1);
+    else if (tab === "dash-facturas")  COBRO.cargarResumen();
   }
 
   // ═══════════════════════════════════════════════════
@@ -1006,6 +1012,7 @@ const CT = (() => {
       const p = new URLSearchParams({ page, limit: 100 });
       const f = leerFiltros();
       if (f.localidad)   p.set("localidad",   f.localidad);
+      if (f.factura)     p.set("factura",     f.factura);
       if (f.placa)       p.set("placa",       f.placa);
       if (f.cliente)     p.set("cliente",     f.cliente);
       if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
@@ -1044,17 +1051,15 @@ const CT = (() => {
     function renderTabla(data) {
       const tbody = document.getElementById("tbody-cobranza");
       const count = document.getElementById("cobro-tabla-count");
-      const historicos = data?.historicos || [];
       const docs = data?.documentos || [];
-      if (!docs.length && !historicos.length) {
+      if (!docs.length) {
         tbody.innerHTML = `<tr><td colspan="14" class="empty-cell" style="padding:40px;">Sin documentos</td></tr>`;
         count.textContent = "0 documentos";
         document.getElementById("pag-cobranza").innerHTML = "";
         return;
       }
       totalPag = data.totalPaginas || 1;
-      const histTxt = historicos.length ? ` + ${historicos.length} cobrados históricos` : "";
-      count.textContent = `${data.total} documentos${histTxt} · Página ${data.pagina} de ${totalPag}`;
+      count.textContent = `${data.total} documentos · Página ${data.pagina} de ${totalPag}`;
 
       function renderRow(d) {
         const ec = estadoCobro(d);
@@ -1077,14 +1082,7 @@ const CT = (() => {
           <td><span style="padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;color:${c.text};background:${c.badge}">${ec}</span></td>
         </tr>`;
       }
-      let html = docs.map(renderRow).join("");
-      if (historicos.length) {
-        html += `<tr style="background:#eff6ff;"><td colspan="14" style="padding:8px 12px;font-weight:700;color:#2563eb;font-size:12px;text-align:center;">
-          COBRADOS HISTÓRICOS (${historicos.length}) — Facturas cobradas antes del registro en el sistema
-        </td></tr>`;
-        html += historicos.map(renderRow).join("");
-      }
-      tbody.innerHTML = html;
+      tbody.innerHTML = docs.map(renderRow).join("");
 
       // Paginación
       const pagEl = document.getElementById("pag-cobranza");
@@ -1226,12 +1224,12 @@ const CT = (() => {
       }
     }
 
-    function switchToCobranzaTab() {
+    function switchToFacturasTab() {
       document.querySelectorAll(".taller-tab").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".taller-tab-panel").forEach(p => p.classList.remove("active"));
-      const tabBtn = document.querySelector('.taller-tab[data-tab="cobranza"]');
+      const tabBtn = document.querySelector('.taller-tab[data-tab="facturas"]');
       if (tabBtn) tabBtn.classList.add("active");
-      document.getElementById("panel-cobranza")?.classList.add("active");
+      document.getElementById("panel-facturas")?.classList.add("active");
     }
 
     function initEvents() {
@@ -1249,7 +1247,7 @@ const CT = (() => {
           btn.classList.add("card-activa");
           document.getElementById("cobro-cards").classList.add("cards-con-activa");
         }
-        switchToCobranzaTab();
+        switchToFacturasTab();
         cargar(1);
       });
 
@@ -1258,7 +1256,13 @@ const CT = (() => {
       document.getElementById("btn-export-cobranza")?.addEventListener("click", exportarExcel);
     }
 
-    return { cargar, cargarResumen, initEvents };
+    function resetCard() {
+      _cardCobro = null;
+      document.getElementById("cobro-cards")?.querySelectorAll("[data-cobro-card]").forEach(b => b.classList.remove("card-activa"));
+      document.getElementById("cobro-cards")?.classList.remove("cards-con-activa");
+    }
+
+    return { cargar, cargarResumen, initEvents, resetCard };
   })();
 
   // ── Init ──────────────────────────────────────────
@@ -1270,10 +1274,11 @@ const CT = (() => {
         document.querySelectorAll(".taller-tab-panel").forEach(p => p.classList.remove("active"));
         btn.classList.add("active");
         document.getElementById(`panel-${btn.dataset.tab}`).classList.add("active");
-        if (btn.dataset.tab === "resumen")   cargarResumen();
-        if (btn.dataset.tab === "dashboard") { DASH.cargar(); COBRO.cargarResumen(); }
-        if (btn.dataset.tab === "ordenes")   cargarOrdenes(1);
-        if (btn.dataset.tab === "cobranza")  COBRO.cargar(1);
+        if (btn.dataset.tab === "resumen")        cargarResumen();
+        if (btn.dataset.tab === "dashboard")      DASH.cargar();
+        if (btn.dataset.tab === "ordenes")        cargarOrdenes(1);
+        if (btn.dataset.tab === "facturas")       COBRO.cargar(1);
+        if (btn.dataset.tab === "dash-facturas")  COBRO.cargarResumen();
       });
     });
 
@@ -1292,6 +1297,7 @@ const CT = (() => {
       _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
+      COBRO.resetCard();
       recargarTabActiva();
     });
 
@@ -1300,14 +1306,16 @@ const CT = (() => {
       _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
+      COBRO.resetCard();
       document.getElementById("f-localidad").value = "";
-      ["f-orden","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
+      ["f-orden","f-factura","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = "";
       });
       const cbObs = document.getElementById("f-con-obs"); if (cbObs) cbObs.checked = false;
       msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
       cargarFiltros("");
       cargarCards("");
+      COBRO.cargarResumen();
       recargarTabActiva();
     });
 
@@ -1316,6 +1324,7 @@ const CT = (() => {
       const val = e.target.value;
       cargarFiltros(val);
       cargarCards(val);
+      COBRO.cargarResumen();
       recargarTabActiva();
     });
 
@@ -1363,6 +1372,7 @@ const CT = (() => {
     // Carga inicial
     cargarFiltros();
     cargarCards();
+    COBRO.cargarResumen();
     cargarOrdenes(1);
   }
 
