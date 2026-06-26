@@ -448,6 +448,7 @@ const CT = (() => {
     { id:"cliente",   label:"Cliente",         def:true   },
     { id:"aseg",      label:"Aseguradora",     def:true   },
     { id:"usuario",   label:"Usuario",         def:false  },
+    { id:"factura",   label:"N° Factura",      def:false  },
     { id:"vtotal",    label:"V. Total",        def:true   },
     { id:"obs",       label:"Observación",     def:false  },
     { id:"acciones",  label:"Acciones",        def:true,  noToggle:true },
@@ -635,6 +636,7 @@ const CT = (() => {
           <td data-col="cliente" class="tc-cliente" title="${cl}">${o.cliente || "—"}</td>
           <td data-col="aseg" class="tc-aseg" title="${as}">${o.aseguradora || "—"}</td>
           <td data-col="usuario">${o.usuario_registro || "—"}</td>
+          <td data-col="factura">${o.numero_factura || "—"}</td>
           <td data-col="vtotal" class="num-right">${fmtMoney(o.valor_total)}</td>
           <td data-col="obs" class="obs-cell tc-obs" title="${ob}">${o.observacion || ""}</td>
           <td data-col="acciones"><button class="btn-editar" onclick="CT.editarOrden('${o.numero_orden}','${o.localidad}')">✏</button></td>
