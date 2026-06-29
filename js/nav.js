@@ -45,8 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
     const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Facturas';
 
-    // Admin: bloqueo si intenta acceder a Proveedores o Clientes sin ser admin
-    if (rol !== 'admin' && (pagina === 'Proveedores' || pagina === 'Clientes')) {
+    // Bloqueo si intenta acceder a Proveedores o Clientes sin ser admin ni control
+    if (!['admin', 'control'].includes(rol) && (pagina === 'Proveedores' || pagina === 'Clientes')) {
       window.location.href = 'dashboard.html';
       return;
     }
