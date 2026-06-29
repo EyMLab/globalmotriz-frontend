@@ -108,11 +108,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
       _cajachicaData = data.historial;
       renderBalance(data.acumulado, data.limite);
-      renderTablaCajaChica(data.historial);
+      poblarFiltroTipoDocCC(_cajachicaData);
+      filtrarCajaChica();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
     }
   }
+
+  // Auto-detectar tipos de documento únicos para el select
+  function poblarFiltroTipoDocCC(historial) {
+    const sel = document.getElementById('cc-filtro-tipo');
+    if (!sel) return;
+    const valorPrevio = sel.value;
+    const tipos = [...new Set(historial.filter(r => !r.es_reposicion && r.tipo_doc).map(r => r.tipo_doc))].sort();
+    sel.innerHTML = '<option value="">Todos los tipos</option>' +
+      tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (valorPrevio && tipos.includes(valorPrevio)) sel.value = valorPrevio;
+  }
+
+  function filtrarCajaChica() {
+    const texto = (document.getElementById('cc-filtro-texto')?.value || '').toLowerCase().trim();
+    const tipo  = document.getElementById('cc-filtro-tipo')?.value || '';
+    const desde = document.getElementById('cc-filtro-desde')?.value || '';
+    const hasta = document.getElementById('cc-filtro-hasta')?.value || '';
+
+    const filtrados = _cajachicaData.filter(r => {
+      // Reposiciones siempre se muestran (son separadores visuales del histórico)
+      // a menos que se aplique un filtro específico de tipo que no las incluya.
+      const esRepo = r.es_reposicion;
+
+      if (tipo && (esRepo || r.tipo_doc !== tipo)) return false;
+
+      if (texto && !esRepo) {
+        const blob = `${r.proveedor || ''} ${r.concepto || ''} ${r.num_documento || ''}`.toLowerCase();
+        if (!blob.includes(texto)) return false;
+      }
+      if (texto && esRepo) return false; // si hay búsqueda texto, ocultar reposiciones
+
+      const fechaR = (r.fecha || '').slice(0, 10);
+      if (desde && fechaR < desde) return false;
+      if (hasta && fechaR > hasta) return false;
+
+      return true;
+    });
+    renderTablaCajaChica(filtrados);
+  }
+
+  window.limpiarFiltrosCajaChica = function () {
+    ['cc-filtro-texto', 'cc-filtro-tipo', 'cc-filtro-desde', 'cc-filtro-hasta'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    filtrarCajaChica();
+  };
+
+  // Listeners de filtros Caja Chica
+  ['cc-filtro-texto', 'cc-filtro-tipo', 'cc-filtro-desde', 'cc-filtro-hasta'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input',  filtrarCajaChica);
+    document.getElementById(id)?.addEventListener('change', filtrarCajaChica);
+  });
 
   function renderBalance(acumulado, limite) {
     const pct = Math.max(0, (acumulado / limite) * 100);
@@ -331,6 +385,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   // CIERRE DE CAJA - Cargar
   // =========================================================
+  let _cierreTotalesData = null;
+
   async function cargarCierreCaja(mes) {
     const tbody = document.getElementById('tabla-cierre');
     tbody.innerHTML = `<tr><td colspan="11">Cargando...</td></tr>`;
@@ -342,11 +398,49 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data?.error || 'Error');
 
       _cierreData = data.cobros;
-      renderTablaCierre(data.cobros, data.totales);
+      _cierreTotalesData = data.totales;
+      filtrarCierre();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="11">Error: ${err.message}</td></tr>`;
     }
   }
+
+  function filtrarCierre() {
+    const cliente = (document.getElementById('cierre-filtro-cliente')?.value || '').toLowerCase().trim();
+    const factura = (document.getElementById('cierre-filtro-factura')?.value || '').toLowerCase().trim();
+
+    const filtrados = (_cierreData || []).filter(r => {
+      if (cliente && !(r.cliente || '').toLowerCase().includes(cliente)) return false;
+      if (factura && !(r.factura_num || '').toString().toLowerCase().includes(factura)) return false;
+      return true;
+    });
+
+    // Recalcular totales de la vista filtrada
+    const totales = filtrados.reduce((acc, r) => {
+      acc.total              += parseFloat(r.total              || 0);
+      acc.pago_ahorros       += parseFloat(r.pago_ahorros       || 0);
+      acc.pago_transferencia += parseFloat(r.pago_transferencia || 0);
+      acc.pago_cheques       += parseFloat(r.pago_cheques       || 0);
+      acc.pago_tarjeta       += parseFloat(r.pago_tarjeta       || 0);
+      acc.pago_efectivo      += parseFloat(r.pago_efectivo      || 0);
+      return acc;
+    }, { total: 0, pago_ahorros: 0, pago_transferencia: 0, pago_cheques: 0, pago_tarjeta: 0, pago_efectivo: 0 });
+
+    renderTablaCierre(filtrados, totales);
+  }
+
+  window.limpiarFiltrosCierre = function () {
+    ['cierre-filtro-cliente', 'cierre-filtro-factura'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    filtrarCierre();
+  };
+
+  // Listeners de filtros Cierre
+  ['cierre-filtro-cliente', 'cierre-filtro-factura'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', filtrarCierre);
+  });
 
   function renderTablaCierre(cobros, totales) {
     const tbody = document.getElementById('tabla-cierre');
@@ -936,20 +1030,42 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
       _deduciblesData = data.deducibles;
+      poblarFiltroModoPagoDed(_deduciblesData);
       filtrarDeducibles();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="10">Error: ${err.message}</td></tr>`;
     }
   }
 
+  // Auto-detectar modos de pago únicos para el select
+  function poblarFiltroModoPagoDed(registros) {
+    const sel = document.getElementById('ded-filtro-modo-pago');
+    if (!sel) return;
+    const valorPrevio = sel.value;
+    const modos = [...new Set(registros.map(r => r.modo_pago).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Todos los modos</option>' +
+      modos.map(m => `<option value="${m}">${m}</option>`).join('');
+    if (valorPrevio && modos.includes(valorPrevio)) sel.value = valorPrevio;
+  }
+
   function filtrarDeducibles() {
     const estado = document.getElementById('ded-filtro-estado')?.value || '';
-    const ot = (document.getElementById('ded-filtro-ot')?.value || '').toLowerCase().trim();
-    const aseg = (document.getElementById('ded-filtro-aseguradora')?.value || '').toLowerCase().trim();
+    const ot     = (document.getElementById('ded-filtro-ot')?.value || '').toLowerCase().trim();
+    const aseg   = (document.getElementById('ded-filtro-aseguradora')?.value || '').toLowerCase().trim();
+    const modo   = document.getElementById('ded-filtro-modo-pago')?.value || '';
+    const desde  = document.getElementById('ded-filtro-desde')?.value || '';
+    const hasta  = document.getElementById('ded-filtro-hasta')?.value || '';
+
     _deduciblesFiltrados = _deduciblesData.filter(r => {
       if (estado && r.estado !== estado) return false;
-      if (ot && !r.ot.toLowerCase().includes(ot)) return false;
-      if (aseg && !r.aseguradora.toLowerCase().includes(aseg)) return false;
+      if (ot   && !(r.ot || '').toLowerCase().includes(ot)) return false;
+      if (aseg && !(r.aseguradora || '').toLowerCase().includes(aseg)) return false;
+      if (modo && r.modo_pago !== modo) return false;
+
+      const fechaR = (r.fecha_cobro || '').slice(0, 10);
+      if (desde && fechaR < desde) return false;
+      if (hasta && fechaR > hasta) return false;
+
       return true;
     });
     renderTablaDeducibles(_deduciblesFiltrados);
@@ -1017,14 +1133,17 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.limpiarFiltrosDeducibles = function () {
-    document.getElementById('ded-filtro-estado').value = '';
-    document.getElementById('ded-filtro-ot').value = '';
-    document.getElementById('ded-filtro-aseguradora').value = '';
+    ['ded-filtro-estado', 'ded-filtro-ot', 'ded-filtro-aseguradora',
+     'ded-filtro-modo-pago', 'ded-filtro-desde', 'ded-filtro-hasta'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     filtrarDeducibles();
   };
 
   // Listeners filtros
-  ['ded-filtro-estado', 'ded-filtro-ot', 'ded-filtro-aseguradora'].forEach(id => {
+  ['ded-filtro-estado', 'ded-filtro-ot', 'ded-filtro-aseguradora',
+   'ded-filtro-modo-pago', 'ded-filtro-desde', 'ded-filtro-hasta'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', filtrarDeducibles);
     document.getElementById(id)?.addEventListener('change', filtrarDeducibles);
   });
@@ -1190,33 +1309,56 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
       _facturasAnuladasData = data.facturas;
+      poblarFiltroMotivoFan(_facturasAnuladasData);
       filtrarFacturasAnuladas();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
     }
   }
 
+  // Auto-detectar motivos únicos para el select
+  function poblarFiltroMotivoFan(registros) {
+    const sel = document.getElementById('fan-filtro-motivo');
+    if (!sel) return;
+    const valorPrevio = sel.value;
+    const motivos = [...new Set(registros.map(r => r.motivo).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Todos los motivos</option>' +
+      motivos.map(m => `<option value="${m}">${m}</option>`).join('');
+    if (valorPrevio && motivos.includes(valorPrevio)) sel.value = valorPrevio;
+  }
+
   function filtrarFacturasAnuladas() {
-    const estado = document.getElementById('fan-filtro-estado')?.value || '';
-    const ot = (document.getElementById('fan-filtro-ot')?.value || '').toLowerCase().trim();
+    const estado  = document.getElementById('fan-filtro-estado')?.value || '';
+    const motivo  = document.getElementById('fan-filtro-motivo')?.value || '';
+    const ot      = (document.getElementById('fan-filtro-ot')?.value      || '').toLowerCase().trim();
+    const cliente = (document.getElementById('fan-filtro-cliente')?.value || '').toLowerCase().trim();
+    const placa   = (document.getElementById('fan-filtro-placa')?.value   || '').toLowerCase().trim();
     const factura = (document.getElementById('fan-filtro-factura')?.value || '').toLowerCase().trim();
+
     const filtrados = _facturasAnuladasData.filter(r => {
-      if (estado && r.estado !== estado) return false;
-      if (ot && !r.ot.toLowerCase().includes(ot)) return false;
-      if (factura && !(r.factura_anulada.toLowerCase().includes(factura) || (r.factura_nueva || '').toLowerCase().includes(factura))) return false;
+      if (estado  && r.estado !== estado) return false;
+      if (motivo  && r.motivo !== motivo) return false;
+      if (ot      && !(r.ot || '').toLowerCase().includes(ot)) return false;
+      if (cliente && !(r.cliente || '').toLowerCase().includes(cliente)) return false;
+      if (placa   && !(r.placa   || '').toLowerCase().includes(placa))   return false;
+      if (factura && !((r.factura_anulada || '').toLowerCase().includes(factura) ||
+                       (r.factura_nueva   || '').toLowerCase().includes(factura))) return false;
       return true;
     });
     renderTablaFacturasAnuladas(filtrados);
   }
 
   window.limpiarFiltrosFacturas = function () {
-    document.getElementById('fan-filtro-estado').value = '';
-    document.getElementById('fan-filtro-ot').value = '';
-    document.getElementById('fan-filtro-factura').value = '';
+    ['fan-filtro-estado', 'fan-filtro-motivo', 'fan-filtro-ot',
+     'fan-filtro-cliente', 'fan-filtro-placa', 'fan-filtro-factura'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     filtrarFacturasAnuladas();
   };
 
-  ['fan-filtro-estado', 'fan-filtro-ot', 'fan-filtro-factura'].forEach(id => {
+  ['fan-filtro-estado', 'fan-filtro-motivo', 'fan-filtro-ot',
+   'fan-filtro-cliente', 'fan-filtro-placa', 'fan-filtro-factura'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', filtrarFacturasAnuladas);
     document.getElementById(id)?.addEventListener('change', filtrarFacturasAnuladas);
   });

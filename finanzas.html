@@ -70,6 +70,17 @@
         <button class="btn-obs" onclick="descargarReporteCajaChica()">&#8595; Descargar Reporte</button>
       </div>
 
+      <!-- Filtros -->
+      <div class="filter-row">
+        <input id="cc-filtro-texto" placeholder="Buscar (proveedor, concepto, N° doc)..." class="filter-input-sm" style="width:280px;">
+        <select id="cc-filtro-tipo" class="filter-select-sm">
+          <option value="">Todos los tipos</option>
+        </select>
+        <input id="cc-filtro-desde" type="date" class="filter-input-sm" style="width:140px;" title="Fecha desde">
+        <input id="cc-filtro-hasta" type="date" class="filter-input-sm" style="width:140px;" title="Fecha hasta">
+        <button class="btn btn-obs" onclick="limpiarFiltrosCajaChica()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
+      </div>
+
       <!-- Tabla historial -->
       <table>
         <thead>
@@ -103,13 +114,20 @@
       </div>
 
       <!-- Selector de mes + botones -->
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
         <div class="mes-selector">
           <label for="input-mes">Mes:</label>
           <input type="month" id="input-mes">
         </div>
         <button class="btn-obs" onclick="modalRegistrarCobro()">+ Registrar Cobro</button>
         <button class="btn-obs" onclick="descargarReporteCierre()">&#8595; Descargar Reporte</button>
+      </div>
+
+      <!-- Filtros adicionales -->
+      <div class="filter-row">
+        <input id="cierre-filtro-cliente" placeholder="Buscar cliente..." class="filter-input-sm" style="width:200px;">
+        <input id="cierre-filtro-factura" placeholder="Buscar N° factura/OT..." class="filter-input-sm" style="width:180px;">
+        <button class="btn btn-obs" onclick="limpiarFiltrosCierre()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
       </div>
 
       <!-- Tabla cobros -->
@@ -168,8 +186,13 @@
               <option value="PENDIENTE">⚠ Pendiente</option>
               <option value="DEVUELTO">✓ Devuelto</option>
             </select>
+            <select id="ded-filtro-modo-pago" class="filter-select-sm" title="Modo de pago">
+              <option value="">Todos los modos</option>
+            </select>
             <input id="ded-filtro-ot" placeholder="Buscar OT..." class="filter-input-sm" style="width:130px;">
             <input id="ded-filtro-aseguradora" placeholder="Buscar aseguradora..." class="filter-input-sm" style="width:180px;">
+            <input id="ded-filtro-desde" type="date" class="filter-input-sm" style="width:140px;" title="Fecha cobro desde">
+            <input id="ded-filtro-hasta" type="date" class="filter-input-sm" style="width:140px;" title="Fecha cobro hasta">
             <button class="btn btn-obs" onclick="limpiarFiltrosDeducibles()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
           </div>
         </div>
@@ -246,7 +269,12 @@
           <option value="PENDIENTE">⚠ Pendiente</option>
           <option value="REEMPLAZADA">✓ Reemplazada</option>
         </select>
+        <select id="fan-filtro-motivo" class="filter-select-sm" title="Motivo">
+          <option value="">Todos los motivos</option>
+        </select>
         <input id="fan-filtro-ot" placeholder="Buscar OT..." class="filter-input-sm" style="width:130px;">
+        <input id="fan-filtro-cliente" placeholder="Buscar cliente..." class="filter-input-sm" style="width:170px;">
+        <input id="fan-filtro-placa" placeholder="Buscar placa..." class="filter-input-sm" style="width:130px;">
         <input id="fan-filtro-factura" placeholder="Buscar N° factura..." class="filter-input-sm" style="width:165px;">
         <button class="btn btn-obs" onclick="limpiarFiltrosFacturas()" style="font-size:12px;padding:6px 12px;">✕ Limpiar</button>
       </div>
