@@ -1378,6 +1378,11 @@ const CLIE = (() => {
 
   // ── Init ────────────────────────────────────────
   async function init() {
+    // Si el usuario es "control" → marca el body para ocultar acciones de escritura
+    if (localStorage.getItem('rol') === 'control') {
+      document.body.classList.add('rol-control');
+    }
+
     initTabs();
     initColumnToggle();
 

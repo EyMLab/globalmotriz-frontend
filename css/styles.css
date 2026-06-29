@@ -420,6 +420,66 @@ body.login {
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
 }
 
+/* ======================================================================
+   NAVBAR RESPONSIVE — reduce paddings/sizes en pantallas pequeñas.
+   No afecta funcionalidad: solo ajustes visuales para evitar amontonamiento.
+====================================================================== */
+
+/* Mediana (≤1300px): reducir padding y gaps */
+@media (max-width: 1300px) {
+  .navbar { padding: 0 16px; }
+  .nav-center { gap: 4px; }
+  .nav-dropdown-btn,
+  .nav-links a { padding: 20px 10px; font-size: 13px; }
+  .nav-title { font-size: 18px; }
+  .nav-right { gap: 6px; }
+}
+
+/* Chica (≤1100px): ocultar título de página y achicar botones */
+@media (max-width: 1100px) {
+  .nav-title { display: none; }
+  .btn-nav { padding: 7px 10px; font-size: 13px; }
+  .usuario-badge { font-size: 13px; padding: 5px 10px; }
+  .nav-dropdown-btn,
+  .nav-links a { padding: 20px 8px; font-size: 12.5px; }
+}
+
+/* Muy chica (≤900px): padding mínimo */
+@media (max-width: 900px) {
+  .navbar { padding: 0 8px; }
+  .nav-dropdown-btn,
+  .nav-links a { padding: 20px 6px; font-size: 12px; }
+  .nav-center { gap: 2px; }
+  .nav-right { gap: 4px; }
+  .btn-nav { padding: 6px 8px; }
+}
+
+/* ======================================================================
+   ROL CONTROL — solo lectura en módulos de Contabilidad
+   Oculta botones y elementos de escritura para el rol "control".
+   El backend ya bloquea las mutaciones; esto es la capa visual.
+====================================================================== */
+body.rol-control #btn-importar-cli,
+body.rol-control #btn-importar-prov,
+body.rol-control #sel-bar,
+body.rol-control #check-all-docs,
+body.rol-control .btn-gestion,
+body.rol-control .btn-guardar-abono,
+body.rol-control .btn-total-abonar,
+body.rol-control #btn-guardar-todos,
+body.rol-control .row-check,
+body.rol-control .col-checkbox {
+  display: none !important;
+}
+
+/* Ocultar la columna de checkbox del header (primera columna) y de gestión (última) */
+body.rol-control .prov-table thead tr th:first-child,
+body.rol-control .prov-table tbody tr td:first-child,
+body.rol-control .prov-table thead tr th:last-child,
+body.rol-control .prov-table tbody tr td:last-child {
+  display: none !important;
+}
+
 /* Botones navbar y header */
 .btn-nav,
 .header-right button {

@@ -114,11 +114,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 
-    const enlaceProveedores = rol === 'admin'
+    const enlaceProveedores = ['admin', 'control'].includes(rol)
       ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas x Pagar</a>`
       : "";
 
-    const enlaceClientes = rol === 'admin'
+    const enlaceClientes = ['admin', 'control'].includes(rol)
       ? `<a href="clientes.html" class="${pagina === 'Clientes' ? 'active' : ''}">Cuentas x Cobrar</a>`
       : "";
 
