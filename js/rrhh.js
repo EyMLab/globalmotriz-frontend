@@ -48,6 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
         empleados = data;
         poblarFiltroCargo();
         renderInfoEmpleados();
+        // Si el dashboard ya estaba abierto, re-renderizarlo con los nuevos datos
+        if (_dashboardRenderizado) renderDashboard();
       })
       .catch(err => {
         console.error('Error cargando empleados:', err);
@@ -224,6 +226,266 @@ document.addEventListener('DOMContentLoaded', () => {
   // Bind botón resumen
   const btnResumen = document.getElementById('btn-resumen-tallas');
   if (btnResumen) btnResumen.addEventListener('click', mostrarResumenTallas);
+
+  // ===============================
+  // TABS (Empleados / Dashboard)
+  // ===============================
+  let _dashboardRenderizado = false;
+  document.querySelectorAll('.subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.subtab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + tab)?.classList.add('active');
+      if (tab === 'dashboard') {
+        renderDashboard();
+        _dashboardRenderizado = true;
+      }
+    });
+  });
+
+  // ===============================
+  // DASHBOARD - cálculo de antigüedad y renderizado
+  // ===============================
+
+  // Calcula diferencia entre dos fechas en años, meses, días
+  function diffAniosMesesDias(desde, hasta) {
+    let d1 = new Date(desde + 'T00:00:00');
+    let d2 = new Date(hasta);
+    if (isNaN(d1) || isNaN(d2)) return { anios: 0, meses: 0, dias: 0, totalDias: 0 };
+
+    let anios = d2.getFullYear() - d1.getFullYear();
+    let meses = d2.getMonth() - d1.getMonth();
+    let dias  = d2.getDate() - d1.getDate();
+
+    if (dias < 0) {
+      meses -= 1;
+      // días del mes anterior
+      const mesAnterior = new Date(d2.getFullYear(), d2.getMonth(), 0).getDate();
+      dias += mesAnterior;
+    }
+    if (meses < 0) {
+      anios -= 1;
+      meses += 12;
+    }
+
+    const totalDias = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+    return { anios, meses, dias, totalDias };
+  }
+
+  function formatAntiguedad(a, m, d) {
+    if (a <= 0 && m <= 0) return `${d} día${d !== 1 ? 's' : ''}`;
+    if (a <= 0) return `${m}m ${d}d`;
+    return `${a}a ${m}m ${d}d`;
+  }
+
+  function rangoAntiguedad(anios) {
+    if (anios < 1)   return '< 1 año';
+    if (anios <= 3)  return '1 - 3 años';
+    if (anios <= 5)  return '3 - 5 años';
+    if (anios <= 10) return '5 - 10 años';
+    return '10+ años';
+  }
+
+  // Referencias a charts para destruir/recrear
+  const _charts = { cargos: null, localidad: null, cargoLoc: null, antiguedad: null };
+
+  function renderDashboard() {
+    const activos = empleados.filter(e => e.activo);
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+
+    // ---- KPIs ----
+    const totalActivos = activos.length;
+    const enMatriz     = activos.filter(e => (e.localidad || 'MATRIZ') === 'MATRIZ').length;
+    const enSucursal   = activos.filter(e => e.localidad === 'SUCURSAL').length;
+    const nuevosAnio   = activos.filter(e => {
+      if (!e.fecha_ingreso) return false;
+      return parseInt(e.fecha_ingreso.substring(0, 4)) === anioActual;
+    }).length;
+
+    // Antigüedad promedio (en días → años)
+    const conIngreso = activos.filter(e => e.fecha_ingreso);
+    let totalDiasSum = 0;
+    conIngreso.forEach(e => {
+      totalDiasSum += diffAniosMesesDias(e.fecha_ingreso.substring(0, 10), hoy).totalDias;
+    });
+    const promedioDias = conIngreso.length ? totalDiasSum / conIngreso.length : 0;
+    const promedioAnios = Math.floor(promedioDias / 365.25);
+    const promedioMeses = Math.floor((promedioDias - promedioAnios * 365.25) / 30.44);
+
+    document.getElementById('kpi-total').textContent      = totalActivos;
+    document.getElementById('kpi-matriz').textContent     = enMatriz;
+    document.getElementById('kpi-sucursal').textContent   = enSucursal;
+    document.getElementById('kpi-nuevos').textContent     = nuevosAnio;
+    document.getElementById('kpi-anio-actual').textContent= anioActual;
+    document.getElementById('kpi-antiguedad').textContent =
+      conIngreso.length ? `${promedioAnios}a ${promedioMeses}m` : '—';
+
+    // ---- Datos para gráficos ----
+    const porCargo = {};
+    activos.forEach(e => {
+      const c = e.cargo || 'SIN CARGO';
+      porCargo[c] = (porCargo[c] || 0) + 1;
+    });
+    const cargosSorted = Object.entries(porCargo).sort((a, b) => b[1] - a[1]);
+
+    const porLocalidad = { MATRIZ: enMatriz, SUCURSAL: enSucursal };
+
+    // Cargo × Localidad: por cada cargo, cuántos en MATRIZ y cuántos en SUCURSAL
+    const cargosLista = cargosSorted.map(c => c[0]);
+    const matrizPorCargo = cargosLista.map(c => activos.filter(e => e.cargo === c && (e.localidad || 'MATRIZ') === 'MATRIZ').length);
+    const sucursalPorCargo = cargosLista.map(c => activos.filter(e => e.cargo === c && e.localidad === 'SUCURSAL').length);
+
+    // Antigüedad por rangos
+    const rangos = { '< 1 año': 0, '1 - 3 años': 0, '3 - 5 años': 0, '5 - 10 años': 0, '10+ años': 0 };
+    conIngreso.forEach(e => {
+      const { anios } = diffAniosMesesDias(e.fecha_ingreso.substring(0, 10), hoy);
+      rangos[rangoAntiguedad(anios)]++;
+    });
+
+    // ---- Renderizar charts ----
+    renderChartCargos(cargosSorted);
+    renderChartLocalidad(porLocalidad);
+    renderChartCargoLoc(cargosLista, matrizPorCargo, sucursalPorCargo);
+    renderChartAntiguedad(rangos);
+
+    // ---- Tabla de antigüedad (más antiguo → más nuevo) ----
+    renderTablaAntiguedad(conIngreso, hoy);
+  }
+
+  function destruirChart(key) {
+    if (_charts[key]) { _charts[key].destroy(); _charts[key] = null; }
+  }
+
+  function renderChartCargos(cargosSorted) {
+    const ctx = document.getElementById('chart-cargos')?.getContext('2d');
+    if (!ctx) return;
+    destruirChart('cargos');
+    _charts.cargos = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: cargosSorted.map(c => c[0]),
+        datasets: [{
+          label: 'Empleados',
+          data: cargosSorted.map(c => c[1]),
+          backgroundColor: '#2B7A9E',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
+        }
+      }
+    });
+  }
+
+  function renderChartLocalidad(porLoc) {
+    const ctx = document.getElementById('chart-localidad')?.getContext('2d');
+    if (!ctx) return;
+    destruirChart('localidad');
+    _charts.localidad = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(porLoc),
+        datasets: [{
+          data: Object.values(porLoc),
+          backgroundColor: ['#2B7A9E', '#5BC0BE'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 } } }
+        }
+      }
+    });
+  }
+
+  function renderChartCargoLoc(cargos, matriz, sucursal) {
+    const ctx = document.getElementById('chart-cargo-loc')?.getContext('2d');
+    if (!ctx) return;
+    destruirChart('cargoLoc');
+    _charts.cargoLoc = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: cargos,
+        datasets: [
+          { label: 'MATRIZ',   data: matriz,   backgroundColor: '#2B7A9E', borderRadius: 3 },
+          { label: 'SUCURSAL', data: sucursal, backgroundColor: '#5BC0BE', borderRadius: 3 }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { stacked: false, beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+          y: { stacked: false }
+        }
+      }
+    });
+  }
+
+  function renderChartAntiguedad(rangos) {
+    const ctx = document.getElementById('chart-antiguedad')?.getContext('2d');
+    if (!ctx) return;
+    destruirChart('antiguedad');
+    const colores = ['#94a3b8', '#60a5fa', '#0891b2', '#16a34a', '#1e3a5f'];
+    _charts.antiguedad = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(rangos),
+        datasets: [{
+          data: Object.values(rangos),
+          backgroundColor: colores,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
+        }
+      }
+    });
+  }
+
+  function renderTablaAntiguedad(conIngreso, hoy) {
+    const tbody = document.getElementById('tabla-antiguedad');
+    if (!tbody) return;
+    if (!conIngreso.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">Sin empleados activos con fecha de ingreso</td></tr>';
+      return;
+    }
+    // Ordenar de más antiguo a más nuevo
+    const ordenados = [...conIngreso].sort((a, b) => {
+      return new Date(a.fecha_ingreso) - new Date(b.fecha_ingreso);
+    });
+    tbody.innerHTML = ordenados.map((e, idx) => {
+      const d = diffAniosMesesDias(e.fecha_ingreso.substring(0, 10), hoy);
+      return `<tr>
+        <td style="text-align:center;color:#6b7280;font-weight:500;">${idx + 1}</td>
+        <td>${e.nombre} ${e.apellido}</td>
+        <td>${e.cargo || '—'}</td>
+        <td><span class="badge-localidad badge-${(e.localidad || 'MATRIZ').toLowerCase()}">${e.localidad || 'MATRIZ'}</span></td>
+        <td>${formatFecha(e.fecha_ingreso)}</td>
+        <td style="font-weight:600;color:#1e3a5f;">${formatAntiguedad(d.anios, d.meses, d.dias)}</td>
+      </tr>`;
+    }).join('');
+  }
 
   // ===============================
   // Editar info empleado

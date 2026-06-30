@@ -7,6 +7,7 @@
   <title>RRHH - Empleados</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -16,57 +17,144 @@
 
   <div class="dashboard-container">
 
-    <!-- =========================
-         SECCIÓN: INFO EMPLEADOS
-    ========================== -->
-    <div class="section-header" style="margin-bottom:12px;">
-      <h2>Informacion de Empleados</h2>
+    <!-- ============================================================
+         SUB-TABS NAV
+    ============================================================ -->
+    <div class="subtabs-nav">
+      <button class="subtab-btn active" data-tab="empleados">Empleados</button>
+      <button class="subtab-btn" data-tab="dashboard">Dashboard</button>
     </div>
 
-    <!-- Filtros -->
-    <div class="filter-row" style="margin-bottom:16px;">
-      <input id="buscar-empleado" class="swal2-input" placeholder="Buscar por nombre o cédula..."
-             style="width:260px;margin:0;height:36px;font-size:13px;">
-      <select id="filtro-localidad-rrhh" class="filter-select-md">
-        <option value="">Todas las localidades</option>
-        <option value="MATRIZ">MATRIZ</option>
-        <option value="SUCURSAL">SUCURSAL</option>
-      </select>
-      <select id="filtro-cargo-rrhh" class="filter-select-md">
-        <option value="">Todos los cargos</option>
-      </select>
-      <select id="filtro-estado-rrhh" class="filter-select-md">
-        <option value="activo">Activos</option>
-        <option value="inactivo">Inactivos</option>
-        <option value="">Todos</option>
-      </select>
+    <!-- ============================================================
+         PANEL 1: EMPLEADOS
+    ============================================================ -->
+    <div id="panel-empleados" class="subtab-panel active">
+
+      <div class="section-header" style="margin-bottom:12px;">
+        <h2>Información de Empleados</h2>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filter-row" style="margin-bottom:16px;">
+        <input id="buscar-empleado" class="swal2-input" placeholder="Buscar por nombre o cédula..."
+               style="width:260px;margin:0;height:36px;font-size:13px;">
+        <select id="filtro-localidad-rrhh" class="filter-select-md">
+          <option value="">Todas las localidades</option>
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+        <select id="filtro-cargo-rrhh" class="filter-select-md">
+          <option value="">Todos los cargos</option>
+        </select>
+        <select id="filtro-estado-rrhh" class="filter-select-md">
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
+        <div id="contador-empleados" style="font-size:14px;color:#374151;font-weight:600;"></div>
+        <button id="btn-resumen-tallas"
+                style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:13px;cursor:pointer;font-weight:600;display:none;">
+          Resumen de tallas
+        </button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:45px;text-align:center;">#</th>
+            <th>Nombre Completo</th>
+            <th>Cedula</th>
+            <th>Fecha Nacimiento</th>
+            <th>Fecha Ingreso</th>
+            <th>Localidad</th>
+            <th>Cargo</th>
+            <th>Tallas</th>
+            <th>Estado</th>
+            <th class="col-acciones-rrhh">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-info-empleados"></tbody>
+      </table>
+
     </div>
 
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
-      <div id="contador-empleados" style="font-size:14px;color:#374151;font-weight:600;"></div>
-      <button id="btn-resumen-tallas"
-              style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:13px;cursor:pointer;font-weight:600;display:none;">
-        Resumen de tallas
-      </button>
-    </div>
+    <!-- ============================================================
+         PANEL 2: DASHBOARD
+    ============================================================ -->
+    <div id="panel-dashboard" class="subtab-panel">
 
-    <table>
-      <thead>
-        <tr>
-          <th style="width:45px;text-align:center;">#</th>
-          <th>Nombre Completo</th>
-          <th>Cedula</th>
-          <th>Fecha Nacimiento</th>
-          <th>Fecha Ingreso</th>
-          <th>Localidad</th>
-          <th>Cargo</th>
-          <th>Tallas</th>
-          <th>Estado</th>
-          <th class="col-acciones-rrhh">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tabla-info-empleados"></tbody>
-    </table>
+      <div class="section-header" style="margin-bottom:16px;">
+        <h2>Dashboard de Empleados</h2>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="rrhh-kpi-grid">
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">Total activos</div>
+          <div class="rrhh-kpi-value" id="kpi-total">—</div>
+        </div>
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">MATRIZ</div>
+          <div class="rrhh-kpi-value" id="kpi-matriz">—</div>
+        </div>
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">SUCURSAL</div>
+          <div class="rrhh-kpi-value" id="kpi-sucursal">—</div>
+        </div>
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">Nuevos en <span id="kpi-anio-actual"></span></div>
+          <div class="rrhh-kpi-value" id="kpi-nuevos">—</div>
+        </div>
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">Antigüedad promedio</div>
+          <div class="rrhh-kpi-value" id="kpi-antiguedad">—</div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="rrhh-charts-grid">
+        <div class="rrhh-chart-card">
+          <h3>Empleados por Cargo</h3>
+          <div class="rrhh-chart-body"><canvas id="chart-cargos"></canvas></div>
+        </div>
+        <div class="rrhh-chart-card">
+          <h3>Distribución por Localidad</h3>
+          <div class="rrhh-chart-body"><canvas id="chart-localidad"></canvas></div>
+        </div>
+        <div class="rrhh-chart-card">
+          <h3>Cargo × Localidad</h3>
+          <div class="rrhh-chart-body"><canvas id="chart-cargo-loc"></canvas></div>
+        </div>
+        <div class="rrhh-chart-card">
+          <h3>Antigüedad por Rangos</h3>
+          <div class="rrhh-chart-body"><canvas id="chart-antiguedad"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tabla de antigüedad -->
+      <div class="rrhh-chart-card" style="margin-top:20px;">
+        <h3>Antigüedad de Empleados (más antiguo → más nuevo)</h3>
+        <div style="padding:0;">
+          <table style="margin:0;">
+            <thead>
+              <tr>
+                <th style="width:45px;text-align:center;">#</th>
+                <th>Nombre Completo</th>
+                <th>Cargo</th>
+                <th>Localidad</th>
+                <th>Fecha Ingreso</th>
+                <th>Tiempo en la empresa</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-antiguedad"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
 
   </div>
 
