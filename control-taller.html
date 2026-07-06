@@ -138,7 +138,7 @@
       gap: 10px;
       flex-wrap: wrap;
       align-items: flex-end;
-      justify-content: center;
+      justify-content: flex-start;
       padding-bottom: 12px;
     }
     .filtros-actions {
@@ -1015,7 +1015,7 @@
   <div class="taller-tab-panel" id="panel-facturas">
 
     <!-- Filtros extra facturas -->
-    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+    <div class="filtros-taller" style="flex-direction:row;align-items:center;flex-wrap:wrap;gap:14px;">
       <div class="fg">
         <label>Tiene Orden</label>
         <select id="fc-tiene-orden">
@@ -1024,11 +1024,12 @@
           <option value="NO">No</option>
         </select>
       </div>
-      <label class="check-obs-label" style="font-size:12px;">
+      <label class="check-obs-label">
         <input type="checkbox" id="fc-descartados" />
         Incluir descartados
       </label>
-      <button class="btn-sm" id="btn-export-cobranza" style="margin-left:auto;">⬇ Excel Cobranza</button>
+      <div style="flex:1;"></div>
+      <button class="btn-sm" id="btn-export-cobranza">⬇ Excel Cobranza</button>
     </div>
 
     <!-- Tabla facturas -->
