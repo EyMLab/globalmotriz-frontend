@@ -503,9 +503,6 @@ const PROV = (() => {
 
   // ── Limpiar todo el resumen (prioridad + por_abonar) ─
   async function limpiarResumen() {
-    const filas = document.querySelectorAll("#tbody-resumen tr[data-proveedor]");
-    if (!filas.length) return;
-
     const { isConfirmed } = await Swal.fire({
       title: "¿Limpiar todo el resumen?",
       text: "Se eliminarán todas las prioridades y montos por abonar. Esta acción no se puede deshacer.",
@@ -517,19 +514,15 @@ const PROV = (() => {
     });
     if (!isConfirmed) return;
 
-    let errores = 0;
-    for (const tr of filas) {
-      const provEnc = tr.dataset.proveedor;
-      const referencia = tr.querySelector("[data-campo='referencia']")?.value.trim() || null;
-      const res = await apiFetch(`/proveedores-pagar/resumen/${provEnc}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prioridad: null, por_abonar: null, referencia }),
-      });
-      if (!res || !res.ok) errores++;
+    const res = await apiFetch("/proveedores-pagar/resumen/limpiar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res || !res.ok) {
+      Swal.fire("Error", "No se pudo limpiar el resumen.", "error");
+      return;
     }
-    if (errores > 0) Swal.fire("Atención", `${errores} filas no se pudieron limpiar.`, "warning");
-    else Swal.fire({ icon: "success", title: "Resumen limpiado", timer: 1400, showConfirmButton: false });
+    Swal.fire({ icon: "success", title: "Resumen limpiado", timer: 1400, showConfirmButton: false });
     cargarResumen();
   }
 
