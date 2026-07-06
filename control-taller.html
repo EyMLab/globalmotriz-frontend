@@ -138,8 +138,13 @@
       gap: 10px;
       flex-wrap: wrap;
       align-items: flex-end;
-      justify-content: flex-start;
+      justify-content: space-evenly;
       padding-bottom: 12px;
+    }
+    /* En pantallas angostas cada fila puede quedar con un solo campo suelto;
+       ahí se ve mejor alineado a la izquierda que centrado en medio del vacío. */
+    @media (max-width: 900px) {
+      .filtros-row { justify-content: flex-start; }
     }
     .filtros-actions {
       display: flex;
