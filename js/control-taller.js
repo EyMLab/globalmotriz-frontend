@@ -1017,7 +1017,7 @@ const CT = (() => {
     const fmtD = d => d ? new Date(d).toLocaleDateString("es-EC") : "—";
 
     function estadoCobro(d) {
-      if (d.estado_doc === "COBRADO_HISTORICO") return "HISTORICO";
+      if (d.estado_doc === "COBRADO_HISTORICO") return "COBRADO";
       if (d.estado_doc === "DESCARTADO") return "DESCARTADO";
       if (d.estado_doc === "COBRADO" || (parseFloat(d.saldo) === 0 && parseFloat(d.cobrado) > 0)) return "COBRADO";
       if (parseFloat(d.cobrado) > 0 && parseFloat(d.saldo) > 0) return "PARCIAL";
@@ -1028,7 +1028,6 @@ const CT = (() => {
 
     const COLORES_COBRO = {
       COBRADO:    { bg:"#f0fdf4", border:"#22c55e", text:"#16a34a", badge:"#dcfce7" },
-      HISTORICO:  { bg:"#eff6ff", border:"#3b82f6", text:"#2563eb", badge:"#dbeafe" },
       PARCIAL:    { bg:"#fefce8", border:"#f59e0b", text:"#d97706", badge:"#fef9c3" },
       PENDIENTE:  { bg:"#fef2f2", border:"#ef4444", text:"#dc2626", badge:"#fee2e2" },
       DESCARTADO: { bg:"#f9fafb", border:"#d1d5db", text:"#6b7280", badge:"#f3f4f6" },
@@ -1126,14 +1125,12 @@ const CT = (() => {
       if (!res) return;
       const c = res.cards || {};
 
-      // Cards
+      // Cards (los históricos —facturas sin documento de cobranza— se cuentan como Cobrado)
       const histCount = parseInt(c.historico_count) || 0;
       document.getElementById("cc-total").textContent     = (parseInt(c.total)||0) + histCount;
       document.getElementById("cc-cobrado").textContent   = (parseInt(c.cobrado)||0) + histCount;
       document.getElementById("cc-parcial").textContent   = c.parcial ?? "—";
       document.getElementById("cc-pendiente").textContent = c.pendiente ?? "—";
-      const histEl = document.getElementById("cc-historico");
-      if (histEl) histEl.textContent = histCount;
 
       // Totales financieros
       const tc = parseFloat(c.total_cargos)||0;
