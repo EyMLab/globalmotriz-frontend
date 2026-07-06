@@ -501,6 +501,38 @@ const PROV = (() => {
     cargarResumen();
   }
 
+  // ── Limpiar todo el resumen (prioridad + por_abonar) ─
+  async function limpiarResumen() {
+    const filas = document.querySelectorAll("#tbody-resumen tr[data-proveedor]");
+    if (!filas.length) return;
+
+    const { isConfirmed } = await Swal.fire({
+      title: "¿Limpiar todo el resumen?",
+      text: "Se eliminarán todas las prioridades y montos por abonar. Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, limpiar",
+      confirmButtonColor: "#ef4444",
+      cancelButtonText: "Cancelar",
+    });
+    if (!isConfirmed) return;
+
+    let errores = 0;
+    for (const tr of filas) {
+      const provEnc = tr.dataset.proveedor;
+      const referencia = tr.querySelector("[data-campo='referencia']")?.value.trim() || null;
+      const res = await apiFetch(`/proveedores-pagar/resumen/${provEnc}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prioridad: null, por_abonar: null, referencia }),
+      });
+      if (!res || !res.ok) errores++;
+    }
+    if (errores > 0) Swal.fire("Atención", `${errores} filas no se pudieron limpiar.`, "warning");
+    else Swal.fire({ icon: "success", title: "Resumen limpiado", timer: 1400, showConfirmButton: false });
+    cargarResumen();
+  }
+
   // ── Suma conceptos → inp-fijo → recalc disponible ──
   function actualizarTotalFijo() {
     // Solo suma los conceptos que NO están marcados como pagados
@@ -1281,8 +1313,9 @@ const PROV = (() => {
 
     // Resumen
     document.getElementById("btn-filtrar-res")?.addEventListener("click",  cargarResumen);
-    document.getElementById("btn-guardar-todos")?.addEventListener("click", guardarTodos);
-    document.getElementById("btn-pdf-resumen")?.addEventListener("click",   pdfResumen);
+    document.getElementById("btn-guardar-todos")?.addEventListener("click",   guardarTodos);
+    document.getElementById("btn-limpiar-resumen")?.addEventListener("click", limpiarResumen);
+    document.getElementById("btn-pdf-resumen")?.addEventListener("click",     pdfResumen);
     document.getElementById("btn-pdf-prov")?.addEventListener("click",      pdfPorProveedor);
 
     // Costos
