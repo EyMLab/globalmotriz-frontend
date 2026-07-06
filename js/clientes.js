@@ -385,17 +385,18 @@ const CLIE = (() => {
     });
     if (!isConfirmed) return;
 
-    let errores = 0;
-    for (const cb of checks) {
-      const res = await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(cb.dataset.num)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: nuevoEstado }),
-      });
-      if (!res || !res.ok) errores++;
+    Swal.fire({ title: "Actualizando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const numeros = checks.map(c => c.dataset.num);
+    const res = await apiFetch("/clientes-cobrar/documentos/bulk-estado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ numeros, estado: nuevoEstado }),
+    });
+    if (!res || !res.ok) {
+      Swal.fire("Error", "No se pudieron actualizar los documentos.", "error");
+    } else {
+      Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1400, showConfirmButton: false });
     }
-    if (errores) Swal.fire("Atención", `${errores} documentos no se pudieron actualizar.`, "warning");
-    else Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1500, showConfirmButton: false });
     await cargarDocumentos(paginaDoc);
   }
 
@@ -418,17 +419,18 @@ const CLIE = (() => {
     });
     if (!isConfirmed) return;
 
-    let errores = 0;
-    for (const cb of checks) {
-      const res = await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(cb.dataset.num)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado_gestion: estadoElegido || null }),
-      });
-      if (!res || !res.ok) errores++;
+    Swal.fire({ title: "Asignando estado...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const numeros = checks.map(c => c.dataset.num);
+    const res = await apiFetch("/clientes-cobrar/documentos/bulk-estado-gestion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ numeros, estado_gestion: estadoElegido || null }),
+    });
+    if (!res || !res.ok) {
+      Swal.fire("Error", "No se pudo asignar el estado.", "error");
+    } else {
+      Swal.fire({ icon: "success", title: "Estado asignado", timer: 1400, showConfirmButton: false });
     }
-    if (errores) Swal.fire("Atención", `${errores} documentos no se pudieron actualizar.`, "warning");
-    else Swal.fire({ icon: "success", title: "Estado asignado", timer: 1400, showConfirmButton: false });
     await cargarDocumentos(paginaDoc);
   }
 
