@@ -636,7 +636,7 @@ const CT = (() => {
           <td data-col="cliente" class="tc-cliente" title="${cl}">${o.cliente || "—"}</td>
           <td data-col="aseg" class="tc-aseg" title="${as}">${o.aseguradora || "—"}</td>
           <td data-col="usuario">${o.usuario_registro || "—"}</td>
-          <td data-col="factura">${o.numero_factura || "—"}</td>
+          <td data-col="factura">${o.numero_factura ? `<a href="#" onclick="CT.irAFactura('${o.numero_factura}');return false;" style="color:var(--primary);text-decoration:underline;">${o.numero_factura}</a>` : "—"}</td>
           <td data-col="vtotal" class="num-right">${fmtMoney(o.valor_total)}</td>
           <td data-col="obs" class="obs-cell tc-obs" title="${ob}">${o.observacion || ""}</td>
           <td data-col="acciones"><button class="btn-editar" onclick="CT.editarOrden('${o.numero_orden}','${o.localidad}')">✏</button></td>
@@ -790,6 +790,31 @@ const CT = (() => {
       tr.querySelector(".obs-cell").textContent = vals.observacion;
       tr.querySelector(".fecha-salida-env").textContent = fmtFecha(vals.fecha_salida_enviada);
     }
+  }
+
+  // ── Navegación cruzada Órdenes ↔ Facturas ─────────
+  function limpiarFiltrosTexto() {
+    _cardActiva = null;
+    document.getElementById("cards-estado")?.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
+    document.getElementById("cards-estado")?.classList.remove("cards-con-activa");
+    COBRO.resetCard();
+    ["f-orden","f-factura","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = "";
+    });
+    const cbObs = document.getElementById("f-con-obs"); if (cbObs) cbObs.checked = false;
+    msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
+  }
+
+  function irAFactura(numeroFactura) {
+    limpiarFiltrosTexto();
+    document.getElementById("f-factura").value = numeroFactura;
+    document.querySelector('.taller-tab[data-tab="facturas"]')?.click();
+  }
+
+  function irAOrden(numeroOrden) {
+    limpiarFiltrosTexto();
+    document.getElementById("f-orden").value = numeroOrden;
+    document.querySelector('.taller-tab[data-tab="ordenes"]')?.click();
   }
 
   // ── Visibilidad de columnas ───────────────────────
@@ -1014,13 +1039,14 @@ const CT = (() => {
       const p = new URLSearchParams({ page, limit: 100 });
       const f = leerFiltros();
       if (f.localidad)   p.set("localidad",   f.localidad);
+      if (f.orden)       p.set("orden",       f.orden);
       if (f.factura)     p.set("factura",     f.factura);
       if (f.placa)       p.set("placa",       f.placa);
       if (f.cliente)     p.set("cliente",     f.cliente);
       if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
       if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
-      const aseg = msOrdAseg?.getValues();
-      if (aseg?.length) p.set("aseguradora", aseg[0]);
+      const aseg = msOrdAseg?.getValues() || [];
+      if (aseg.length) p.set("aseguradoras_multi", aseg.join(","));
       const tieneOrden = document.getElementById("fc-tiene-orden")?.value;
       if (tieneOrden) p.set("tiene_orden", tieneOrden);
       if (document.getElementById("fc-descartados")?.checked) p.set("incluir_descartados", "1");
@@ -1041,9 +1067,8 @@ const CT = (() => {
 
     async function cargarResumen() {
       try {
-        const f = leerFiltros();
-        const desc = document.getElementById("fc-descartados")?.checked ? "1" : "0";
-        const res = await apiFetch(`/taller/cobranza/resumen?localidad=${encodeURIComponent(f.localidad)}&incluir_descartados=${desc}`).then(r => safeJson(r));
+        const params = buildParams(1);
+        const res = await apiFetch(`/taller/cobranza/resumen?${params}`).then(r => safeJson(r));
         renderResumen(res);
       } catch (e) {
         console.error("Error cobranza resumen:", e);
@@ -1069,7 +1094,7 @@ const CT = (() => {
         const descartado = ec === "DESCARTADO";
         return `<tr style="background:${c.bg};${descartado?'opacity:.6;':''}border-left:3px solid ${c.border};">
           <td><strong>${d.numero_documento||""}</strong></td>
-          <td>${d.numero_orden||'<span style="color:#9ca3af">—</span>'}</td>
+          <td>${d.numero_orden ? `<a href="#" onclick="CT.irAOrden('${d.numero_orden}');return false;" style="color:var(--primary);text-decoration:underline;">${d.numero_orden}</a>` : '<span style="color:#9ca3af">—</span>'}</td>
           <td>${d.centro_costos||""}</td>
           <td class="tc-cliente">${d.cliente||""}</td>
           <td>${d.placa||'<span style="color:#9ca3af">—</span>'}</td>
@@ -1380,5 +1405,5 @@ const CT = (() => {
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { editarOrden };
+  return { editarOrden, irAFactura, irAOrden };
 })();
