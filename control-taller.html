@@ -134,17 +134,26 @@
       gap: 0;
     }
     .filtros-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-evenly;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px 18px;
+      align-items: end;
       padding-bottom: 12px;
     }
-    /* En pantallas angostas cada fila puede quedar con un solo campo suelto;
-       ahí se ve mejor alineado a la izquierda que centrado en medio del vacío. */
     @media (max-width: 900px) {
-      .filtros-row { justify-content: flex-start; }
+      .filtros-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .filtros-row { grid-template-columns: 1fr; }
+    }
+    /* Los campos estiran para llenar su columna de la grilla en vez de quedar angostos con huecos alrededor */
+    .filtros-row .fg select,
+    .filtros-row .fg input[type="text"],
+    .filtros-row .fg input[type="date"],
+    .filtros-row .fg .ms-wrap,
+    .filtros-row .fg .ac-wrap,
+    .filtros-row .fg .ac-wrap input[type="text"] {
+      width: 100%;
     }
     .filtros-actions {
       display: flex;
@@ -748,22 +757,22 @@
         </div>
         <div class="fg">
           <label>N° Orden</label>
-          <input type="text" id="f-orden" placeholder="Ej: 4079" style="width:100px;" />
+          <input type="text" id="f-orden" placeholder="Ej: 4079" />
         </div>
       </div>
       <div class="filtros-row">
         <div class="fg">
           <label>N° Factura</label>
-          <input type="text" id="f-factura" placeholder="Ej: 3240" style="width:100px;" />
+          <input type="text" id="f-factura" placeholder="Ej: 3240" />
         </div>
         <div class="fg">
           <label>Placa</label>
-          <input type="text" id="f-placa" placeholder="Buscar placa..." style="width:115px;" />
+          <input type="text" id="f-placa" placeholder="Buscar placa..." />
         </div>
         <div class="fg">
           <label>Cliente</label>
           <div class="ac-wrap">
-            <input type="text" id="f-cliente" placeholder="Buscar cliente..." autocomplete="off" style="width:160px;" />
+            <input type="text" id="f-cliente" placeholder="Buscar cliente..." autocomplete="off" />
           </div>
         </div>
         <div class="fg">
