@@ -145,6 +145,7 @@ const PROV = (() => {
     const egDrop = document.getElementById("f-estado-gestion-prov")?.value || "";
     return {
       estado:          document.getElementById("f-estado")?.value    || "",
+      numero_documento: document.getElementById("f-numdoc")?.value.trim() || "",
       proveedor:       document.getElementById("f-proveedor")?.value.trim() || "",
       tipo_doc:        document.getElementById("f-tipo")?.value      || "",
       centro_costos:   document.getElementById("f-centro")?.value    || "",
@@ -1328,7 +1329,7 @@ const PROV = (() => {
     });
     document.getElementById("btn-limpiar-prov")?.addEventListener("click", () => {
       ["f-estado","f-centro","f-tipo","f-estado-gestion-prov"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
-      ["f-proveedor","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      ["f-numdoc","f-proveedor","f-desde","f-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       _cardActiva = null;
       document.getElementById("cards-estado-prov")?.classList.remove("cards-con-activa");
       document.querySelectorAll("#cards-estado-prov .estado-card").forEach(b => b.classList.remove("card-activa"));
