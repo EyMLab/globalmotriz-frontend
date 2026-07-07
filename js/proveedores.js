@@ -762,6 +762,20 @@ const PROV = (() => {
                 </div>`).join("")}
             </div>
           </div>` : ""}
+          ${vals.debug_filas?.length ? `
+          <div style="margin-top:10px">
+            <div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
+              Diagnóstico EGAS (${vals.debug_filas.length} fila/s)
+            </div>
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:6px 10px;font-size:11px;color:#1e3a8a;font-family:monospace;word-break:break-all">
+              ${vals.debug_filas.map(f => `
+                <div style="padding:4px 0;border-bottom:1px solid #bfdbfe">
+                  <b>Fila ${f.fila}</b> — Proveedor leído: <b>${f.provRaw}</b><br>
+                  N° Doc leído (col[${f.idxNroDoc}]): <b>${f.numDoc_leido || "(vacío)"}</b><br>
+                  Cols[0-9]: ${f.todas_cols.join(" | ")}
+                </div>`).join("")}
+            </div>
+          </div>` : ""}
         </div>`,
       confirmButtonText: "Entendido",
       confirmButtonColor: "#2B7A9E",
