@@ -882,30 +882,37 @@ const PROV = (() => {
     Swal.fire({ title: "Generando PDF...", didOpen: () => Swal.showLoading() });
     try {
       const { jsPDF } = window.jspdf;
-      const doc    = new jsPDF("p", "mm", "a4");
-      const pageW  = doc.internal.pageSize.getWidth();
-      const pageH  = doc.internal.pageSize.getHeight();
-      const mL = 14; const mR = 14;
-      const boxW   = pageW - mL - mR;
+      const n = _resumenData.proveedores.length;
+
+      // ── Elegir orientación según cantidad de filas ─────────────────────────
+      // Landscape da más ancho (útil para proveedores largos) y en portrait
+      // cabe más alto. Con ≤40 filas usamos portrait; con más, landscape.
+      const orientation = n <= 40 ? "p" : "l";
+      const doc   = new jsPDF(orientation, "mm", "a4");
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const mL = 12; const mR = 12;
+      const boxW  = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
       const priorMap = { "": "—", "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
-      const n = _resumenData.proveedores.length; // número de proveedores
 
-      // ── Auto-escalado: calcular font+padding para caber en 1 hoja ─────────
-      // Header PDF: 28mm  |  KPI strip compacto: 10mm  |  gap: 4mm
-      // Overhead tabla (th + footer): 16mm  |  Margen inferior: 10mm
-      const TOP_USED    = 28 + 10 + 4;  // 42mm
-      const TBL_FIXED   = 16;
-      const BOTTOM_USED = 10;
-      const availableH  = pageH - TOP_USED - TBL_FIXED - BOTTOM_USED;
-      const targetRowH  = availableH / n;
+      // ── Cálculo continuo y exacto de font + padding ────────────────────────
+      // Espacio disponible para la tabla (sin header PDF, KPI strip, footer texto)
+      // Cada fila de autoTable: rowH ≈ fontSize(pt) × 0.3527mm + cellPadding × 2
+      // totalRows = n filas de datos + 1 cabecera + 1 pie
+      const TOP_USED  = 26 + 10 + 4;   // header PDF (26) + KPI strip (10) + gap (4)
+      const FOOT_USED = 7;              // línea "Generado" al pie
+      const availableH = pageH - TOP_USED - FOOT_USED;
+      const totalRows  = n + 2;         // body + header + footer de tabla
+      const rowH = availableH / totalRows;   // altura exacta por fila (mm)
 
-      let fs, pad;
-      if      (targetRowH >= 8)   { fs = 8.5; pad = 2.5; }
-      else if (targetRowH >= 6.5) { fs = 7.5; pad = 2;   }
-      else if (targetRowH >= 5)   { fs = 6.5; pad = 1.5; }
-      else if (targetRowH >= 4)   { fs = 5.5; pad = 1;   }
-      else                         { fs = 5;   pad = 0.8; }
+      // Derivar fontSize y padding a partir de rowH
+      // pad proporcional: rowH * 0.28, pero acotado entre 0.8 y 3.0
+      let pad = Math.min(3.0, Math.max(0.8, rowH * 0.28));
+      // fontSize en pt: lo que queda del espacio tras padding
+      let fs  = Math.min(12, Math.max(7, (rowH - pad * 2) / 0.3527));
+      // Recalcular pad para aprovechar todo el espacio con el fs final
+      pad = Math.min(3.0, Math.max(0.8, (rowH - fs * 0.3527) / 2));
 
       let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Resumen · ${hoyStr}`);
 
@@ -962,14 +969,17 @@ const PROV = (() => {
           { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
         ]],
         showFoot: "lastPage",
-        margin: { left: mL, right: mR, bottom: 8 },
+        margin: { left: mL, right: mR, bottom: FOOT_USED },
         styles: {
           fontSize: fs, cellPadding: pad,
-          lineColor: [226, 232, 240], lineWidth: 0.2, font: "helvetica",
+          minCellHeight: rowH,
+          lineColor: [226, 232, 240], lineWidth: 0.2,
+          font: "helvetica", overflow: "ellipsize",
         },
         headStyles: {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
           fontStyle: "bold", font: "helvetica", fontSize: fs,
+          minCellHeight: rowH,
         },
         bodyStyles: {
           fontStyle: "bold", font: "helvetica",
@@ -977,16 +987,17 @@ const PROV = (() => {
         footStyles: {
           fillColor: [241, 245, 249], textColor: PDF_DARK,
           fontStyle: "bold", font: "helvetica", fontSize: fs,
+          minCellHeight: rowH,
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: "auto", overflow: "ellipsize" }, // Proveedor — nunca wrap
-          2: { cellWidth: 28, overflow: "ellipsize" },     // Referencia — nunca wrap
-          3: { cellWidth: 12, halign: "center" },
-          4: { cellWidth: 30, halign: "right" },
-          5: { cellWidth: 20, halign: "center" },
-          6: { cellWidth: 28, halign: "right" },
+          0: { cellWidth: 9,    halign: "center" },
+          1: { cellWidth: "auto", overflow: "ellipsize" },
+          2: { cellWidth: orientation === "l" ? 36 : 28, overflow: "ellipsize" },
+          3: { cellWidth: 11,   halign: "center" },
+          4: { cellWidth: orientation === "l" ? 34 : 28, halign: "right" },
+          5: { cellWidth: 18,   halign: "center" },
+          6: { cellWidth: orientation === "l" ? 34 : 26, halign: "right" },
         },
         didParseCell: (data) => {
           if (data.section === "body") {
