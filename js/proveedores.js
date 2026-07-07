@@ -952,13 +952,19 @@ const PROV = (() => {
           5: { cellWidth: 20, halign: "center" },
           6: { cellWidth: 28, halign: "right" },
         },
-        // Pintar de rojo suave las filas con prioridad ALTA (valor "3")
         didParseCell: (data) => {
           if (data.section === "body") {
             const prov = _resumenData.proveedores[data.row.index];
-            if (String(prov?.prioridad || "") === "3") {
-              data.cell.styles.fillColor = [254, 226, 226]; // rojo muy suave
-              data.cell.styles.textColor = [127, 29, 29];   // rojo oscuro legible
+            const prior = String(prov?.prioridad || "");
+            if (prior === "3") {
+              data.cell.styles.fillColor = [254, 226, 226]; // ALTA  — rojo suave
+              data.cell.styles.textColor = [127, 29, 29];
+            } else if (prior === "2") {
+              data.cell.styles.fillColor = [254, 249, 195]; // MEDIA — amarillo suave
+              data.cell.styles.textColor = [113, 63, 18];
+            } else if (prior === "1") {
+              data.cell.styles.fillColor = [220, 252, 231]; // BAJA  — verde suave
+              data.cell.styles.textColor = [20, 83, 45];
             }
           }
         },
