@@ -921,20 +921,22 @@ const PROV = (() => {
       y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
 
       // ── 2. Con y real, calcular font+padding exactos ─────────────────────────
-      // Cada fila autoTable ≈ fontSize(pt) × 0.3527mm + cellPadding × 2
-      // Garantizamos que la altura natural de cada fila ≤ targetRowH (no hay wrap)
-      const FOOT_USED  = 6;    // espacio para texto "Generado" al pie
-      const tableAvail = pageH - y - FOOT_USED - 1; // -1mm margen de seguridad
-      const totalRows  = n + 2; // n body + 1 header + 1 footer
+      // autoTable pagina cuando el contenido supera (pageH - margin.bottom).
+      // Para garantizar UNA sola hoja usamos:
+      //   tableAvail = pageH - y - MARGIN_BOTTOM - SAFETY
+      // donde SAFETY da holgura real contra redondeos de jsPDF.
+      const MARGIN_BOTTOM = 10;   // margen inferior que autoTable respeta
+      const SAFETY        = 4;    // buffer extra para redondeos y bordes
+      const tableAvail = pageH - y - MARGIN_BOTTOM - SAFETY;
+      const totalRows  = n + 2;   // n body + 1 header + 1 footer
       const targetRowH = tableAvail / totalRows;
 
-      // fs máximo tal que fs×0.3527 + 2×minPad ≤ targetRowH (minPad=0.6)
-      const PAD_MIN = 0.6;
-      let fs  = Math.min(12, Math.max(6, (targetRowH - PAD_MIN * 2) / 0.3527));
-      // pad llena el espacio sobrante simétricamente, nunca más de 3mm
-      let pad = Math.min(3.0, Math.max(PAD_MIN, (targetRowH - fs * 0.3527) / 2));
-      // Altura real de fila con este fs y pad (≤ targetRowH por construcción)
-      const rowH = fs * 0.3527 + pad * 2;
+      // fs máximo tal que fs×0.3527 + 2×PAD_MIN ≤ targetRowH
+      // → fs = (targetRowH - 2×PAD_MIN) / 0.3527
+      const PAD_MIN = 0.8;
+      let fs  = Math.min(12, Math.max(6.5, (targetRowH - PAD_MIN * 2) / 0.3527));
+      // pad aprovecha el espacio restante simétricamente
+      let pad = Math.min(3.5, Math.max(PAD_MIN, (targetRowH - fs * 0.3527) / 2));
 
       // ── 3. Tabla ─────────────────────────────────────────────────────────────
       const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
@@ -959,8 +961,7 @@ const PROV = (() => {
           { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
         ]],
         showFoot: "lastPage",
-        // margen inferior = FOOT_USED para que autoTable no pagine antes de tiempo
-        margin: { left: mL, right: mR, bottom: FOOT_USED + 1 },
+        margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
         styles: {
           fontSize: fs, cellPadding: pad,
           minCellHeight: targetRowH, // expande filas para llenar la hoja
@@ -1006,10 +1007,9 @@ const PROV = (() => {
         },
       });
 
-      // Fecha de generación al pie (misma hoja)
-      const finalY = doc.lastAutoTable.finalY + 4;
+      // Fecha de generación al pie
       doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...PDF_GRAY);
-      doc.text(`Generado: ${hoyStr}  ·  ${n} proveedores`, pageW - mR, finalY, { align: "right" });
+      doc.text(`Generado: ${hoyStr}  ·  ${n} proveedores`, pageW - mR, pageH - 3, { align: "right" });
 
       doc.save(`resumen_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
       Swal.close();
