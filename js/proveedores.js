@@ -892,27 +892,9 @@ const PROV = (() => {
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
       const priorMap = { "": "—", "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
 
-      // ── Cálculo continuo y exacto de font + padding ────────────────────────
-      // Espacio disponible para la tabla (sin header PDF, KPI strip, footer texto)
-      // Cada fila de autoTable: rowH ≈ fontSize(pt) × 0.3527mm + cellPadding × 2
-      // totalRows = n filas de datos + 1 cabecera + 1 pie
-      const TOP_USED  = 26 + 10 + 4;   // header PDF (26) + KPI strip (10) + gap (4)
-      const FOOT_USED = 7;              // línea "Generado" al pie
-      const availableH = pageH - TOP_USED - FOOT_USED;
-      const totalRows  = n + 2;         // body + header + footer de tabla
-      const rowH = availableH / totalRows;   // altura exacta por fila (mm)
-
-      // Derivar fontSize y padding a partir de rowH
-      // pad proporcional: rowH * 0.28, pero acotado entre 0.8 y 3.0
-      let pad = Math.min(3.0, Math.max(0.8, rowH * 0.28));
-      // fontSize en pt: lo que queda del espacio tras padding
-      let fs  = Math.min(12, Math.max(7, (rowH - pad * 2) / 0.3527));
-      // Recalcular pad para aprovechar todo el espacio con el fs final
-      pad = Math.min(3.0, Math.max(0.8, (rowH - fs * 0.3527) / 2));
-
+      // ── 1. Dibujar header y KPI primero para conocer el y real ──────────────
       let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Resumen · ${hoyStr}`);
 
-      // ── KPI strip compacto (una sola línea, 10mm) ─
       const totalDeudaVal = parseFloat(_resumenData.total_general || 0);
       const conPlanVal    = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar || 0), 0);
       const diferenciaVal = _disponible - conPlanVal;
@@ -922,27 +904,39 @@ const PROV = (() => {
         { label: "CON PLAN DE ABONO",  valor: fmtMoney(conPlanVal),    color: PDF_PRIMARY },
         { label: "DIFERENCIA",         valor: fmtMoney(diferenciaVal), color: diferenciaVal >= 0 ? [21, 128, 61] : [185, 28, 28] },
       ];
-      // Fondo del strip
       doc.setFillColor(241, 245, 249); doc.setDrawColor(210, 220, 230);
       doc.roundedRect(mL, y, boxW, 10, 2, 2, "FD");
       const kpiW = boxW / 4;
       kpis.forEach((k, i) => {
         const cx = mL + i * kpiW + kpiW / 2;
-        // Separadores verticales entre KPIs
         if (i > 0) {
           doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.3);
           doc.line(mL + i * kpiW, y + 1.5, mL + i * kpiW, y + 8.5);
         }
-        // Label pequeño
         doc.setFont("Roboto", "normal"); doc.setFontSize(5.5); doc.setTextColor(...PDF_GRAY);
         doc.text(k.label, cx, y + 3.5, { align: "center" });
-        // Valor en negrita y color
         doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(...k.color);
         doc.text(k.valor, cx, y + 8.5, { align: "center" });
       });
-      y += 14; // 10mm strip + 4mm gap
+      y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
 
-      // ── Tabla proveedores (auto-escalada) ─────────
+      // ── 2. Con y real, calcular font+padding exactos ─────────────────────────
+      // Cada fila autoTable ≈ fontSize(pt) × 0.3527mm + cellPadding × 2
+      // Garantizamos que la altura natural de cada fila ≤ targetRowH (no hay wrap)
+      const FOOT_USED  = 6;    // espacio para texto "Generado" al pie
+      const tableAvail = pageH - y - FOOT_USED - 1; // -1mm margen de seguridad
+      const totalRows  = n + 2; // n body + 1 header + 1 footer
+      const targetRowH = tableAvail / totalRows;
+
+      // fs máximo tal que fs×0.3527 + 2×minPad ≤ targetRowH (minPad=0.6)
+      const PAD_MIN = 0.6;
+      let fs  = Math.min(12, Math.max(6, (targetRowH - PAD_MIN * 2) / 0.3527));
+      // pad llena el espacio sobrante simétricamente, nunca más de 3mm
+      let pad = Math.min(3.0, Math.max(PAD_MIN, (targetRowH - fs * 0.3527) / 2));
+      // Altura real de fila con este fs y pad (≤ targetRowH por construcción)
+      const rowH = fs * 0.3527 + pad * 2;
+
+      // ── 3. Tabla ─────────────────────────────────────────────────────────────
       const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
       const totalAbonar = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar   || 0), 0);
 
@@ -965,31 +959,30 @@ const PROV = (() => {
           { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
         ]],
         showFoot: "lastPage",
-        margin: { left: mL, right: mR, bottom: FOOT_USED },
+        // margen inferior = FOOT_USED para que autoTable no pagine antes de tiempo
+        margin: { left: mL, right: mR, bottom: FOOT_USED + 1 },
         styles: {
           fontSize: fs, cellPadding: pad,
-          minCellHeight: rowH,
+          minCellHeight: targetRowH, // expande filas para llenar la hoja
           lineColor: [226, 232, 240], lineWidth: 0.2,
           font: "helvetica", overflow: "ellipsize",
         },
         headStyles: {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
           fontStyle: "bold", font: "helvetica", fontSize: fs,
-          minCellHeight: rowH,
+          minCellHeight: targetRowH,
         },
-        bodyStyles: {
-          fontStyle: "bold", font: "helvetica",
-        },
+        bodyStyles: { fontStyle: "bold", font: "helvetica" },
         footStyles: {
           fillColor: [241, 245, 249], textColor: PDF_DARK,
           fontStyle: "bold", font: "helvetica", fontSize: fs,
-          minCellHeight: rowH,
+          minCellHeight: targetRowH,
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
           0: { cellWidth: 9,    halign: "center" },
           1: { cellWidth: "auto", overflow: "ellipsize" },
-          2: { cellWidth: 28, overflow: "ellipsize" },
+          2: { cellWidth: 28,   overflow: "ellipsize" },
           3: { cellWidth: 11,   halign: "center" },
           4: { cellWidth: 28,   halign: "right" },
           5: { cellWidth: 18,   halign: "center" },
