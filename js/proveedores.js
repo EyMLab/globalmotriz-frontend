@@ -742,40 +742,87 @@ const PROV = (() => {
             <span style="padding:4px 10px;background:#fef2f2;border-radius:99px;font-size:12px;font-weight:600;color:#b91c1c">
               ${vals.eliminados} eliminado${vals.eliminados !== 1 ? "s" : ""}
             </span>
-            ${vals.filas_omitidas > 0 ? `<span style="padding:4px 10px;background:#fefce8;border-radius:99px;font-size:12px;font-weight:600;color:#92400e">
-              ${vals.filas_omitidas} fila${vals.filas_omitidas !== 1 ? "s" : ""} omitida${vals.filas_omitidas !== 1 ? "s" : ""}
+            ${vals.filas_omitidas > 0 ? `<span title="Ver detalle" style="cursor:pointer;padding:4px 10px;background:#fefce8;border-radius:99px;font-size:12px;font-weight:600;color:#92400e">
+              ⚠ ${vals.filas_omitidas} fila${vals.filas_omitidas !== 1 ? "s" : ""} omitida${vals.filas_omitidas !== 1 ? "s" : ""}
             </span>` : ""}
           </div>
           ${seccionNuevos}
           ${seccionEliminados}
+          ${vals.detalle_omitidas?.length ? `
+          <div style="margin-top:10px">
+            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
+              Filas omitidas (${vals.filas_omitidas})
+            </div>
+            <div style="background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:12px;color:#78350f">
+              ${vals.detalle_omitidas.map(o => `
+                <div style="padding:3px 0;border-bottom:1px solid #fde68a">
+                  <b>Fila ${o.fila}</b> — Proveedor: <b>${o.proveedor || "(vacío)"}</b> — Motivo: ${o.motivo}
+                  ${o.numDoc ? `— Valor leído: <code>${o.numDoc}</code>` : ""}
+                </div>`).join("")}
+            </div>
+          </div>` : ""}
         </div>`,
       confirmButtonText: "Entendido",
       confirmButtonColor: "#2B7A9E",
     });
   }
 
-  // ── Exportar CSV ─────────────────────────────────
-  async function exportCSV() {
+  // ── Exportar Excel ───────────────────────────────
+  async function exportExcel() {
     const f = leerFiltros();
     const qs = new URLSearchParams({ limit: 9999, ...f });
     Object.keys(f).forEach(k => { if (!f[k]) qs.delete(k); });
 
-    const res = await apiFetch(`/proveedores-pagar/documentos?${qs}`);
-    if (!res || !res.ok) return;
-    const data = await safeJson(res);
-    if (!data.documentos?.length) { Swal.fire("Sin datos", "No hay documentos para exportar.", "info"); return; }
+    Swal.fire({ title: "Generando Excel...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-    const cols = ["proveedor","tipo_doc","centro_costos","numero_documento","fecha_emision","saldo","observacion","estado"];
-    const header = cols.join(",");
-    const rows = data.documentos.map(d =>
-      cols.map(c => `"${String(d[c] ?? "").replace(/"/g, '""')}"`).join(",")
-    );
-    const csv = [header, ...rows].join("\n");
-    const a = Object.assign(document.createElement("a"), {
-      href: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
-      download: `proveedores_${new Date().toISOString().slice(0,10)}.csv`,
-    });
-    a.click();
+    const res = await apiFetch(`/proveedores-pagar/documentos?${qs}`);
+    if (!res || !res.ok) { Swal.close(); return; }
+    const data = await safeJson(res);
+    if (!data.documentos?.length) {
+      Swal.fire("Sin datos", "No hay documentos para exportar.", "info");
+      return;
+    }
+
+    const COLS = [
+      { key: "proveedor",        label: "Proveedor"         },
+      { key: "tipo_doc",         label: "Tipo Documento"    },
+      { key: "centro_costos",    label: "Centro de Costos"  },
+      { key: "numero_documento", label: "N° Documento"      },
+      { key: "fecha_emision",    label: "Fecha Emisión"     },
+      { key: "saldo",            label: "Saldo ($)"         },
+      { key: "observacion",      label: "Observación"       },
+      { key: "estado",           label: "Estado"            },
+      { key: "estado_gestion",   label: "Estado Gestión"    },
+      { key: "prioridad",        label: "Prioridad"         },
+      { key: "por_abonar",       label: "Por Abonar ($)"   },
+    ];
+
+    const PRIORIDAD_LABEL = { "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
+
+    const wsData = [
+      COLS.map(c => c.label),
+      ...data.documentos.map(d => COLS.map(c => {
+        if (c.key === "prioridad") return PRIORIDAD_LABEL[String(d[c.key] ?? "")] || "";
+        if (c.key === "saldo" || c.key === "por_abonar") return d[c.key] != null ? Number(d[c.key]) : "";
+        return d[c.key] ?? "";
+      })),
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Anchos de columna
+    ws["!cols"] = [
+      { wch: 40 }, { wch: 22 }, { wch: 18 }, { wch: 22 },
+      { wch: 14 }, { wch: 12 }, { wch: 30 }, { wch: 12 },
+      { wch: 16 }, { wch: 10 }, { wch: 14 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Proveedores");
+    const fecha = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `proveedores_${fecha}.xlsx`);
+
+    Swal.close();
   }
 
   // ═══════════════════════════════════════════════════
@@ -1270,7 +1317,7 @@ const PROV = (() => {
 
     // Eventos toolbar
     document.getElementById("btn-importar-prov")?.addEventListener("click", importar);
-    document.getElementById("btn-export-csv-prov")?.addEventListener("click", exportCSV);
+    document.getElementById("btn-export-xlsx-prov")?.addEventListener("click", exportExcel);
 
     // Eventos filtros documentos
     document.getElementById("btn-filtrar-prov")?.addEventListener("click", () => {
