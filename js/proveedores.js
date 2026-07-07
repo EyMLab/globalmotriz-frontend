@@ -921,22 +921,22 @@ const PROV = (() => {
       y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
 
       // ── 2. Con y real, calcular font+padding exactos ─────────────────────────
-      // autoTable pagina cuando el contenido supera (pageH - margin.bottom).
-      // Para garantizar UNA sola hoja usamos:
-      //   tableAvail = pageH - y - MARGIN_BOTTOM - SAFETY
-      // donde SAFETY da holgura real contra redondeos de jsPDF.
-      const MARGIN_BOTTOM = 10;   // margen inferior que autoTable respeta
-      const SAFETY        = 4;    // buffer extra para redondeos y bordes
+      // Garantía de una sola hoja:
+      //   tableAvail = espacio real para la tabla (con holgura contra redondeos)
+      //   naturalRowH = fs × 0.3527 + 2 × pad  ≤  targetRowH  (siempre)
+      //   minCellHeight = targetRowH  → las filas se expanden para llenar la hoja
+      const MARGIN_BOTTOM = 10;
+      const SAFETY        = 4;
       const tableAvail = pageH - y - MARGIN_BOTTOM - SAFETY;
-      const totalRows  = n + 2;   // n body + 1 header + 1 footer
+      const totalRows  = n + 2;
       const targetRowH = tableAvail / totalRows;
 
-      // fs máximo tal que fs×0.3527 + 2×PAD_MIN ≤ targetRowH
-      // → fs = (targetRowH - 2×PAD_MIN) / 0.3527
-      const PAD_MIN = 0.8;
-      let fs  = Math.min(12, Math.max(6.5, (targetRowH - PAD_MIN * 2) / 0.3527));
-      // pad aprovecha el espacio restante simétricamente
-      let pad = Math.min(3.5, Math.max(PAD_MIN, (targetRowH - fs * 0.3527) / 2));
+      // Padding mínimo absoluto: 0.4mm (permite tablas grandes sin desborde)
+      const PAD_MIN = 0.4;
+      // fs máximo que cabe: fs = (targetRowH - 2×PAD_MIN) / 0.3527
+      let fs  = Math.min(12, Math.max(6, (targetRowH - PAD_MIN * 2) / 0.3527));
+      // pad: usa el espacio sobrante simétrico; siempre ≥ PAD_MIN
+      let pad = Math.max(PAD_MIN, Math.min(3.5, (targetRowH - fs * 0.3527) / 2));
 
       // ── 3. Tabla ─────────────────────────────────────────────────────────────
       const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
@@ -964,7 +964,7 @@ const PROV = (() => {
         margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
         styles: {
           fontSize: fs, cellPadding: pad,
-          minCellHeight: targetRowH, // expande filas para llenar la hoja
+          minCellHeight: targetRowH,
           lineColor: [226, 232, 240], lineWidth: 0.2,
           font: "helvetica", overflow: "ellipsize",
         },
