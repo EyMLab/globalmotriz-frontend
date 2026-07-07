@@ -742,6 +742,9 @@ const PROV = (() => {
             <span style="padding:4px 10px;background:#fef2f2;border-radius:99px;font-size:12px;font-weight:600;color:#b91c1c">
               ${vals.eliminados} eliminado${vals.eliminados !== 1 ? "s" : ""}
             </span>
+            ${vals.filas_omitidas > 0 ? `<span style="padding:4px 10px;background:#fefce8;border-radius:99px;font-size:12px;font-weight:600;color:#92400e">
+              ${vals.filas_omitidas} fila${vals.filas_omitidas !== 1 ? "s" : ""} omitida${vals.filas_omitidas !== 1 ? "s" : ""}
+            </span>` : ""}
           </div>
           ${seccionNuevos}
           ${seccionEliminados}
