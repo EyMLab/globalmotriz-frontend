@@ -79,10 +79,10 @@ const PROV = (() => {
 
   // ── Gestión modal ──────────────────────────────
   function editarGestionClick(btn) {
-    editarGestion(btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "", btn.dataset.eg || "");
+    editarGestion(btn.dataset.num, btn.dataset.prov || "", btn.dataset.obs || "", btn.dataset.resp || "", btn.dataset.eg || "");
   }
 
-  async function editarGestion(numDoc, obsActual, respActual, egActual) {
+  async function editarGestion(numDoc, proveedor, obsActual, respActual, egActual) {
     const optsEG = ["", ...ESTADOS_GESTION_PROV].map(e =>
       `<option value="${e}"${e === egActual ? " selected" : ""}>${e || "— Sin estado —"}</option>`
     ).join("");
@@ -128,6 +128,7 @@ const PROV = (() => {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        proveedor,
         observacion: vals.observacion,
         responsable: vals.responsable,
         estado_gestion: vals.estado_gestion || null,
@@ -275,6 +276,7 @@ const PROV = (() => {
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
               data-num="${d.numero_documento.replace(/"/g,'&quot;')}"
+              data-prov="${(d.proveedor||"").replace(/"/g,'&quot;')}"
               data-estado="${d.estado}"
               onchange="PROV.actualizarBarraSeleccion()"/>
           </td>
@@ -285,7 +287,7 @@ const PROV = (() => {
           <td style="white-space:nowrap">${fmtFecha(d.fecha_emision)}</td>
           <td class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
           <td style="text-align:center;font-size:11px;font-weight:600">${d.estado_gestion || "—"}</td>
-          <td style="text-align:center"><button class="${btnClass}" data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}" data-eg="${(d.estado_gestion||"").replace(/"/g,"&quot;")}" onclick="PROV.editarGestionClick(this)" title="Gestión">${btnIcon}</button></td>
+          <td style="text-align:center"><button class="${btnClass}" data-num="${numEnc}" data-prov="${(d.proveedor||"").replace(/"/g,"&quot;")}" data-obs="${obsEnc}" data-resp="${respEnc}" data-eg="${(d.estado_gestion||"").replace(/"/g,"&quot;")}" onclick="PROV.editarGestionClick(this)" title="Gestión">${btnIcon}</button></td>
         </tr>`;
       }).join("");
       // Resetear barra y check-all al recargar
@@ -338,17 +340,16 @@ const PROV = (() => {
     });
     if (!isConfirmed) return;
 
-    let errores = 0;
-    for (const cb of checks) {
-      const res = await apiFetch(`/proveedores-pagar/documentos/${encodeURIComponent(cb.dataset.num)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: nuevoEstado }),
-      });
-      if (!res || !res.ok) errores++;
-    }
-    if (errores) Swal.fire("Atención", `${errores} documentos no se pudieron actualizar.`, "warning");
-    else Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1500, showConfirmButton: false });
+    Swal.fire({ title: nuevoEstado === "DESCARTADO" ? "Descartando..." : "Reactivando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const pares = checks.map(c => ({ numDoc: c.dataset.num, proveedor: c.dataset.prov || "" }));
+    const res = await apiFetch("/proveedores-pagar/documentos/bulk-estado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pares, estado: nuevoEstado }),
+    });
+    if (!res || !res.ok) { Swal.fire("Error", "No se pudieron actualizar los documentos.", "error"); return; }
+    Swal.fire({ icon: "success", title: nuevoEstado === "DESCARTADO" ? "Descartados" : "Reactivados", timer: 1500, showConfirmButton: false });
     await cargarDocumentos(paginaDoc);
   }
 
@@ -743,39 +744,9 @@ const PROV = (() => {
             <span style="padding:4px 10px;background:#fef2f2;border-radius:99px;font-size:12px;font-weight:600;color:#b91c1c">
               ${vals.eliminados} eliminado${vals.eliminados !== 1 ? "s" : ""}
             </span>
-            ${vals.filas_omitidas > 0 ? `<span title="Ver detalle" style="cursor:pointer;padding:4px 10px;background:#fefce8;border-radius:99px;font-size:12px;font-weight:600;color:#92400e">
-              ⚠ ${vals.filas_omitidas} fila${vals.filas_omitidas !== 1 ? "s" : ""} omitida${vals.filas_omitidas !== 1 ? "s" : ""}
-            </span>` : ""}
           </div>
           ${seccionNuevos}
           ${seccionEliminados}
-          ${vals.detalle_omitidas?.length ? `
-          <div style="margin-top:10px">
-            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
-              Filas omitidas (${vals.filas_omitidas})
-            </div>
-            <div style="background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:12px;color:#78350f">
-              ${vals.detalle_omitidas.map(o => `
-                <div style="padding:3px 0;border-bottom:1px solid #fde68a">
-                  <b>Fila ${o.fila}</b> — Proveedor: <b>${o.proveedor || "(vacío)"}</b> — Motivo: ${o.motivo}
-                  ${o.numDoc ? `— Valor leído: <code>${o.numDoc}</code>` : ""}
-                </div>`).join("")}
-            </div>
-          </div>` : ""}
-          ${vals.debug_filas?.length ? `
-          <div style="margin-top:10px">
-            <div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">
-              Diagnóstico EGAS (${vals.debug_filas.length} fila/s)
-            </div>
-            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:6px 10px;font-size:11px;color:#1e3a8a;font-family:monospace;word-break:break-all">
-              ${vals.debug_filas.map(f => `
-                <div style="padding:4px 0;border-bottom:1px solid #bfdbfe">
-                  <b>Fila ${f.fila}</b> — Proveedor leído: <b>${f.provRaw}</b><br>
-                  N° Doc leído (col[${f.idxNroDoc}]): <b>${f.numDoc_leido || "(vacío)"}</b><br>
-                  Cols[0-9]: ${f.todas_cols.join(" | ")}
-                </div>`).join("")}
-            </div>
-          </div>` : ""}
         </div>`,
       confirmButtonText: "Entendido",
       confirmButtonColor: "#2B7A9E",
