@@ -884,11 +884,7 @@ const PROV = (() => {
       const { jsPDF } = window.jspdf;
       const n = _resumenData.proveedores.length;
 
-      // ── Elegir orientación según cantidad de filas ─────────────────────────
-      // Landscape da más ancho (útil para proveedores largos) y en portrait
-      // cabe más alto. Con ≤40 filas usamos portrait; con más, landscape.
-      const orientation = n <= 40 ? "p" : "l";
-      const doc   = new jsPDF(orientation, "mm", "a4");
+      const doc   = new jsPDF("p", "mm", "a4");
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
       const mL = 12; const mR = 12;
@@ -993,11 +989,11 @@ const PROV = (() => {
         columnStyles: {
           0: { cellWidth: 9,    halign: "center" },
           1: { cellWidth: "auto", overflow: "ellipsize" },
-          2: { cellWidth: orientation === "l" ? 36 : 28, overflow: "ellipsize" },
+          2: { cellWidth: 28, overflow: "ellipsize" },
           3: { cellWidth: 11,   halign: "center" },
-          4: { cellWidth: orientation === "l" ? 34 : 28, halign: "right" },
+          4: { cellWidth: 28,   halign: "right" },
           5: { cellWidth: 18,   halign: "center" },
-          6: { cellWidth: orientation === "l" ? 34 : 26, halign: "right" },
+          6: { cellWidth: 26,   halign: "right" },
         },
         didParseCell: (data) => {
           if (data.section === "body") {
