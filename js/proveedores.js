@@ -886,8 +886,8 @@ const PROV = (() => {
 
       const doc   = new jsPDF("p", "mm", "a4");
       const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const mL = 12; const mR = 12;
+      const pageH = doc.internal.pageSize.getHeight();  // 297mm
+      const mL = 14; const mR = 14;
       const boxW  = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
       const priorMap = { "": "—", "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
@@ -921,21 +921,20 @@ const PROV = (() => {
       y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
 
       // ── 2. Con y real, calcular font+padding exactos ─────────────────────────
-      // Garantía de una sola hoja:
-      //   tableAvail = espacio real para la tabla (con holgura contra redondeos)
-      //   naturalRowH = fs × 0.3527 + 2 × pad  ≤  targetRowH  (siempre)
-      //   minCellHeight = targetRowH  → las filas se expanden para llenar la hoja
-      const MARGIN_BOTTOM = 10;
-      const SAFETY        = 4;
-      const tableAvail = pageH - y - MARGIN_BOTTOM - SAFETY;
-      const totalRows  = n + 2;
+      // Estrategia: llenar TODA la hoja en una sola página.
+      //   targetRowH = espacio disponible / (n filas + cabecera + pie)
+      //   fs  se redondea HACIA ABAJO para que naturalRowH ≤ targetRowH siempre
+      //   pad rellena el espacio sobrante (≥ 0.4mm)
+      //   minCellHeight = targetRowH → filas se expanden hasta cubrir el fondo
+      const MARGIN_BOTTOM = 10;  // margen inferior (texto "Generado")
+      const tableAvail = pageH - y - MARGIN_BOTTOM - 1;  // 1mm holgura float
+      const totalRows  = n + 2;  // n datos + 1 cabecera + 1 pie
       const targetRowH = tableAvail / totalRows;
 
-      // Padding mínimo absoluto: 0.4mm (permite tablas grandes sin desborde)
       const PAD_MIN = 0.4;
-      // fs máximo que cabe: fs = (targetRowH - 2×PAD_MIN) / 0.3527
-      let fs  = Math.min(12, Math.max(6, (targetRowH - PAD_MIN * 2) / 0.3527));
-      // pad: usa el espacio sobrante simétrico; siempre ≥ PAD_MIN
+      // fs redondeado ABAJO garantiza naturalRowH ≤ targetRowH (sin desborde)
+      const rawFs = (targetRowH - PAD_MIN * 2) / 0.3527;
+      let fs  = Math.floor(Math.min(12, Math.max(6, rawFs)) * 100) / 100;
       let pad = Math.max(PAD_MIN, Math.min(3.5, (targetRowH - fs * 0.3527) / 2));
 
       // ── 3. Tabla ─────────────────────────────────────────────────────────────
