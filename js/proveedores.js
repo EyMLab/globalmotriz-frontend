@@ -951,18 +951,17 @@ const PROV = (() => {
 
       doc.autoTable({
         startY: y,
-        head: [["#", "Proveedor", "Referencia", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
+        head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
         body: _resumenData.proveedores.map((r, i) => [
           i + 1,
           r.proveedor,
-          r.referencia || "",
           r.cantidad_docs,
           fmtMoney(r.total_saldo),
           priorMap[String(r.prioridad || "")] || "—",
           fmtMoney(r.por_abonar || 0),
         ]),
         foot: [[
-          { content: "TOTALES", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+          { content: "TOTALES", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
           { content: fmtMoney(totalSaldo),  styles: { fontStyle: "bold", halign: "right" } },
           "",
           { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
@@ -989,13 +988,12 @@ const PROV = (() => {
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 9,    halign: "center" },
+          0: { cellWidth: 9,      halign: "center" },
           1: { cellWidth: "auto", overflow: "ellipsize" },
-          2: { cellWidth: 26,   overflow: "ellipsize" },
-          3: { cellWidth: 12,   halign: "center" },
-          4: { cellWidth: 24,   halign: "right" },
-          5: { cellWidth: 18,   halign: "center" },
-          6: { cellWidth: 24,   halign: "right" },
+          2: { cellWidth: 12,     halign: "center" },
+          3: { cellWidth: 28,     halign: "right" },
+          4: { cellWidth: 20,     halign: "center" },
+          5: { cellWidth: 28,     halign: "right" },
         },
         didParseCell: (data) => {
           if (data.section === "body") {
