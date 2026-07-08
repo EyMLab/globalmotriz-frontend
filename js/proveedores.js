@@ -920,22 +920,30 @@ const PROV = (() => {
       });
       y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
 
-      // ── 2. Con y real, calcular font+padding exactos ─────────────────────────
-      // Estrategia: llenar TODA la hoja en una sola página.
-      //   targetRowH = espacio disponible / (n filas + cabecera + pie)
-      //   fs  se redondea HACIA ABAJO para que naturalRowH ≤ targetRowH siempre
-      //   pad rellena el espacio sobrante (≥ 0.4mm)
-      //   minCellHeight = targetRowH → filas se expanden hasta cubrir el fondo
-      const MARGIN_BOTTOM = 10;  // margen inferior (texto "Generado")
-      const tableAvail = pageH - y - MARGIN_BOTTOM - 1;  // 1mm holgura float
-      const totalRows  = n + 2;  // n datos + 1 cabecera + 1 pie
+// ── 2. Con y real, calcular font+padding exactos ─────────────────────────
+      // Estrategia: llenar TODA la hoja en una sola página, expandiendo las filas.
+      const MARGIN_BOTTOM = 10;
+      const tableAvail = pageH - y - MARGIN_BOTTOM - 1; // 1mm de holgura extra
+      const totalRows  = n + 2; // n datos + cabecera + pie
       const targetRowH = tableAvail / totalRows;
 
-      const PAD_MIN = 0.4;
-      // fs redondeado ABAJO garantiza naturalRowH ≤ targetRowH (sin desborde)
-      const rawFs = (targetRowH - PAD_MIN * 2) / 0.3527;
-      let fs  = Math.floor(Math.min(12, Math.max(6, rawFs)) * 100) / 100;
-      let pad = Math.max(PAD_MIN, Math.min(3.5, (targetRowH - fs * 0.3527) / 2));
+      // jsPDF usa un factor de línea interno aproximado de 1.15 sobre el tamaño de fuente
+      const LINE_HEIGHT_FACTOR = 1.15;
+      const PT_TO_MM = 0.3527;
+
+      // Definimos un padding vertical mínimo para que no toque los bordes superior/inferior
+      const minPadY = 0.6;
+      const maxTextH = targetRowH - (minPadY * 2);
+
+      // Calculamos la fuente máxima permitida tomando en cuenta el line-height
+      const maxRawFs = maxTextH / (PT_TO_MM * LINE_HEIGHT_FACTOR);
+
+      // Limitamos la fuente: mínimo 6pt (legible), máximo 10.5pt (para que no se vea gigante con pocos datos)
+      let fs = Math.floor(Math.max(6, Math.min(10.5, maxRawFs)) * 10) / 10;
+
+      // Calculamos la altura final de la fuente y distribuimos el espacio restante en el padding Y
+      const actualFontH = fs * PT_TO_MM * LINE_HEIGHT_FACTOR;
+      const padY = (targetRowH - actualFontH) / 2;
 
       // ── 3. Tabla ─────────────────────────────────────────────────────────────
       const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
@@ -962,44 +970,45 @@ const PROV = (() => {
         showFoot: "lastPage",
         margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
         styles: {
-          fontSize: fs, cellPadding: pad,
+          fontSize: fs,
+          cellPadding: { top: padY, bottom: padY, left: 1.5, right: 1.5 },
           minCellHeight: targetRowH,
+          valign: 'middle', // Fundamental para que el texto se centre perfectamente en el targetRowH
           lineColor: [226, 232, 240], lineWidth: 0.2,
-          font: "helvetica", overflow: "ellipsize",
+          font: "helvetica",
+          overflow: "ellipsize", // Previene tajantemente los saltos de línea que dañan la altura
         },
         headStyles: {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
-          fontStyle: "bold", font: "helvetica", fontSize: fs,
-          minCellHeight: targetRowH,
+          fontStyle: "bold"
         },
-        bodyStyles: { fontStyle: "bold", font: "helvetica" },
+        bodyStyles: { fontStyle: "bold" },
         footStyles: {
           fillColor: [241, 245, 249], textColor: PDF_DARK,
-          fontStyle: "bold", font: "helvetica", fontSize: fs,
-          minCellHeight: targetRowH,
+          fontStyle: "bold"
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
           0: { cellWidth: 9,    halign: "center" },
           1: { cellWidth: "auto", overflow: "ellipsize" },
-          2: { cellWidth: 28,   overflow: "ellipsize" },
-          3: { cellWidth: 11,   halign: "center" },
-          4: { cellWidth: 28,   halign: "right" },
+          2: { cellWidth: 26,   overflow: "ellipsize" },
+          3: { cellWidth: 12,   halign: "center" },
+          4: { cellWidth: 24,   halign: "right" },
           5: { cellWidth: 18,   halign: "center" },
-          6: { cellWidth: 26,   halign: "right" },
+          6: { cellWidth: 24,   halign: "right" },
         },
         didParseCell: (data) => {
           if (data.section === "body") {
             const prov = _resumenData.proveedores[data.row.index];
             const prior = String(prov?.prioridad || "");
             if (prior === "3") {
-              data.cell.styles.fillColor = [254, 226, 226]; // ALTA  — rojo suave
+              data.cell.styles.fillColor = [254, 226, 226];
               data.cell.styles.textColor = [127, 29, 29];
             } else if (prior === "2") {
-              data.cell.styles.fillColor = [254, 249, 195]; // MEDIA — amarillo suave
+              data.cell.styles.fillColor = [254, 249, 195];
               data.cell.styles.textColor = [113, 63, 18];
             } else if (prior === "1") {
-              data.cell.styles.fillColor = [220, 252, 231]; // BAJA  — verde suave
+              data.cell.styles.fillColor = [220, 252, 231];
               data.cell.styles.textColor = [20, 83, 45];
             }
           }
