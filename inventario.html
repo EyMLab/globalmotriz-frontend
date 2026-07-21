@@ -7,6 +7,7 @@
   <title>Inventario de Insumos</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div id="nav-container"></div>
@@ -20,6 +21,7 @@
       <button class="subtab-btn active" data-tab="inventario">Inventario Actual</button>
       <button class="subtab-btn" data-tab="traslados">Traslados y Ajustes</button>
       <button class="subtab-btn" data-tab="historial-mov">Historial de Movimientos</button>
+      <button class="subtab-btn" data-tab="dashboard">Dashboard</button>
     </div>
 
     <!-- ============================================================
@@ -243,6 +245,65 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         PANEL 4: DASHBOARD (consumo de bodega)
+    ============================================================ -->
+    <div id="panel-dashboard" class="subtab-panel">
+
+      <div class="section-header" style="margin-bottom:16px;">
+        <h2>Dashboard de Consumo</h2>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="bodega-dash-kpi-grid">
+        <div class="bodega-dash-kpi-card">
+          <div class="bodega-dash-kpi-label">Total de entregas</div>
+          <div class="bodega-dash-kpi-value" id="bdk-total-entregas">—</div>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <div class="bodega-dash-kpi-label">Insumos distintos</div>
+          <div class="bodega-dash-kpi-value" id="bdk-insumos-distintos">—</div>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <div class="bodega-dash-kpi-label">Empleados que retiraron</div>
+          <div class="bodega-dash-kpi-value" id="bdk-empleados-distintos">—</div>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <div class="bodega-dash-kpi-label">Día de mayor consumo</div>
+          <div class="bodega-dash-kpi-value" id="bdk-dia-mayor" style="font-size:16px;">—</div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="bodega-dash-charts-grid">
+        <div class="bodega-dash-chart-card">
+          <h3>Insumos Más Consumidos</h3>
+          <div class="bodega-dash-chart-body"><canvas id="chart-top-insumos"></canvas></div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Empleados Que Más Retiran</h3>
+          <div class="bodega-dash-chart-body"><canvas id="chart-top-empleados"></canvas></div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Órdenes de Trabajo Con Más Consumo</h3>
+          <div class="bodega-dash-chart-body"><canvas id="chart-top-ordenes"></canvas></div>
+        </div>
+        <div class="bodega-dash-chart-card bodega-dash-chart-wide">
+          <h3>Consumo por Mes</h3>
+          <div class="bodega-dash-chart-body"><canvas id="chart-consumo-mes"></canvas></div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Consumo por Localidad</h3>
+          <div class="bodega-dash-chart-body"><canvas id="chart-localidad"></canvas></div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Registrado vs. No Registrado</h3>
+          <div class="bodega-dash-chart-body"><canvas id="chart-registrado"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
   <script src="js/api.js"></script>
@@ -251,5 +312,6 @@
   <script src="js/inventario.js"></script>
   <script src="js/historial.js"></script>
   <script src="js/insumos.js"></script>
+  <script src="js/insumos-dashboard.js"></script>
 </body>
 </html>
