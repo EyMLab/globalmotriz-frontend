@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Info Empleados
   // ===============================
   function cargarEmpleados() {
-    const cols = rolUsuario === 'admin' ? 10 : 9;
+    const cols = rolUsuario === 'admin' ? 11 : 10;
     tablaInfo.innerHTML = `<tr><td colspan="${cols}">Cargando...</td></tr>`;
     apiFetch('/empleados')
       .then(res => {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(err => {
         console.error('Error cargando empleados:', err);
-        const colsErr = rolUsuario === 'admin' ? 10 : 9;
+        const colsErr = rolUsuario === 'admin' ? 11 : 10;
         tablaInfo.innerHTML = `<tr><td colspan="${colsErr}">Error al cargar empleados: ${err.message}</td></tr>`;
       });
   }
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnResumen = document.getElementById('btn-resumen-tallas');
     if (btnResumen) btnResumen.style.display = lista.length ? 'inline-block' : 'none';
 
-    const cols = rolUsuario === 'admin' ? 10 : 9;
+    const cols = rolUsuario === 'admin' ? 11 : 10;
     if (!lista.length) {
       tablaInfo.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;">No se encontraron empleados</td></tr>`;
       return;
@@ -132,8 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>${tz}</span><span>${tp}</span><span>${tc}</span><span>${tch}</span>
         </div>`;
 
-      const btnEditar = rolUsuario === 'admin'
-        ? `<td class="user-actions"><button class="btn-obs" onclick="editarInfoEmpleado(${e.id})">Editar</button></td>`
+      const acciones = rolUsuario === 'admin'
+        ? `<td class="user-actions">
+            <button class="btn-obs" onclick="editarInfoEmpleado(${e.id})">Editar</button>
+            <button class="btn-obs" onclick="toggleEmpleado(${e.id}, ${e.activo})">${e.activo ? 'Desactivar' : 'Activar'}</button>
+            <button class="btn-eliminar" onclick="eliminarEmpleado(${e.id})">Eliminar</button>
+          </td>`
         : '';
 
       tr.innerHTML = `
@@ -144,9 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${fechaIng}</td>
         <td><span class="badge-localidad badge-${(e.localidad || 'MATRIZ').toLowerCase()}">${e.localidad || 'MATRIZ'}</span></td>
         <td>${e.cargo}</td>
+        <td>${e.tag_uid || '—'}</td>
         <td style="white-space:nowrap;">${tallas}</td>
         <td><span class="badge ${e.activo ? 'badge-ok' : 'badge-off'}">${e.activo ? 'Activo' : 'Inactivo'}</span></td>
-        ${btnEditar}
+        ${acciones}
       `;
       tablaInfo.appendChild(tr);
     });
@@ -500,6 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
     Swal.fire({
       title: `Editar - ${emp.nombre} ${emp.apellido}`,
       html: `
+        <input id="rrhh-nombre" class="swal2-input" value="${emp.nombre || ''}" placeholder="Nombre">
+        <input id="rrhh-apellido" class="swal2-input" value="${emp.apellido || ''}" placeholder="Apellido">
+        <input id="rrhh-cargo" class="swal2-input" value="${emp.cargo || ''}" placeholder="Cargo">
+        <input id="rrhh-tag" class="swal2-input" value="${emp.tag_uid || ''}" placeholder="UID del TAG">
         <input id="rrhh-cedula" class="swal2-input" value="${emp.cedula || ''}" placeholder="Cedula">
         <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
         <input id="rrhh-fechanac" type="date" class="swal2-input" value="${fechaNacVal}">
@@ -535,7 +544,18 @@ document.addEventListener('DOMContentLoaded', () => {
       showCancelButton: true,
       confirmButtonText: 'Guardar',
       preConfirm: () => {
+        const nombre = document.getElementById('rrhh-nombre').value.trim();
+        const apellido = document.getElementById('rrhh-apellido').value.trim();
+        const cargo = document.getElementById('rrhh-cargo').value.trim();
+        const tag_uid = document.getElementById('rrhh-tag').value.trim();
+
+        if (!nombre || !apellido || !cargo || !tag_uid) {
+          Swal.showValidationMessage('Nombre, apellido, cargo y TAG son obligatorios');
+          return false;
+        }
+
         return {
+          nombre, apellido, cargo, tag_uid,
           cedula:          document.getElementById('rrhh-cedula').value.trim()   || null,
           fecha_nacimiento:document.getElementById('rrhh-fechanac').value        || null,
           fecha_ingreso:   document.getElementById('rrhh-fechaing').value        || null,
@@ -560,6 +580,109 @@ document.addEventListener('DOMContentLoaded', () => {
           cargarEmpleados();
         })
         .catch(() => Swal.fire('Error', 'No se pudo actualizar', 'error'));
+    });
+  };
+
+  // ===============================
+  // Nuevo empleado
+  // ===============================
+  const btnNuevoEmpleado = document.getElementById('btn-nuevo-empleado');
+  if (btnNuevoEmpleado) {
+    btnNuevoEmpleado.onclick = () => {
+      Swal.fire({
+        title: 'Nuevo empleado',
+        html: `
+          <input id="emp-nombre" class="swal2-input" placeholder="Nombre">
+          <input id="emp-apellido" class="swal2-input" placeholder="Apellido">
+          <input id="emp-cedula" class="swal2-input" placeholder="Cédula (opcional)">
+          <input id="emp-cargo" class="swal2-input" placeholder="Cargo">
+          <input id="emp-tag" class="swal2-input" placeholder="UID del TAG">
+          <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de nacimiento</label>
+          <input id="emp-fechanac" type="date" class="swal2-input">
+          <label style="display:block;text-align:left;margin:8px 0 4px 18px;font-size:13px;color:#666;">Fecha de ingreso</label>
+          <input id="emp-fechaing" type="date" class="swal2-input">
+          <select id="emp-localidad" class="swal2-select" style="margin-top:8px;">
+            <option value="MATRIZ">MATRIZ</option>
+            <option value="SUCURSAL">SUCURSAL</option>
+          </select>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        preConfirm: () => {
+          const nombre = document.getElementById('emp-nombre').value.trim();
+          const apellido = document.getElementById('emp-apellido').value.trim();
+          const cargo = document.getElementById('emp-cargo').value.trim();
+          const tag_uid = document.getElementById('emp-tag').value.trim();
+          const cedula = document.getElementById('emp-cedula').value.trim();
+          const fecha_nacimiento = document.getElementById('emp-fechanac').value;
+          const fecha_ingreso = document.getElementById('emp-fechaing').value;
+          const localidad = document.getElementById('emp-localidad').value;
+
+          if (!nombre || !apellido || !cargo || !tag_uid) {
+            Swal.showValidationMessage('Nombre, apellido, cargo y TAG son obligatorios');
+            return false;
+          }
+
+          return { nombre, apellido, cargo, tag_uid, cedula: cedula || null, fecha_nacimiento: fecha_nacimiento || null, fecha_ingreso: fecha_ingreso || null, localidad };
+        }
+      }).then(r => {
+        if (!r.isConfirmed) return;
+
+        apiFetch('/empleados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(r.value)
+        })
+          .then(res => {
+            if (!res.ok) throw new Error();
+            Swal.fire('✅ Empleado creado', '', 'success');
+            cargarEmpleados();
+          })
+          .catch(() => {
+            Swal.fire('Error', 'No se pudo crear el empleado', 'error');
+          });
+      });
+    };
+  }
+
+  // ===============================
+  // Activar / Desactivar
+  // ===============================
+  window.toggleEmpleado = function (id, activo) {
+    apiFetch(`/empleados/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activo: !activo })
+    })
+      .then(() => cargarEmpleados())
+      .catch(() => {
+        Swal.fire('Error', 'No se pudo cambiar estado', 'error');
+      });
+  };
+
+  // ===============================
+  // Eliminar
+  // ===============================
+  window.eliminarEmpleado = function (id) {
+    Swal.fire({
+      title: '¿Eliminar empleado?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+
+      apiFetch(`/empleados/${id}`, {
+        method: 'DELETE'
+      })
+        .then(() => {
+          Swal.fire('✅ Empleado eliminado', '', 'success');
+          cargarEmpleados();
+        })
+        .catch(() => {
+          Swal.fire('Error', 'No se pudo eliminar', 'error');
+        });
     });
   };
 

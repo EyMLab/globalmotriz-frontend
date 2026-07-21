@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Enlaces según rol
     // ============================================
     const enlaceUsuarios = ['admin', 'control'].includes(rol)
-      ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
+      ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Accesos</a>`
       : "";
 
     const enlaceInventario = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceRRHH = ['admin', 'control', 'asistente_contable'].includes(rol)
-      ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">Empleados</a>`
+      ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">Lista de Empleados</a>`
       : "";
 
     const enlaceCumpleanos = ['admin', 'control', 'asistente_contable'].includes(rol)
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>` : ''}
           ${(enlaceAsistencia || enlaceRRHH || enlaceCumpleanos) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleaños'].includes(pagina) ? 'active' : ''}">RRHH <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleaños'].includes(pagina) ? 'active' : ''}">Personal <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceAsistencia}
               ${enlaceRRHH}
