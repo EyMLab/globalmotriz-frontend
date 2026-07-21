@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const LIMITES = { GENERAL: 150, COMBUSTIBLE: 100 };
   let _cajachicaData = [];
   let _cierreData = [];
+  const CC_PAGE_SIZE = 20;
+  let _cajachicaPage = 1;
+  let _cajachicaTotal = 0;
 
   // Helper: formatea "YYYY-MM-DD" sin bug de timezone
   function fmtFecha(str) {
@@ -96,10 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   // CAJA CHICA - Cargar
   // =========================================================
-  const CC_PAGE_SIZE = 20;
-  let _cajachicaPage = 1;
-  let _cajachicaTotal = 0;
-
   async function cargarCajaChica(tipo, page) {
     if (page) _cajachicaPage = page;
     const tbody = document.getElementById('tabla-caja-chica');
