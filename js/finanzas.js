@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.btn-tipo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       tipoCajaActual = btn.dataset.tipo;
-      cargarCajaChica(tipoCajaActual);
+      cargarCajaChica(tipoCajaActual, 1);
     });
   });
 
@@ -96,24 +96,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   // CAJA CHICA - Cargar
   // =========================================================
-  async function cargarCajaChica(tipo) {
+  const CC_PAGE_SIZE = 20;
+  let _cajachicaPage = 1;
+  let _cajachicaTotal = 0;
+
+  async function cargarCajaChica(tipo, page) {
+    if (page) _cajachicaPage = page;
     const tbody = document.getElementById('tabla-caja-chica');
     tbody.innerHTML = `<tr><td colspan="9">Cargando...</td></tr>`;
 
     try {
-      const res = await apiFetch(`/finanzas/caja-chica?tipo=${tipo}`);
+      const res = await apiFetch(`/finanzas/caja-chica?tipo=${tipo}&page=${_cajachicaPage}&pageSize=${CC_PAGE_SIZE}`);
       const data = await safeJson(res);
 
       if (!res.ok) throw new Error(data?.error || 'Error al cargar');
 
       _cajachicaData = data.historial;
+      _cajachicaTotal = data.total || 0;
+      _cajachicaPage = data.page || _cajachicaPage;
       renderBalance(data.acumulado, data.limite);
       poblarFiltroTipoDocCC(_cajachicaData);
       filtrarCajaChica();
+      renderPaginacionCajaChica();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
     }
   }
+
+  function renderPaginacionCajaChica() {
+    const maxPag = Math.max(1, Math.ceil(_cajachicaTotal / CC_PAGE_SIZE));
+    const info = document.getElementById('cc-page-info');
+    const btnPrev = document.getElementById('cc-btn-prev');
+    const btnNext = document.getElementById('cc-btn-next');
+    if (info) info.textContent = `Página ${_cajachicaPage} de ${maxPag} (${_cajachicaTotal} registros)`;
+    if (btnPrev) btnPrev.disabled = _cajachicaPage <= 1;
+    if (btnNext) btnNext.disabled = _cajachicaPage >= maxPag;
+  }
+
+  document.getElementById('cc-btn-prev')?.addEventListener('click', () => {
+    if (_cajachicaPage > 1) cargarCajaChica(tipoCajaActual, _cajachicaPage - 1);
+  });
+  document.getElementById('cc-btn-next')?.addEventListener('click', () => {
+    const maxPag = Math.max(1, Math.ceil(_cajachicaTotal / CC_PAGE_SIZE));
+    if (_cajachicaPage < maxPag) cargarCajaChica(tipoCajaActual, _cajachicaPage + 1);
+  });
 
   // Auto-detectar tipos de documento únicos para el select
   function poblarFiltroTipoDocCC(historial) {
@@ -329,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error al registrar');
       await Swal.fire('Gasto registrado', '', 'success');
-      cargarCajaChica(tipoCajaActual);
+      cargarCajaChica(tipoCajaActual, 1);
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
     }
@@ -376,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
       await Swal.fire('Reposición registrada', '', 'success');
-      cargarCajaChica(tipoCajaActual);
+      cargarCajaChica(tipoCajaActual, 1);
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
     }
@@ -743,7 +769,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================
   window.descargarReporteCajaChica = async function () {
     try {
-      const res = await apiFetch(`/finanzas/caja-chica/reporte?tipo=${tipoCajaActual}`);
+      // 1. Elegir período: el actual (desde la última reposición) o uno anterior
+      const repoRes = await apiFetch(`/finanzas/caja-chica/reposiciones?tipo=${tipoCajaActual}`);
+      const repoData = await safeJson(repoRes);
+      const reposiciones = (repoRes.ok && repoData?.reposiciones) ? repoData.reposiciones : [];
+
+      let reposicionId = '';
+      if (reposiciones.length > 1) {
+        const opciones = reposiciones.map((r, idx) =>
+          `<option value="${idx === 0 ? '' : r.id}">${idx === 0 ? 'Período actual' : 'Período'} — desde ${fmtFecha(r.fecha)}</option>`
+        ).join('');
+
+        const { value: seleccion, isDismissed } = await Swal.fire({
+          title: 'Elegir período a descargar',
+          html: `<select id="cc-select-periodo" class="swal2-select" style="width:100%;">${opciones}</select>`,
+          showCancelButton: true,
+          confirmButtonText: 'Descargar',
+          cancelButtonText: 'Cancelar',
+          preConfirm: () => document.getElementById('cc-select-periodo').value
+        });
+
+        if (isDismissed) return;
+        reposicionId = seleccion || '';
+      }
+
+      const qs = reposicionId
+        ? `?tipo=${tipoCajaActual}&reposicion_id=${reposicionId}`
+        : `?tipo=${tipoCajaActual}`;
+      const res = await apiFetch(`/finanzas/caja-chica/reporte${qs}`);
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error al obtener datos');
 
@@ -761,6 +814,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? fmtFecha(data.fecha_desde)
         : 'Inicio';
       const hoyStr = new Date().toLocaleDateString('es-EC');
+      // Si es un período cerrado (hay una reposición posterior), el rango termina ahí, no hoy
+      const fechaHastaStr = data.es_periodo_cerrado ? fmtFecha(data.fecha_hasta) : hoyStr;
 
       const startY = await construirCabeceraPDF(
         doc,
@@ -788,7 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFont('Roboto', 'bold'); doc.setTextColor(...COLOR_GRAY);
       doc.text('Período:', marginL + 4, startY + 12);
       doc.setFont('Roboto', 'normal'); doc.setTextColor(...COLOR_DARK);
-      doc.text(`${fechaDesde} - ${hoyStr}`, marginL + 22, startY + 12);
+      doc.text(`${fechaDesde} - ${fechaHastaStr}`, marginL + 22, startY + 12);
 
       // Semáforo (3 círculos, top-right del box)
       const r = 3.2;
@@ -884,8 +939,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      const mesActual = new Date().toISOString().slice(0, 7);
-      doc.save(`Caja_Chica_${tipoCajaActual}_${mesActual}.pdf`);
+      const mesPeriodo = data.fecha_desde
+        ? data.fecha_desde.slice(0, 7)
+        : new Date().toISOString().slice(0, 7);
+      doc.save(`Caja_Chica_${tipoCajaActual}_${mesPeriodo}.pdf`);
 
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
