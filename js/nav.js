@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
-      ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Estado del Taller</a>`
+      ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Monitoreo LPR</a>`
       : "";
 
     const enlaceControlTaller = ['admin', 'control', 'asistente_contable'].includes(rol)
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <header class="navbar">
         <div class="nav-left">
           <img src="img/logo.png" alt="Logo" class="logo-header">
-          <span class="nav-title">${pagina === 'Taller' ? 'Estado del Taller' : pagina}</span>
+          <span class="nav-title">${pagina === 'Taller' ? 'Monitoreo LPR' : pagina}</span>
         </div>
 
         <nav class="nav-center nav-links">

@@ -1,0 +1,4 @@
+# VSCode / OS Files
+.vscode/
+.DS_Store
+desktop.ini
