@@ -209,8 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('tabla-caja-chica');
 
     if (esAdmin) document.getElementById('th-edit-cc').textContent = 'Acciones';
+    if (esAdmin) document.getElementById('th-registrado-cc').textContent = 'Registrado';
     if (!historial.length) {
-      tbody.innerHTML = `<tr><td colspan="${esAdmin ? 10 : 9}">Sin registros</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${esAdmin ? 11 : 10}">Sin registros</td></tr>`;
       return;
     }
 
@@ -223,6 +224,9 @@ document.addEventListener('DOMContentLoaded', () => {
              <button class="btn btn-eliminar" style="font-size:11px;padding:4px 8px;" onclick="eliminarCajaChica(${r.id})">Eliminar</button>
            </div>`
         : '';
+      const registradoCell = esAdmin && !esRepo
+        ? `<input type="checkbox" ${r.registrado ? 'checked' : ''} onchange="toggleRegistradoCajaChica(${r.id}, this)">`
+        : '';
       return `<tr style="${esRepo ? 'background:#eff6ff;' : ''}">
         <td>${fecha}</td>
         <td>${esRepo ? '<span class="badge-repo">REPOSICIÓN</span>' : r.tipo_doc}</td>
@@ -233,10 +237,31 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${esRepo ? '—' : '$' + parseFloat(r.monto_base).toFixed(2)}</td>
         <td>${esRepo ? '—' : '$' + parseFloat(r.iva).toFixed(2)}</td>
         <td><strong>$${parseFloat(r.total).toFixed(2)}</strong></td>
+        <td style="text-align:center;">${registradoCell}</td>
         <td>${acciones}</td>
       </tr>`;
     }).join('');
   }
+
+  window.toggleRegistradoCajaChica = async function (id, checkbox) {
+    const nuevoValor = checkbox.checked;
+    checkbox.disabled = true;
+    try {
+      const res = await apiFetch(`/finanzas/caja-chica/${id}/registrado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrado: nuevoValor })
+      });
+      if (!res.ok) throw new Error();
+      const item = _cajachicaData.find(r => r.id === id);
+      if (item) item.registrado = nuevoValor;
+    } catch {
+      checkbox.checked = !nuevoValor;
+      Swal.fire('Error', 'No se pudo actualizar', 'error');
+    } finally {
+      checkbox.disabled = false;
+    }
+  };
 
   // =========================================================
   // CAJA CHICA - Modal Registrar Gasto
