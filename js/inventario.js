@@ -7,6 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================================================
+      SUB-TABS (Inventario Actual / Traslados y Ajustes / Historial de Movimientos)
+  ====================================================== */
+  const subtabBtns = document.querySelectorAll('.subtab-btn[data-tab]');
+  const subtabPanels = document.querySelectorAll('.subtab-panel');
+
+  subtabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+
+      subtabBtns.forEach(b => b.classList.remove('active'));
+      subtabPanels.forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      document.getElementById(`panel-${tab}`)?.classList.add('active');
+    });
+  });
+
+  /* ======================================================
       ESTADO GLOBAL
   ====================================================== */
   const state = {

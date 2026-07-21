@@ -13,81 +13,243 @@
 
   <div class="dashboard-container">
 
-    <div class="filtros insumos" style="margin-bottom:12px;">
-
-      <div class="filtro-grupo">
-        <label for="filtro-q">Buscar (código o nombre):</label>
-        <input type="text" id="filtro-q" placeholder="Ej: INS001 o Lija 80">
-      </div>
-
-      <div class="filtro-grupo">
-        <label for="filtro-tipo">Tipo:</label>
-        <select id="filtro-tipo">
-          <option value="">Todos</option>
-          <option value="STOCK">STOCK</option>
-          <option value="DIRECTO">DIRECTO</option>
-        </select>
-      </div>
-
-      <div class="filtro-grupo">
-        <label for="filtro-estado">Estado:</label>
-        <select id="filtro-estado">
-          <option value="">Todos</option>
-          <option value="red">Rojo</option>
-          <option value="yellow">Amarillo</option>
-          <option value="green">Verde</option>
-        </select>
-      </div>
-
-      <div class="filtro-grupo">
-        <label for="filtro-localidad">Localidad:</label>
-        <select id="filtro-localidad">
-          <option value="">Todas</option>
-          <option value="MATRIZ">MATRIZ</option>
-          <option value="SUCURSAL">SUCURSAL</option>
-        </select>
-      </div>
-
+    <!-- ============================================================
+         SUB-TABS NAV
+    ============================================================ -->
+    <div class="subtabs-nav">
+      <button class="subtab-btn active" data-tab="inventario">Inventario Actual</button>
+      <button class="subtab-btn" data-tab="traslados">Traslados y Ajustes</button>
+      <button class="subtab-btn" data-tab="historial-mov">Historial de Movimientos</button>
     </div>
 
-    <div class="filter-row" style="margin-bottom:15px;">
-      <button id="btnNuevo" type="button" class="btn-obs">Nuevo Insumo</button>
-      
-      <button id="btnTraslado" type="button" class="btn-obs">Traslado</button>
+    <!-- ============================================================
+         PANEL 1: INVENTARIO ACTUAL
+    ============================================================ -->
+    <div id="panel-inventario" class="subtab-panel active">
 
-      <button id="btnImportar" type="button" class="btn-obs">Importar Excel</button>
-      <button id="btnPlantilla" type="button" class="btn-obs">Plantilla</button>
+      <div class="filtros insumos" style="margin-bottom:12px;">
 
-      <button type="button" class="btn-obs" onclick="window.location.href='historial.html'">Historial</button>
+        <div class="filtro-grupo">
+          <label for="filtro-q">Buscar (código o nombre):</label>
+          <input type="text" id="filtro-q" placeholder="Ej: INS001 o Lija 80">
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-tipo">Tipo:</label>
+          <select id="filtro-tipo">
+            <option value="">Todos</option>
+            <option value="STOCK">STOCK</option>
+            <option value="DIRECTO">DIRECTO</option>
+          </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-estado">Estado:</label>
+          <select id="filtro-estado">
+            <option value="">Todos</option>
+            <option value="red">Rojo</option>
+            <option value="yellow">Amarillo</option>
+            <option value="green">Verde</option>
+          </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-localidad">Localidad:</label>
+          <select id="filtro-localidad">
+            <option value="">Todas</option>
+            <option value="MATRIZ">MATRIZ</option>
+            <option value="SUCURSAL">SUCURSAL</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="filter-row" style="margin-bottom:15px;">
+        <button id="btnNuevo" type="button" class="btn-obs">Nuevo Insumo</button>
+
+        <button id="btnTraslado" type="button" class="btn-obs">Traslado</button>
+
+        <button id="btnImportar" type="button" class="btn-obs">Importar Excel</button>
+        <button id="btnPlantilla" type="button" class="btn-obs">Plantilla</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Insumo</th>
+            <th>Tipo</th>
+            <th>Unidad</th>
+            <th>Localidad</th>
+            <th>Stock</th>
+            <th>Mínimo</th>
+            <th>Estado</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaInventario"></tbody>
+      </table>
+
+      <div class="pagination-controls">
+        <button id="btn-prev" type="button">Anterior</button>
+        <span id="page-info">Página 1</span>
+        <button id="btn-next" type="button">Siguiente</button>
+      </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Insumo</th>
-          <th>Tipo</th>
-          <th>Unidad</th>
-          <th>Localidad</th>
-          <th>Stock</th>
-          <th>Mínimo</th>
-          <th>Estado</th>
-          <th class="col-acciones">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tablaInventario"></tbody>
-    </table>
+    <!-- ============================================================
+         PANEL 2: TRASLADOS Y AJUSTES (antes historial.html)
+    ============================================================ -->
+    <div id="panel-traslados" class="subtab-panel">
 
-    <div class="pagination-controls">
-      <button id="btn-prev" type="button">Anterior</button>
-      <span id="page-info">Página 1</span>
-      <button id="btn-next" type="button">Siguiente</button>
+      <div class="filtros insumos">
+        <div class="filtro-grupo">
+          <label>Localidad</label>
+          <select id="h-localidad">
+            <option value="">Todas</option>
+            <option value="MATRIZ">MATRIZ</option>
+            <option value="SUCURSAL">SUCURSAL</option>
+          </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label>Desde</label>
+          <input type="date" id="h-desde">
+        </div>
+
+        <div class="filtro-grupo">
+          <label>Hasta</label>
+          <input type="date" id="h-hasta">
+        </div>
+
+        <div class="filtro-grupo" style="display:flex; align-items:flex-end;">
+          <button id="btn-buscar" class="btn-obs" style="background:#2B7A9E; color:white; border:none; height:42px; width:100%;">
+            Filtrar Movimientos
+          </button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha / Hora</th>
+              <th>Usuario</th>
+              <th>Código</th>
+              <th>Insumo</th>
+              <th>Tipo Movimiento</th>
+              <th>Cant.</th>
+              <th>Localidad</th>
+              <th>Motivo / Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="tablaHistorial">
+            </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-controls">
+        <button id="btn-prev-traslados">Anterior</button>
+        <span id="page-info-traslados">Página 1</span>
+        <button id="btn-next-traslados">Siguiente</button>
+      </div>
     </div>
+
+    <!-- ============================================================
+         PANEL 3: HISTORIAL DE MOVIMIENTOS (antes insumos.html)
+    ============================================================ -->
+    <div id="panel-historial-mov" class="subtab-panel">
+
+      <div class="filtros insumos">
+
+        <div class="filtro-grupo">
+          <label for="filtro-ot">Orden de Trabajo:</label>
+          <input type="text" id="filtro-ot" placeholder="Ej: 12345">
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-insumo">Código / Nombre:</label>
+          <input type="text" id="filtro-insumo" placeholder="Ej: Lija 80">
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-empleado">Empleado:</label>
+          <select id="filtro-empleado">
+            <option value="">Todos</option>
+            </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-localidad-consumo">Localidad:</label>
+          <select id="filtro-localidad-consumo">
+            <option value="">Todas</option>
+            <option value="MATRIZ">MATRIZ</option>
+            <option value="SUCURSAL">SUCURSAL</option>
+          </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="filtro-registrado">Estado:</label>
+          <select id="filtro-registrado">
+            <option value="">Todos</option>
+            <option value="registrados">Registrados</option>
+            <option value="no-registrados">No registrados</option>
+          </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="fecha-desde">Desde:</label>
+          <input type="date" id="fecha-desde">
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="fecha-hasta">Hasta:</label>
+          <input type="date" id="fecha-hasta">
+        </div>
+
+        <div class="filtro-grupo" style="display: flex; align-items: flex-end;">
+          <button id="btn-descargar-excel" class="btn-primary" style="height: 38px; cursor: pointer;">
+            Descargar Excel
+          </button>
+        </div>
+
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>OT</th>
+            <th>Empleado</th>
+            <th>Código</th>
+            <th>Insumo</th>
+            <th>Tipo</th>
+            <th>Cant</th>
+            <th>Unidad</th>
+            <th>Fecha</th>
+            <th>Localidad</th>
+            <th>Registrado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody id="tabla-insumos"></tbody>
+      </table>
+
+      <div class="pagination-controls">
+        <button id="btn-prev-consumo">Anterior</button>
+        <span id="page-info-consumo">Página 1</span>
+        <button id="btn-next-consumo">Siguiente</button>
+      </div>
+    </div>
+
   </div>
 
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/inventario.js"></script>
+  <script src="js/historial.js"></script>
+  <script src="js/insumos.js"></script>
 </body>
 </html>

@@ -14,9 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const tbody = document.getElementById('tablaHistorial');
-  const btnPrev = document.getElementById('btn-prev');
-  const btnNext = document.getElementById('btn-next');
-  const pageInfo = document.getElementById('page-info');
+  const btnPrev = document.getElementById('btn-prev-traslados');
+  const btnNext = document.getElementById('btn-next-traslados');
+  const pageInfo = document.getElementById('page-info-traslados');
   const btnBuscar = document.getElementById('btn-buscar');
 
   const hoy = new Date().toISOString().split('T')[0];

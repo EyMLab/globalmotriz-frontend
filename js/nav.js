@@ -70,12 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Usuarios</a>`
       : "";
 
-    const enlaceInsumos = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
-      ? `<a href="insumos.html" class="${pagina === 'Insumos' ? 'active' : ''}">Insumos</a>`
-      : "";
-
     const enlaceInventario = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
-      ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Inventario</a>`
+      ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Bodega</a>`
       : "";
 
     const enlaceCompras = ['admin', 'control', 'bodega'].includes(rol)
@@ -135,14 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
 
         <nav class="nav-center nav-links">
-          ${(enlaceInsumos || enlaceInventario) ? `
-          <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Insumos','Inventario'].includes(pagina) ? 'active' : ''}">Bodega <span class="nav-arrow">&#9662;</span></button>
-            <div class="nav-dropdown-menu">
-              ${enlaceInsumos}
-              ${enlaceInventario}
-            </div>
-          </div>` : ''}
+          ${enlaceInventario}
           ${(enlaceCompras || enlaceCotizaciones) ? `
           <div class="nav-dropdown">
             <button class="nav-dropdown-btn ${['Compras','Cotizaciones'].includes(pagina) ? 'active' : ''}">Repuestos <span class="nav-arrow">&#9662;</span></button>

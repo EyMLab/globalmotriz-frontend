@@ -14,18 +14,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const filtroOT = document.getElementById('filtro-ot');
   const filtroInsumo = document.getElementById('filtro-insumo');
-  const filtroLocalidad = document.getElementById('filtro-localidad');
+  const filtroLocalidad = document.getElementById('filtro-localidad-consumo');
   const filtroRegistrado = document.getElementById('filtro-registrado');
   const filtroEmpleado = document.getElementById('filtro-empleado');
   const fechaDesde = document.getElementById('fecha-desde');
   const fechaHasta = document.getElementById('fecha-hasta');
-  
+
   // Botón de reporte
   const btnExcel = document.getElementById('btn-descargar-excel');
 
-  const btnPrev = document.getElementById('btn-prev');
-  const btnNext = document.getElementById('btn-next');
-  const pageInfo = document.getElementById('page-info');
+  const btnPrev = document.getElementById('btn-prev-consumo');
+  const btnNext = document.getElementById('btn-next-consumo');
+  const pageInfo = document.getElementById('page-info-consumo');
 
   // =========================
   // Estado
