@@ -135,21 +135,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
 
         <nav class="nav-center nav-links">
-          ${(enlaceInsumos || enlaceInventario || enlaceCompras) ? `
+          ${(enlaceInsumos || enlaceInventario) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Insumos','Inventario','Compras'].includes(pagina) ? 'active' : ''}">Bodega <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Insumos','Inventario'].includes(pagina) ? 'active' : ''}">Bodega <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceInsumos}
               ${enlaceInventario}
+            </div>
+          </div>` : ''}
+          ${(enlaceCompras || enlaceCotizaciones) ? `
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn ${['Compras','Cotizaciones'].includes(pagina) ? 'active' : ''}">Repuestos <span class="nav-arrow">&#9662;</span></button>
+            <div class="nav-dropdown-menu">
+              ${enlaceCotizaciones}
               ${enlaceCompras}
             </div>
           </div>` : ''}
-          ${(enlaceFacturas || enlaceCotizaciones) ? `
+          ${enlaceFacturas ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Facturas','Cotizaciones'].includes(pagina) ? 'active' : ''}">Ventas <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Facturas'].includes(pagina) ? 'active' : ''}">Ventas <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceFacturas}
-              ${enlaceCotizaciones}
             </div>
           </div>` : ''}
           ${(enlaceLPR || enlaceControlTaller) ? `
