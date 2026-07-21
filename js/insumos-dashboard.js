@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderChartConsumoMes(data.porMes || []);
       renderChartLocalidad(data.porLocalidad || []);
       renderChartRegistrado(data.porRegistrado || []);
+      renderTablaInactividad(data.empleadosInactivos || []);
 
     } catch {
       Swal.fire('Error', 'No se pudo cargar el dashboard de consumo', 'error');
@@ -216,6 +217,40 @@ document.addEventListener('DOMContentLoaded', () => {
         plugins: { legend: { position: 'bottom' } }
       }
     });
+  }
+
+  function renderTablaInactividad(items) {
+    const tbody = document.getElementById('tabla-inactividad');
+    if (!tbody) return;
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">Sin empleados activos</td></tr>';
+      return;
+    }
+
+    const hoy = new Date();
+
+    tbody.innerHTML = items.map((e, idx) => {
+      const nombreCompleto = `${e.nombre || ''} ${e.apellido || ''}`.trim() || 'Sin nombre';
+
+      let ultimaTexto = 'Nunca';
+      let diasTexto = 'Nunca ha registrado';
+      let diasColor = '#dc2626';
+
+      if (e.ultima_fecha) {
+        const dias = Math.floor((hoy - new Date(e.ultima_fecha)) / 86400000);
+        ultimaTexto = fmtFecha(e.ultima_fecha.slice(0, 10));
+        diasTexto = `${dias} día${dias === 1 ? '' : 's'}`;
+        diasColor = dias > 30 ? '#dc2626' : '#1e3a5f';
+      }
+
+      return `<tr>
+        <td style="text-align:center;color:#6b7280;font-weight:500;">${idx + 1}</td>
+        <td>${nombreCompleto}</td>
+        <td>${e.cargo || '—'}</td>
+        <td>${ultimaTexto}</td>
+        <td style="font-weight:600;color:${diasColor};">${diasTexto}</td>
+      </tr>`;
+    }).join('');
   }
 
 });
