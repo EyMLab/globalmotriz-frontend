@@ -107,11 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceProveedores = ['admin', 'control'].includes(rol)
-      ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas x Pagar</a>`
+      ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas por Pagar</a>`
       : "";
 
     const enlaceClientes = ['admin', 'control'].includes(rol)
-      ? `<a href="clientes.html" class="${pagina === 'Clientes' ? 'active' : ''}">Cuentas x Cobrar</a>`
+      ? `<a href="clientes.html" class="${pagina === 'Clientes' ? 'active' : ''}">Cuentas por Cobrar</a>`
       : "";
 
 
@@ -153,13 +153,13 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${enlaceCumpleanos}
             </div>
           </div>` : ''}
-          ${enlaceFinanzas}
-          ${(enlaceProveedores || enlaceClientes) ? `
+          ${(enlaceFinanzas || enlaceProveedores || enlaceClientes) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Proveedores','Clientes'].includes(pagina) ? 'active' : ''}">Contabilidad <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Finanzas','Proveedores','Clientes'].includes(pagina) ? 'active' : ''}">Finanzas <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
-              ${enlaceProveedores}
               ${enlaceClientes}
+              ${enlaceFinanzas}
+              ${enlaceProveedores}
             </div>
           </div>` : ''}
           ${enlaceUsuarios}
