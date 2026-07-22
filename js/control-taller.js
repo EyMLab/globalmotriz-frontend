@@ -636,7 +636,7 @@ const CT = (() => {
           <td data-col="cliente" class="tc-cliente" title="${cl}">${o.cliente || "—"}</td>
           <td data-col="aseg" class="tc-aseg" title="${as}">${o.aseguradora || "—"}</td>
           <td data-col="usuario">${o.usuario_registro || "—"}</td>
-          <td data-col="factura">${o.numero_factura ? `<a href="#" onclick="CT.irAFactura('${o.numero_factura}');return false;" style="color:var(--primary);text-decoration:underline;">${o.numero_factura}</a>` : "—"}</td>
+          <td data-col="factura">${o.numero_factura || "—"}</td>
           <td data-col="vtotal" class="num-right">${fmtMoney(o.valor_total)}</td>
           <td data-col="obs" class="obs-cell tc-obs" title="${ob}">${o.observacion || ""}</td>
           <td data-col="acciones"><button class="btn-editar" onclick="CT.editarOrden('${o.numero_orden}','${o.localidad}')">✏</button></td>
@@ -792,29 +792,16 @@ const CT = (() => {
     }
   }
 
-  // ── Navegación cruzada Órdenes ↔ Facturas ─────────
+  // ── Limpiar filtros de texto/fecha ─────────
   function limpiarFiltrosTexto() {
     _cardActiva = null;
     document.getElementById("cards-estado")?.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
     document.getElementById("cards-estado")?.classList.remove("cards-con-activa");
-    COBRO.resetCard();
     ["f-orden","f-factura","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = "";
     });
     const cbObs = document.getElementById("f-con-obs"); if (cbObs) cbObs.checked = false;
     msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
-  }
-
-  function irAFactura(numeroFactura) {
-    limpiarFiltrosTexto();
-    document.getElementById("f-factura").value = numeroFactura;
-    document.querySelector('.taller-tab[data-tab="facturas"]')?.click();
-  }
-
-  function irAOrden(numeroOrden) {
-    limpiarFiltrosTexto();
-    document.getElementById("f-orden").value = numeroOrden;
-    document.querySelector('.taller-tab[data-tab="ordenes"]')?.click();
   }
 
   // ── Visibilidad de columnas ───────────────────────
@@ -1001,293 +988,7 @@ const CT = (() => {
     if      (tab === "ordenes")        cargarOrdenes(1);
     else if (tab === "dashboard")      DASH.cargar();
     else if (tab === "resumen")        cargarResumen();
-    else if (tab === "facturas")       COBRO.cargar(1);
-    else if (tab === "dash-facturas")  COBRO.cargarResumen();
   }
-
-  // ═══════════════════════════════════════════════════
-  // MÓDULO COBRANZA
-  // ═══════════════════════════════════════════════════
-  const COBRO = (() => {
-    let pag = 1, totalPag = 1;
-    let _cardCobro = null;
-    let chartEstado, chartAseg, chartAntiguedad;
-
-    const fmtM = v => "$" + (parseFloat(v)||0).toLocaleString("es-EC",{minimumFractionDigits:2,maximumFractionDigits:2});
-    const fmtD = d => d ? new Date(d).toLocaleDateString("es-EC") : "—";
-
-    function estadoCobro(d) {
-      if (d.estado_doc === "COBRADO_HISTORICO") return "COBRADO";
-      if (d.estado_doc === "DESCARTADO") return "DESCARTADO";
-      if (d.estado_doc === "COBRADO" || (parseFloat(d.saldo) === 0 && parseFloat(d.cobrado) > 0)) return "COBRADO";
-      if (parseFloat(d.cobrado) > 0 && parseFloat(d.saldo) > 0) return "PARCIAL";
-      if (parseFloat(d.saldo) > 0) return "PENDIENTE";
-      if (parseFloat(d.cargos) === 0 && parseFloat(d.saldo) === 0) return "COBRADO";
-      return "SIN_INFO";
-    }
-
-    const COLORES_COBRO = {
-      COBRADO:    { bg:"#f0fdf4", border:"#22c55e", text:"#16a34a", badge:"#dcfce7" },
-      PARCIAL:    { bg:"#fefce8", border:"#f59e0b", text:"#d97706", badge:"#fef9c3" },
-      PENDIENTE:  { bg:"#fef2f2", border:"#ef4444", text:"#dc2626", badge:"#fee2e2" },
-      DESCARTADO: { bg:"#f9fafb", border:"#d1d5db", text:"#6b7280", badge:"#f3f4f6" },
-      SIN_INFO:   { bg:"#fff",    border:"#e5e7eb", text:"#9ca3af", badge:"#f3f4f6" },
-    };
-
-    function buildParams(page) {
-      const p = new URLSearchParams({ page, limit: 100 });
-      const f = leerFiltros();
-      if (f.localidad)   p.set("localidad",   f.localidad);
-      if (f.orden)       p.set("orden",       f.orden);
-      if (f.factura)     p.set("factura",     f.factura);
-      if (f.placa)       p.set("placa",       f.placa);
-      if (f.cliente)     p.set("cliente",     f.cliente);
-      if (f.fecha_desde) p.set("fecha_desde", f.fecha_desde);
-      if (f.fecha_hasta) p.set("fecha_hasta", f.fecha_hasta);
-      const aseg = msOrdAseg?.getValues() || [];
-      if (aseg.length) p.set("aseguradoras_multi", aseg.join(","));
-      const tieneOrden = document.getElementById("fc-tiene-orden")?.value;
-      if (tieneOrden) p.set("tiene_orden", tieneOrden);
-      if (document.getElementById("fc-descartados")?.checked) p.set("incluir_descartados", "1");
-      if (_cardCobro && _cardCobro !== "TOTAL") p.set("estado_cobro", _cardCobro);
-      return p;
-    }
-
-    async function cargar(page = 1) {
-      pag = page;
-      const params = buildParams(page);
-      try {
-        const dataRes = await apiFetch(`/taller/cobranza?${params}`).then(r => safeJson(r));
-        renderTabla(dataRes);
-      } catch (e) {
-        console.error("Error cobranza tabla:", e);
-      }
-    }
-
-    async function cargarResumen() {
-      try {
-        const params = buildParams(1);
-        const res = await apiFetch(`/taller/cobranza/resumen?${params}`).then(r => safeJson(r));
-        renderResumen(res);
-      } catch (e) {
-        console.error("Error cobranza resumen:", e);
-      }
-    }
-
-    function renderTabla(data) {
-      const tbody = document.getElementById("tbody-cobranza");
-      const count = document.getElementById("cobro-tabla-count");
-      const docs = data?.documentos || [];
-      if (!docs.length) {
-        tbody.innerHTML = `<tr><td colspan="14" class="empty-cell" style="padding:40px;">Sin documentos</td></tr>`;
-        count.textContent = "0 documentos";
-        document.getElementById("pag-cobranza").innerHTML = "";
-        return;
-      }
-      totalPag = data.totalPaginas || 1;
-      count.textContent = `${data.total} documentos · Página ${data.pagina} de ${totalPag}`;
-
-      function renderRow(d) {
-        const ec = estadoCobro(d);
-        const c = COLORES_COBRO[ec] || COLORES_COBRO.SIN_INFO;
-        const descartado = ec === "DESCARTADO";
-        return `<tr style="background:${c.bg};${descartado?'opacity:.6;':''}border-left:3px solid ${c.border};">
-          <td><strong>${d.numero_documento||""}</strong></td>
-          <td>${d.numero_orden ? `<a href="#" onclick="CT.irAOrden('${d.numero_orden}');return false;" style="color:var(--primary);text-decoration:underline;">${d.numero_orden}</a>` : '<span style="color:#9ca3af">—</span>'}</td>
-          <td>${d.centro_costos||""}</td>
-          <td class="tc-cliente">${d.cliente||""}</td>
-          <td>${d.placa||'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="tc-aseg">${d.aseguradora||'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="num-right">${fmtM(d.cargos)}</td>
-          <td class="num-right" style="color:${c.text}">${fmtM(d.cobrado)}</td>
-          <td class="num-right">${fmtM(d.retencion)}</td>
-          <td class="num-right">${fmtM(d.n_credito)}</td>
-          <td class="num-right" style="font-weight:700;color:${c.text}">${fmtM(d.saldo)}</td>
-          <td>${fmtD(d.fecha_emision)}</td>
-          <td class="num-right" style="color:${(d.dias||0)>90?'#dc2626':(d.dias||0)>30?'#d97706':'inherit'}">${d.dias??'—'}</td>
-          <td><span style="padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;color:${c.text};background:${c.badge}">${ec}</span></td>
-        </tr>`;
-      }
-      tbody.innerHTML = docs.map(renderRow).join("");
-
-      // Paginación
-      const pagEl = document.getElementById("pag-cobranza");
-      if (totalPag <= 1) { pagEl.innerHTML = ""; return; }
-      pagEl.innerHTML = `
-        <button class="btn-sm btn-sm-sec" ${pag<=1?'disabled':''} id="cobro-prev">← Anterior</button>
-        <span style="font-size:12px;color:var(--text-light)">Pág ${pag} de ${totalPag}</span>
-        <button class="btn-sm btn-sm-sec" ${pag>=totalPag?'disabled':''} id="cobro-next">Siguiente →</button>`;
-      document.getElementById("cobro-prev")?.addEventListener("click", () => cargar(pag - 1));
-      document.getElementById("cobro-next")?.addEventListener("click", () => cargar(pag + 1));
-    }
-
-    function renderResumen(res) {
-      if (!res) return;
-      const c = res.cards || {};
-
-      // Cards (los históricos —facturas sin documento de cobranza— se cuentan como Cobrado)
-      const histCount = parseInt(c.historico_count) || 0;
-      document.getElementById("cc-total").textContent     = (parseInt(c.total)||0) + histCount;
-      document.getElementById("cc-cobrado").textContent   = (parseInt(c.cobrado)||0) + histCount;
-      document.getElementById("cc-parcial").textContent   = c.parcial ?? "—";
-      document.getElementById("cc-pendiente").textContent = c.pendiente ?? "—";
-
-      // Totales financieros
-      const tc = parseFloat(c.total_cargos)||0;
-      const tb = parseFloat(c.total_cobrado)||0;
-      const pct = tc > 0 ? ((tb / tc) * 100).toFixed(1) : "0.0";
-      document.getElementById("cf-cargos").textContent    = fmtM(c.total_cargos);
-      document.getElementById("cf-cobrado").textContent   = fmtM(c.total_cobrado);
-      document.getElementById("cf-retencion").textContent = fmtM(c.total_retencion);
-      document.getElementById("cf-ncredito").textContent  = fmtM(c.total_n_credito);
-      document.getElementById("cf-saldo").textContent     = fmtM(c.total_saldo);
-      document.getElementById("cf-pct").textContent       = pct + "%";
-
-      renderCharts(res);
-    }
-
-    function renderCharts(res) {
-      const c = res.cards || {};
-
-      // Donut: estado de cobro
-      if (chartEstado) chartEstado.destroy();
-      const ctxE = document.getElementById("chart-cobro-estado");
-      if (ctxE) {
-        chartEstado = new Chart(ctxE, {
-          type: "doughnut",
-          data: {
-            labels: ["Cobrado", "Parcial", "Pendiente"],
-            datasets: [{
-              data: [parseInt(c.cobrado)||0, parseInt(c.parcial)||0, parseInt(c.pendiente)||0],
-              backgroundColor: ["#22c55e","#f59e0b","#ef4444"],
-              borderWidth: 1,
-            }],
-          },
-          options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom",labels:{font:{size:11}}}} },
-        });
-      }
-
-      // Barras: saldo por aseguradora
-      if (chartAseg) chartAseg.destroy();
-      const ctxA = document.getElementById("chart-cobro-aseg");
-      const aseg = res.por_aseguradora || [];
-      if (ctxA && aseg.length) {
-        chartAseg = new Chart(ctxA, {
-          type: "bar",
-          data: {
-            labels: aseg.map(a => {
-              const lbl = a.aseguradora || "(sin aseg.)";
-              return lbl.length > 25 ? lbl.slice(0,22)+"…" : lbl;
-            }),
-            datasets: [{
-              label: "Saldo Pendiente",
-              data: aseg.map(a => parseFloat(a.saldo_pendiente)||0),
-              backgroundColor: "rgba(239,68,68,.7)",
-              borderColor: "#ef4444",
-              borderWidth: 1,
-            }],
-          },
-          options: {
-            indexAxis: "y", responsive:true, maintainAspectRatio:false,
-            plugins:{legend:{display:false}},
-            scales:{x:{ticks:{callback:v=>"$"+v.toLocaleString("es-EC")}}},
-          },
-        });
-      }
-
-      // Barras: antigüedad
-      if (chartAntiguedad) chartAntiguedad.destroy();
-      const ctxAnt = document.getElementById("chart-cobro-antiguedad");
-      const ant = res.antiguedad || {};
-      if (ctxAnt) {
-        chartAntiguedad = new Chart(ctxAnt, {
-          type: "bar",
-          data: {
-            labels: ["> 90 días", "31-90 días", "1-30 días", "Al día"],
-            datasets: [{
-              label: "Saldo",
-              data: [
-                parseFloat(ant.monto_mas_90)||0,
-                parseFloat(ant.monto_31_90)||0,
-                parseFloat(ant.monto_1_30)||0,
-                parseFloat(ant.monto_al_dia)||0,
-              ],
-              backgroundColor: ["#ef4444","#f59e0b","#fbbf24","#86efac"],
-              borderWidth: 1,
-            }],
-          },
-          options: {
-            responsive:true, maintainAspectRatio:false,
-            plugins:{legend:{display:false}},
-            scales:{y:{ticks:{callback:v=>"$"+v.toLocaleString("es-EC")}}},
-          },
-        });
-      }
-    }
-
-    async function exportarExcel() {
-      const btn = document.getElementById("btn-export-cobranza");
-      if (!btn) return;
-      btn.disabled = true; btn.textContent = "⏳ Generando...";
-      try {
-        const params = buildParams(1);
-        params.delete("page"); params.delete("limit");
-        const token = localStorage.getItem("token");
-        const url = `${API_BASE_URL}/taller/cobranza/exportar?${params}`;
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-        if (!res.ok) throw new Error("Error del servidor");
-        const blob = await res.blob();
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `cobranza-taller-${new Date().toISOString().slice(0,10)}.xlsx`;
-        a.click();
-      } catch (e) {
-        Swal.fire("Error", "No se pudo generar el Excel de cobranza.", "error");
-      } finally {
-        btn.disabled = false; btn.textContent = "⬇ Excel Cobranza";
-      }
-    }
-
-    function switchToFacturasTab() {
-      document.querySelectorAll(".taller-tab").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".taller-tab-panel").forEach(p => p.classList.remove("active"));
-      const tabBtn = document.querySelector('.taller-tab[data-tab="facturas"]');
-      if (tabBtn) tabBtn.classList.add("active");
-      document.getElementById("panel-facturas")?.classList.add("active");
-    }
-
-    function initEvents() {
-      document.getElementById("cobro-cards")?.addEventListener("click", e => {
-        const btn = e.target.closest("[data-cobro-card]");
-        if (!btn) return;
-        const val = btn.dataset.cobroCard;
-        if (_cardCobro === val) {
-          _cardCobro = null;
-          btn.classList.remove("card-activa");
-          document.getElementById("cobro-cards").classList.remove("cards-con-activa");
-        } else {
-          _cardCobro = val;
-          document.getElementById("cobro-cards").querySelectorAll("[data-cobro-card]").forEach(b => b.classList.remove("card-activa"));
-          btn.classList.add("card-activa");
-          document.getElementById("cobro-cards").classList.add("cards-con-activa");
-        }
-        switchToFacturasTab();
-        cargar(1);
-      });
-
-      document.getElementById("fc-tiene-orden")?.addEventListener("change", () => cargar(1));
-      document.getElementById("fc-descartados")?.addEventListener("change", () => cargar(1));
-      document.getElementById("btn-export-cobranza")?.addEventListener("click", exportarExcel);
-    }
-
-    function resetCard() {
-      _cardCobro = null;
-      document.getElementById("cobro-cards")?.querySelectorAll("[data-cobro-card]").forEach(b => b.classList.remove("card-activa"));
-      document.getElementById("cobro-cards")?.classList.remove("cards-con-activa");
-    }
-
-    return { cargar, cargarResumen, initEvents, resetCard };
-  })();
 
   // ── Init ──────────────────────────────────────────
   function init() {
@@ -1301,8 +1002,6 @@ const CT = (() => {
         if (btn.dataset.tab === "resumen")        cargarResumen();
         if (btn.dataset.tab === "dashboard")      DASH.cargar();
         if (btn.dataset.tab === "ordenes")        cargarOrdenes(1);
-        if (btn.dataset.tab === "facturas")       COBRO.cargar(1);
-        if (btn.dataset.tab === "dash-facturas")  COBRO.cargarResumen();
       });
     });
 
@@ -1321,7 +1020,6 @@ const CT = (() => {
       _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
-      COBRO.resetCard();
       recargarTabActiva();
     });
 
@@ -1330,7 +1028,6 @@ const CT = (() => {
       _cardActiva = null;
       document.getElementById("cards-estado").querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.getElementById("cards-estado").classList.remove("cards-con-activa");
-      COBRO.resetCard();
       document.getElementById("f-localidad").value = "";
       ["f-orden","f-factura","f-placa","f-cliente","f-desde","f-hasta"].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = "";
@@ -1339,7 +1036,6 @@ const CT = (() => {
       msOrdEstado?.clear(); msOrdAseg?.clear(); msOrdProceso?.clear();
       cargarFiltros("");
       cargarCards("");
-      COBRO.cargarResumen();
       recargarTabActiva();
     });
 
@@ -1348,7 +1044,6 @@ const CT = (() => {
       const val = e.target.value;
       cargarFiltros(val);
       cargarCards(val);
-      COBRO.cargarResumen();
       recargarTabActiva();
     });
 
@@ -1390,17 +1085,13 @@ const CT = (() => {
       });
     });
 
-    // Cobranza events
-    COBRO.initEvents();
-
     // Carga inicial
     cargarFiltros();
     cargarCards();
-    COBRO.cargarResumen();
     cargarOrdenes(1);
   }
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { editarOrden, irAFactura, irAOrden };
+  return { editarOrden };
 })();

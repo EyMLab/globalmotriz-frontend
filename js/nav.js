@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : "";
 
     const enlaceControlTaller = ['admin', 'control'].includes(rol)
-      ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Control Taller</a>`
+      ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Órdenes de Trabajo</a>`
       : "";
 
     const enlaceAsistencia = rol === 'admin'

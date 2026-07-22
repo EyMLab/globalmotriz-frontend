@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/png" href="img/logo.png" />
-  <title>Control Taller</title>
+  <title>Órdenes de Trabajo</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -39,9 +39,6 @@
     .ec-interno   { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
     .ec-garantia  { background: #fefce8; color: #713f12; border-color: #fde68a; }
     .ec-empleado  { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
-
-    /* ── Tarjetas de resumen de cobranza (menos tarjetas: que llenen la fila) ── */
-    #cobro-cards .estado-card { flex: 1 1 200px; max-width: none; }
 
     /* ── Indicador total (dentro del import-box) ───── */
     .total-indicador {
@@ -707,28 +704,10 @@
     <button class="estado-card ec-empleado"  data-card="EMPLEADO"  ><div class="ec-num" id="c-empleado">—</div>  <div class="ec-lbl">Empleado</div></button>
   </div>
 
-  <!-- ── Tarjetas / botones de filtro rápido — FACTURAS ───── -->
-  <div class="taller-estados" id="cobro-cards" style="border-top:2px solid var(--border-subtle);padding-top:12px;">
-    <button class="estado-card" style="background:#eff6ff;color:#0369a1;border-color:#bae6fd;" data-cobro-card="TOTAL">
-      <div class="ec-num" id="cc-total">—</div><div class="ec-lbl">Total Fact.</div>
-    </button>
-    <button class="estado-card" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;" data-cobro-card="COBRADO">
-      <div class="ec-num" id="cc-cobrado">—</div><div class="ec-lbl">Cobrado</div>
-    </button>
-    <button class="estado-card" style="background:#fefce8;color:#d97706;border-color:#fde68a;" data-cobro-card="PARCIAL">
-      <div class="ec-num" id="cc-parcial">—</div><div class="ec-lbl">Parcial</div>
-    </button>
-    <button class="estado-card" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;" data-cobro-card="PENDIENTE">
-      <div class="ec-num" id="cc-pendiente">—</div><div class="ec-lbl">Pendiente</div>
-    </button>
-  </div>
-
   <!-- ── Tabs ─────────────────────────────────── -->
   <div class="taller-tabs">
     <button class="taller-tab active" data-tab="ordenes">Órdenes</button>
     <button class="taller-tab"        data-tab="dashboard">Dashboard Órdenes</button>
-    <button class="taller-tab"        data-tab="facturas">Facturas</button>
-    <button class="taller-tab"        data-tab="dash-facturas">Dashboard Facturas</button>
     <button class="taller-tab"        data-tab="resumen">Resumen (tabla)</button>
   </div>
 
@@ -1026,94 +1005,6 @@
 
     </div>
   </div><!-- /panel-resumen -->
-
-  <!-- ═══════════════════════ TAB FACTURAS ══════════════════════ -->
-  <div class="taller-tab-panel" id="panel-facturas">
-
-    <!-- Filtros extra facturas -->
-    <div class="filtros-taller" style="flex-direction:row;align-items:center;flex-wrap:wrap;gap:14px;">
-      <div class="fg">
-        <label>Tiene Orden</label>
-        <select id="fc-tiene-orden">
-          <option value="">Todos</option>
-          <option value="SI">Sí</option>
-          <option value="NO">No</option>
-        </select>
-      </div>
-      <label class="check-obs-label">
-        <input type="checkbox" id="fc-descartados" />
-        Incluir descartados
-      </label>
-      <div style="flex:1;"></div>
-      <button class="btn-sm" id="btn-export-cobranza">⬇ Excel Cobranza</button>
-    </div>
-
-    <!-- Tabla facturas -->
-    <div class="tabla-taller-wrap">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:12px;color:var(--text-light);" id="cobro-tabla-count"></span>
-      </div>
-      <table class="tabla-taller" id="tabla-cobranza">
-        <thead>
-          <tr>
-            <th>N° Factura</th>
-            <th>N° Orden</th>
-            <th>Localidad</th>
-            <th>Cliente</th>
-            <th>Placa</th>
-            <th>Aseguradora</th>
-            <th class="num-right">Cargos</th>
-            <th class="num-right">Cobrado</th>
-            <th class="num-right">Retención</th>
-            <th class="num-right">N/C</th>
-            <th class="num-right">Saldo</th>
-            <th>F. Emisión</th>
-            <th class="num-right">Días</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-cobranza">
-          <tr><td colspan="14" class="empty-cell" style="padding:40px;">Seleccione la pestaña para cargar datos</td></tr>
-        </tbody>
-      </table>
-      <div class="pag-controls" id="pag-cobranza"></div>
-    </div>
-
-  </div><!-- /panel-facturas -->
-
-  <!-- ═══════════════════════ TAB DASHBOARD FACTURAS ══════════════════════ -->
-  <div class="taller-tab-panel" id="panel-dash-facturas">
-
-    <!-- Totales financieros de cobranza -->
-    <div class="resumen-card" style="margin-bottom:18px;">
-      <h3>Totales de Cobranza</h3>
-      <div class="fin-grid" id="cobro-fin-grid">
-        <div class="fin-item"><div class="fin-num" id="cf-cargos">—</div><div class="fin-lbl">Total Cargos</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-cobrado" style="color:#16a34a">—</div><div class="fin-lbl">Cobrado</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-retencion" style="color:#7c3aed">—</div><div class="fin-lbl">Retenciones</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-ncredito" style="color:#0891b2">—</div><div class="fin-lbl">N/Crédito</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-saldo" style="color:#dc2626">—</div><div class="fin-lbl">Saldo Pendiente</div></div>
-        <div class="fin-item"><div class="fin-num" id="cf-pct" style="color:#16a34a">—</div><div class="fin-lbl">% Cobrado</div></div>
-      </div>
-    </div>
-
-    <!-- Gráficas de cobranza -->
-    <div class="dash-grid">
-      <div class="dash-chart-card">
-        <h3>Estado de Cobro</h3>
-        <div class="dash-chart-body"><canvas id="chart-cobro-estado"></canvas></div>
-      </div>
-      <div class="dash-chart-card">
-        <h3>Saldo Pendiente por Aseguradora</h3>
-        <div class="dash-chart-body"><canvas id="chart-cobro-aseg"></canvas></div>
-      </div>
-      <div class="dash-chart-card">
-        <h3>Antigüedad del Saldo</h3>
-        <div class="dash-chart-body"><canvas id="chart-cobro-antiguedad"></canvas></div>
-      </div>
-    </div>
-
-  </div><!-- /panel-dash-facturas -->
 
 </div><!-- /dashboard-container -->
 
