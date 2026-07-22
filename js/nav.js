@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Asistente contable solo puede ver Finanzas, RRHH, Cumpleanos y ControlTaller
-    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños' && pagina !== 'ControlTaller') {
+    // Asistente contable solo puede ver Finanzas, RRHH y Cumpleanos
+    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños') {
       window.location.href = 'finanzas.html';
       return;
     }
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Monitoreo LPR</a>`
       : "";
 
-    const enlaceControlTaller = ['admin', 'control', 'asistente_contable'].includes(rol)
+    const enlaceControlTaller = ['admin', 'control'].includes(rol)
       ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Control Taller</a>`
       : "";
 
