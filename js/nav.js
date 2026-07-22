@@ -102,10 +102,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleaños' ? 'active' : ''}">Cumpleaños</a>`
       : "";
 
-    const enlaceFacturas = ['admin', 'control'].includes(rol)
-      ? `<a href="dashboard.html" class="${pagina === 'Facturas' ? 'active' : ''}">Facturas</a>`
-      : "";
-
     const enlaceFinanzas = ['admin', 'control', 'asistente_contable'].includes(rol)
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
@@ -138,13 +134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="nav-dropdown-menu">
               ${enlaceCotizaciones}
               ${enlaceCompras}
-            </div>
-          </div>` : ''}
-          ${enlaceFacturas ? `
-          <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Facturas'].includes(pagina) ? 'active' : ''}">Ventas <span class="nav-arrow">&#9662;</span></button>
-            <div class="nav-dropdown-menu">
-              ${enlaceFacturas}
             </div>
           </div>` : ''}
           ${(enlaceLPR || enlaceControlTaller) ? `

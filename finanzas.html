@@ -34,6 +34,7 @@
       <button class="subtab-btn" data-tab="cierre-caja">Cierre de Caja</button>
       <button class="subtab-btn" data-tab="deducibles">Deducibles</button>
       <button class="subtab-btn" data-tab="facturas-anuladas">Facturas Anuladas</button>
+      <button class="subtab-btn" data-tab="facturas">Facturas</button>
     </div>
 
     <!-- ============================================================
@@ -308,6 +309,85 @@
 
     </div>
 
+    <!-- ============================================================
+         PANEL 5: FACTURAS (registro fotográfico, antes dashboard.html)
+    ============================================================ -->
+    <div id="panel-facturas" class="subtab-panel">
+
+      <div id="loader-facturas" class="loader-overlay" style="display:none;">
+        <div class="loader"></div>
+        <p>Cargando datos...</p>
+      </div>
+
+      <div id="contenido-facturas" style="display:none;">
+        <!-- Filtros -->
+        <div class="filtros facturas">
+          <div class="filtro-grupo">
+            <label for="filtro-asesor">Asesor:</label>
+            <select id="filtro-asesor"><option value="">Todos</option></select>
+          </div>
+          <div class="filtro-grupo">
+            <label for="filtro-modo">Modo de Pago:</label>
+            <select id="filtro-modo"><option value="">Todos</option></select>
+          </div>
+          <div class="filtro-grupo">
+            <label for="filtro-localidad">Localidad:</label>
+            <select id="filtro-localidad"><option value="">Todos</option></select>
+          </div>
+          <div class="filtro-grupo">
+            <label for="fecha-desde">Desde:</label>
+            <input type="date" id="fecha-desde">
+          </div>
+          <div class="filtro-grupo">
+            <label for="fecha-hasta">Hasta:</label>
+            <input type="date" id="fecha-hasta">
+          </div>
+          <div class="filtro-grupo">
+            <label for="filtro-registrado">Registradas:</label>
+            <select id="filtro-registrado">
+              <option value="">Todas</option>
+              <option value="registradas">Registradas</option>
+              <option value="no-registradas">No registradas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Asesor</th>
+              <th>Modo de Pago</th>
+              <th>Localidad</th>
+              <th>Fecha</th>
+              <th>Imagen</th>
+              <th>Registrado</th>
+              <th>Observaciones</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-facturas"></tbody>
+        </table>
+
+        <!-- Paginación -->
+        <div class="pagination-controls">
+          <button id="btn-prev">Anterior</button>
+          <span id="page-info">Página 1</span>
+          <button id="btn-next">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Modal imagen -->
+      <div id="modal-imagen" class="modal">
+        <div class="zoom-container">
+          <span class="cerrar" onclick="cerrarModal()">&times;</span>
+          <img class="modal-contenido" id="imagen-modal" alt="Factura ampliada">
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
   <!-- JS -->
@@ -315,6 +395,7 @@
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/finanzas.js"></script>
+  <script src="js/finanzas-facturas.js"></script>
 
 </body>
 </html>
