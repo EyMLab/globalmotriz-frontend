@@ -17,28 +17,30 @@
       margin-bottom: 20px;
     }
     .estado-card {
-      flex: 1 1 110px;
+      flex: 1 1 100px;
+      min-width: 90px;
       max-width: 160px;
       border-radius: var(--r-lg);
-      padding: 14px 12px;
+      padding: 10px 12px;
       text-align: center;
       font-weight: 700;
+      background: var(--white);
       box-shadow: var(--shadow-card);
-      border: 1px solid transparent;
+      border: 2px solid var(--border-subtle);
     }
-    .estado-card .ec-num { font-size: 28px; line-height: 1; }
-    .estado-card .ec-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-top: 5px; opacity: .8; font-weight: 600; }
-    .ec-abierto   { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-    .ec-terminado { background: #fef9c3; color: #713f12; border-color: #fef08a; }
-    .ec-facturado { background: #dcfce7; color: #14532d; border-color: #bbf7d0; }
-    .ec-anulado   { background: #ede9fe; color: #4c1d95; border-color: #ddd6fe; }
-    .ec-svc       { background: #dbeafe; color: #1e3a8a; border-color: #bfdbfe; }
-    .ec-poranular { background: #fff7ed; color: #7c2d12; border-color: #fed7aa; }
-    .ec-deducible { background: #f5f3ff; color: #5b21b6; border-color: #c4b5fd; }
-    .ec-santiago  { background: #f0fdfa; color: #134e4a; border-color: #5eead4; }
-    .ec-interno   { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
-    .ec-garantia  { background: #fefce8; color: #713f12; border-color: #fde68a; }
-    .ec-empleado  { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+    .estado-card .ec-num { font-size: 24px; font-weight: 800; line-height: 1; }
+    .estado-card .ec-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; margin-top: 5px; opacity: .8; font-weight: 600; }
+    .ec-abierto   { color: #991b1b; border-color: #fecaca; }
+    .ec-terminado { color: #713f12; border-color: #fef08a; }
+    .ec-facturado { color: #14532d; border-color: #bbf7d0; }
+    .ec-anulado   { color: #4c1d95; border-color: #ddd6fe; }
+    .ec-svc       { color: #1e3a8a; border-color: #bfdbfe; }
+    .ec-poranular { color: #7c2d12; border-color: #fed7aa; }
+    .ec-deducible { color: #5b21b6; border-color: #c4b5fd; }
+    .ec-santiago  { color: #134e4a; border-color: #5eead4; }
+    .ec-interno   { color: #9d174d; border-color: #fbcfe8; }
+    .ec-garantia  { color: #713f12; border-color: #fde68a; }
+    .ec-empleado  { color: #065f46; border-color: #6ee7b7; }
 
     /* ── Indicador total (dentro del import-box) ───── */
     .total-indicador {

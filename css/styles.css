@@ -826,15 +826,6 @@ table input[type="checkbox"] {
   border-radius: 4px;
 }
 
-table.usuarios-table th {
-  text-transform: uppercase;
-  font-size: 13px;
-}
-
-table.usuarios-table td {
-  vertical-align: middle;
-  font-size: 14px;
-}
 
 /* ====================================================================== 
    7) MODALES
@@ -2480,3 +2471,18 @@ div.swal2-backdrop-show {
     grid-template-columns: 1fr;
   }
 }
+
+/* ======================================================================
+   16) TABLA ESTÁNDAR — header oscuro unificado para todas las tablas
+   de datos del sistema (antes cada módulo tenía su propio estilo).
+   Se declara al final del archivo y con selector table.tabla-estandar
+   a propósito, para que gane con seguridad sobre reglas que dependen
+   de un contenedor ancestro (ej. ".modal-vehiculo table th" en LPR).
+====================================================================== */
+.tabla-estandar-wrap { overflow-x: auto; border-radius: var(--r-md); box-shadow: var(--shadow-card); border: 1px solid var(--border-subtle); }
+table.tabla-estandar { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 0; }
+table.tabla-estandar th { background: var(--primary-dark); color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; vertical-align: middle; }
+table.tabla-estandar td { padding: 6px 10px; border-bottom: 1px solid var(--border-subtle); white-space: nowrap; color: var(--text); font-family: var(--font-main); font-size: 13px; text-align: left; vertical-align: middle; }
+table.tabla-estandar tbody tr:last-child td { border-bottom: none; }
+table.tabla-estandar tbody tr:hover td { background: #f1f5f9; }
+table.tabla-estandar .num-right { text-align: right; font-variant-numeric: tabular-nums; }

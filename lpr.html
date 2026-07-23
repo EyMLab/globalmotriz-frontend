@@ -108,7 +108,8 @@
         <button id="btn-filtrar-salidas" class="btn-nav">Filtrar</button>
       </div>
 
-      <table>
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar">
         <thead>
           <tr>
             <th>Placa</th>
@@ -119,6 +120,7 @@
         </thead>
         <tbody id="tabla-salidas"></tbody>
       </table>
+      </div>
 
       <div class="pagination-controls">
         <button id="salidas-prev">◀</button>
@@ -157,16 +159,18 @@
         </button>
       </div>
 
-      <table style="width: 100%; border-collapse: collapse;">
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar">
         <thead>
-          <tr style="background: #f1f1f1; text-align: left;">
-            <th style="padding: 8px;">Placa</th>
-            <th style="padding: 8px;">Descripción</th>
-            <th style="padding: 8px; text-align: center;">Acción</th>
+          <tr>
+            <th>Placa</th>
+            <th>Descripción</th>
+            <th style="text-align: center;">Acción</th>
           </tr>
         </thead>
         <tbody id="tabla-internos-body"></tbody>
       </table>
+      </div>
     </div>
   </div>
 
