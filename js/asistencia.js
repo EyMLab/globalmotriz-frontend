@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const data = await safeJson(res);
   if (data.rol !== 'admin') {
-    window.location.href = 'dashboard.html';
+    window.location.href = 'inventario.html';
     return;
   }
 

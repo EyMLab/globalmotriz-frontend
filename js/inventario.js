@@ -83,9 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
       state.esAsesor = data.rol === 'asesor';
 
       // Seguridad Frontend: Si no tiene rol válido, fuera
+      // (no se puede redirigir a esta misma página — usamos finanzas.html,
+      // que nav.js reencaminará correctamente según el rol real)
       if (!state.esAdmin && !state.esControl && !state.esBodega && !state.esAsesor) {
         Swal.fire('Acceso denegado', 'No tienes permiso para Inventario', 'error');
-        window.location.href = 'dashboard.html';
+        window.location.href = 'finanzas.html';
         return;
       }
 

@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!state.esAdmin && !state.esControl && !state.esBodega && !state.esAsesor) {
         Swal.fire('Acceso denegado', '', 'error');
-        window.location.href = 'dashboard.html';
+        window.location.href = 'inventario.html';
         return;
       }
 

@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!['admin', 'control', 'asistente_contable'].includes(data.rol)) {
         Swal.fire('Acceso denegado', 'No tienes permisos para este modulo', 'error');
-        return window.location.href = 'dashboard.html';
+        return window.location.href = 'inventario.html';
       }
       rolUsuario = data.rol;
       inicializarAnios();

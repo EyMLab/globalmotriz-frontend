@@ -125,7 +125,7 @@ form.addEventListener('submit', async function (e) {
       bodega:             'inventario.html',
       asesor:             'inventario.html'
     };
-    window.location.href = destinos[data.rol] || 'dashboard.html';
+    window.location.href = destinos[data.rol] || 'inventario.html';
   } catch (error) {
     console.error('❌ Error en login:', error);
     mostrarError(error.message || 'Error de conexión con el servidor');

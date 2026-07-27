@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (data.rol !== 'admin' && data.rol !== 'control') {
         Swal.fire('Acceso denegado', 'Solo admin puede acceder a Usuarios', 'error');
-        return window.location.href = 'dashboard.html';
+        return window.location.href = 'inventario.html';
       }
       window._rolUsuario = data.rol;
       if (data.rol === 'control') {

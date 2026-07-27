@@ -25,12 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Detectar página actual (match exacto por nombre de archivo)
     // ============================================
     const PAGINA_POR_ARCHIVO = {
-      'dashboard':      'Facturas',
       'usuarios':       'Usuarios',
       'finanzas':       'Finanzas',
-      'insumos':        'Insumos',
       'inventario':     'Inventario',
-      'historial':      'Inventario',     // sub-página de inventario
       'compras':        'Compras',
       'cotizaciones':   'Cotizaciones',
       'control-taller': 'ControlTaller',
@@ -43,11 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
-    const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Facturas';
+    const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Inventario';
 
     // Bloqueo si intenta acceder a Proveedores o Clientes sin ser admin ni control
     if (!['admin', 'control'].includes(rol) && (pagina === 'Proveedores' || pagina === 'Clientes')) {
-      window.location.href = 'dashboard.html';
+      window.location.href = 'inventario.html';
       return;
     }
 
