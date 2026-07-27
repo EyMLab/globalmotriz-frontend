@@ -21,16 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await safeJson(res);
-      if (data.rol !== 'admin' && data.rol !== 'control') {
-        Swal.fire('Acceso denegado', 'Solo admin puede acceder a Usuarios', 'error');
+      if (data.rol !== 'admin') {
+        Swal.fire('Acceso denegado', 'Solo admin puede acceder a Accesos', 'error');
         return window.location.href = 'inventario.html';
-      }
-      window._rolUsuario = data.rol;
-      if (data.rol === 'control') {
-        btnNuevoUsuario.style.display = 'none';
-        document.querySelectorAll('th:last-child').forEach(th => {
-          if (th.textContent.trim() === 'Acciones') th.style.display = 'none';
-        });
       }
 
       cargarUsuarios();
@@ -64,20 +57,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const esControl = window._rolUsuario === 'control';
     usuarios.forEach(u => {
       const tr = document.createElement('tr');
-
-      const acciones = esControl ? '' : `
-          <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
-          <button class="btn-obs" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">Clave</button>
-          <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>`;
 
       tr.innerHTML = `
         <td>${u.usuario}</td>
         <td>${u.rol.toUpperCase()}</td>
         <td>${u.localidad}</td>
-        ${esControl ? '' : `<td class="user-actions">${acciones}</td>`}
+        <td class="user-actions">
+          <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
+          <button class="btn-obs" onclick="cambiarClaveUsuario(${u.id}, '${u.usuario}')">Clave</button>
+          <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>
+        </td>
       `;
 
       tablaUsuarios.appendChild(tr);

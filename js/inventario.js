@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
 
     if (!items || items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="${state.esAsesor ? 8 : 9}" style="text-align:center;">Sin resultados</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${(state.esAsesor || state.esControl) ? 8 : 9}" style="text-align:center;">Sin resultados</td></tr>`;
       return;
     }
 
@@ -240,8 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <td style="${colorStyle}">${item.estado.toUpperCase()}</td>
       `;
 
-      // Columna Acciones (Solo si NO es asesor)
-      if (!state.esAsesor) {
+      // Columna Acciones (Solo si NO es asesor ni control — control es de solo lectura en Bodega)
+      if (!state.esAsesor && !state.esControl) {
         html += `
           <td class="user-actions">
             <button class="btn-obs" onclick="modalEditar('${item.codigo}','${item.localidad}')" title="Editar">

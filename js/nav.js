@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
     // Enlaces según rol
     // ============================================
-    const enlaceUsuarios = ['admin', 'control'].includes(rol)
+    const enlaceUsuarios = rol === 'admin'
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Accesos</a>`
       : "";
 
