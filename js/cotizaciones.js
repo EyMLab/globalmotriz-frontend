@@ -148,6 +148,7 @@
     initFiltros();
     initBotones();
     cargarSolicitudes();
+    cargarResumenKPI();
 
     // Ocultar tabs segun rol
     if (state.esAsesor || state.esControl) {
@@ -203,6 +204,32 @@
       }
     } catch (err) {
       console.error('Error cargando catalogos:', err);
+    }
+  }
+
+  // =====================================================
+  // KPI RESUMEN
+  // =====================================================
+  async function cargarResumenKPI() {
+    try {
+      const res = await apiFetch('/cotizaciones/solicitudes/resumen');
+      const data = await safeJson(res);
+      if (!res.ok) return;
+
+      const estados = ['Pendiente', 'En Cotizacion', 'Cotizada', 'Rechazada', 'Por Recibir'];
+      const ids = { 'Pendiente': 'kpi-pendiente', 'En Cotizacion': 'kpi-en-cotizacion', 'Cotizada': 'kpi-cotizada', 'Rechazada': 'kpi-rechazada', 'Por Recibir': 'kpi-por-recibir' };
+
+      let activas = 0;
+      for (const est of estados) {
+        const val = data[est] || 0;
+        activas += val;
+        const el = document.getElementById(ids[est]);
+        if (el) el.textContent = val;
+      }
+      const elActivas = document.getElementById('kpi-activas');
+      if (elActivas) elActivas.textContent = activas;
+    } catch (err) {
+      console.error('Error cargando resumen KPI:', err);
     }
   }
 
@@ -645,6 +672,7 @@
       if (!res.ok) throw new Error(data?.error);
       Swal.fire('Actualizado', data.message, 'success');
       cargarSolicitudes();
+      cargarResumenKPI();
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
     }
@@ -663,6 +691,7 @@
       if (!res.ok) throw new Error(data?.error);
       Swal.fire('Eliminada', '', 'success');
       cargarSolicitudes();
+      cargarResumenKPI();
     } catch (err) {
       Swal.fire('Error', err.message, 'error');
     }
@@ -719,7 +748,7 @@
                 <td>${s.creado_por}</td>
                 <td>${s.fecha_creacion || '-'}</td>
                 <td>
-                  <button class="btn-obs" onclick="COT.abrirBorrador(${s.id})" style="margin-right:4px;padding:5px 10px;font-size:12px;">Borrador</button>
+                  <button class="btn-obs" onclick="COT.abrirBorrador(${s.id})" style="margin-right:4px;padding:5px 10px;font-size:12px;">${s.estado === 'Pendiente' ? 'Borrador' : 'Editar Borrador'}</button>
                   <button class="btn-cotizar" onclick="COT.abrirWorkspace(${s.id})">Cotizar</button>
                 </td>
               </tr>
@@ -752,6 +781,20 @@
       // Construir items iniciales o vacios
       const itemsData = existingItems.length > 0 ? existingItems : [{ nombre_repuesto: '', cantidad: 1, opciones: [] }];
 
+      const tieneProforma = !!sol.foto_proforma_url;
+      const tieneMatricula = !!sol.foto_matricula_url;
+      const tieneFotos = tieneProforma || tieneMatricula;
+      const fotoInicial = sol.foto_proforma_url || sol.foto_matricula_url;
+
+      let fotoTabsHTML = '';
+      if (tieneProforma && tieneMatricula) {
+        fotoTabsHTML = `
+          <div class="ws-foto-tabs">
+            <button type="button" class="ws-foto-tab active" data-url="${escapeHtml(sol.foto_proforma_url)}">Proforma</button>
+            <button type="button" class="ws-foto-tab" data-url="${escapeHtml(sol.foto_matricula_url)}">Matricula</button>
+          </div>`;
+      }
+
       workspace.innerHTML = `
         <div class="workspace">
           <div class="workspace-header">
@@ -762,26 +805,30 @@
               </p>
               ${sol.notas_asesor ? `<p>Notas del asesor: ${escapeHtml(sol.notas_asesor)}</p>` : ''}
             </div>
-            <div style="display:flex;gap:8px;">
-              ${sol.foto_matricula_url
-                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">MATRICULA</div><img src="${escapeHtml(sol.foto_matricula_url)}" class="proforma-thumb" onclick="abrirFotoCot('${escapeHtml(sol.foto_matricula_url)}')" title="Click para agrandar"></div>`
-                : ''}
-              ${sol.foto_proforma_url
-                ? `<div style="text-align:center;"><div style="font-size:10px;font-weight:600;color:#475569;">PROFORMA</div><img src="${escapeHtml(sol.foto_proforma_url)}" class="proforma-thumb" onclick="abrirFotoCot('${escapeHtml(sol.foto_proforma_url)}')" title="Click para agrandar"></div>`
-                : ''}
-              ${!sol.foto_matricula_url && !sol.foto_proforma_url ? '<div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">Sin fotos</div>' : ''}
-            </div>
           </div>
           ${obsHTML}
-          <div id="ws-items-container"></div>
-          <button class="btn-add-item" id="btn-add-item">+ Agregar Repuesto</button>
-          <div style="margin-top:12px;">
-            <label style="font-size:12px;font-weight:600;color:#475569;">Observaciones de bodega:</label>
-            <textarea id="ws-obs-bodega" style="width:100%;height:50px;border:1px solid #cbd5e1;border-radius:6px;padding:6px;font-size:13px;margin-top:4px;box-sizing:border-box;" placeholder="Opcional...">${sol.observaciones_bodega || ''}</textarea>
-          </div>
-          <div class="workspace-actions">
-            <button class="btn-obs" id="btn-guardar-borrador">Guardar Borrador</button>
-            <button class="btn-aprobar" id="btn-enviar-cotizacion">Enviar Cotizacion</button>
+          <div class="ws-body">
+            <div class="ws-left">
+              <div id="ws-items-container"></div>
+              <button class="btn-add-item" id="btn-add-item">+ Agregar Repuesto</button>
+              <div style="margin-top:12px;">
+                <label style="font-size:12px;font-weight:600;color:#475569;">Observaciones de bodega:</label>
+                <textarea id="ws-obs-bodega" style="width:100%;height:50px;border:1px solid #cbd5e1;border-radius:6px;padding:6px;font-size:13px;margin-top:4px;box-sizing:border-box;" placeholder="Opcional...">${sol.observaciones_bodega || ''}</textarea>
+              </div>
+              <div class="workspace-actions">
+                <button class="btn-obs" id="btn-guardar-borrador">Guardar Borrador</button>
+                <button class="btn-aprobar" id="btn-enviar-cotizacion">Enviar Cotizacion</button>
+              </div>
+            </div>
+            ${tieneFotos ? `
+            <div class="ws-right" id="ws-right-panel">
+              <button type="button" class="ws-toggle-btn" id="ws-toggle-foto" title="Ocultar/Mostrar foto">&#9664;</button>
+              ${fotoTabsHTML}
+              <div class="ws-foto-container" id="ws-foto-container">
+                <img src="${escapeHtml(fotoInicial)}" id="ws-foto" draggable="false">
+              </div>
+              <div style="text-align:center;padding:4px;font-size:11px;color:#94a3b8;">Scroll zoom · Arrastra · Doble clic reset</div>
+            </div>` : ''}
           </div>
         </div>`;
 
@@ -798,9 +845,113 @@
       document.getElementById('btn-enviar-cotizacion').addEventListener('click', () => {
         enviarCotizacion(solicitudId, true);
       });
+
+      // Photo panel: zoom, tabs, collapse
+      if (tieneFotos) {
+        initPhotoZoom('ws-foto-container', 'ws-foto', workspaceZoom);
+
+        document.querySelectorAll('#ws-right-panel .ws-foto-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            document.querySelectorAll('#ws-right-panel .ws-foto-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const img = document.getElementById('ws-foto');
+            if (img) { img.src = tab.dataset.url; img.style.transform = ''; }
+            workspaceZoom.scale = 1; workspaceZoom.posX = 0; workspaceZoom.posY = 0;
+          });
+        });
+
+        document.getElementById('ws-toggle-foto')?.addEventListener('click', () => {
+          const panel = document.getElementById('ws-right-panel');
+          const btn = document.getElementById('ws-toggle-foto');
+          if (panel.classList.toggle('ws-collapsed')) {
+            btn.innerHTML = '&#9654;';
+            btn.title = 'Mostrar foto';
+          } else {
+            btn.innerHTML = '&#9664;';
+            btn.title = 'Ocultar foto';
+          }
+        });
+      }
     } catch (err) {
       workspace.innerHTML = `<p style="color:#dc2626;">Error: ${err.message}</p>`;
     }
+  }
+
+  function detectarProveedoresFrecuentes(itemsData) {
+    const freq = [new Map(), new Map(), new Map()];
+    for (const item of itemsData) {
+      const opciones = item.opciones || [];
+      for (let o = 0; o < 3; o++) {
+        const pId = opciones[o]?.proveedor_id;
+        if (pId) freq[o].set(pId, (freq[o].get(pId) || 0) + 1);
+      }
+    }
+    return freq.map(m => {
+      let best = '', bestCount = 0;
+      for (const [k, v] of m) { if (v > bestCount) { best = k; bestCount = v; } }
+      return best ? String(best) : '';
+    });
+  }
+
+  function renderProviderHeader(defaultProvs) {
+    const provOptions = state.proveedores.map(p =>
+      `<option value="${p.id}" ${defaultProvs.includes(String(p.id)) ? '' : ''}>${p.nombre}</option>`
+    ).join('');
+
+    const cols = ['Proveedor 1', 'Proveedor 2', 'Proveedor 3'];
+    let html = `<div class="ws-provider-header" id="ws-provider-header">
+      <div class="prov-col" style="flex:0;min-width:auto;">
+        <label style="white-space:nowrap;">Proveedores predeterminados</label>
+        <span style="font-size:11px;color:#64748b;">Se aplican a filas vacias</span>
+      </div>`;
+
+    for (let c = 0; c < 3; c++) {
+      const selProv = defaultProvs[c] || '';
+      const provOptionsWithSel = selProv
+        ? provOptions.replace(`value="${selProv}"`, `value="${selProv}" selected`)
+        : provOptions;
+      html += `<div class="prov-col">
+        <label>${cols[c]}</label>
+        <select class="ws-header-prov" data-col="${c}">
+          <option value="">-</option>${provOptionsWithSel}
+        </select>
+      </div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  }
+
+  function autoFillProviders(colIndex, proveedorId) {
+    const tbody = document.getElementById('ws-items-tbody');
+    if (!tbody) return;
+    tbody.querySelectorAll('tr').forEach(row => {
+      const selects = row.querySelectorAll('.ws-prov');
+      const sel = selects[colIndex];
+      if (sel && sel.value === '') {
+        sel.value = proveedorId;
+      }
+    });
+  }
+
+  function initProviderHeaderListeners() {
+    document.querySelectorAll('.ws-header-prov').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const col = parseInt(sel.dataset.col);
+        if (sel.value) autoFillProviders(col, sel.value);
+      });
+    });
+  }
+
+  function autoFillNewRowFromHeader(tr) {
+    const headerProvs = document.querySelectorAll('.ws-header-prov');
+    if (!headerProvs.length) return;
+    const selects = tr.querySelectorAll('.ws-prov');
+    headerProvs.forEach((hp, i) => {
+      if (hp.value && selects[i] && selects[i].value === '') {
+        selects[i].value = hp.value;
+      }
+    });
   }
 
   function renderWorkspaceItems(itemsData) {
@@ -809,7 +960,11 @@
       `<option value="${p.id}">${p.nombre}</option>`
     ).join('');
 
-    let html = `<table class="tabla-cotizacion">
+    const defaultProvs = detectarProveedoresFrecuentes(itemsData);
+
+    let html = renderProviderHeader(defaultProvs);
+
+    html += `<table class="tabla-cotizacion">
       <thead><tr>
         <th class="col-repuesto">Repuesto</th>
         <th class="col-cant">Cant</th>
@@ -834,7 +989,8 @@
 
     container.innerHTML = html;
 
-    // Event listeners para calcular total
+    initProviderHeaderListeners();
+
     container.querySelectorAll('input, select').forEach(el => {
       el.addEventListener('change', recalcularTotal);
       el.addEventListener('input', recalcularTotal);
@@ -904,8 +1060,8 @@
       .replace(/<tr[^>]*>/, '').replace(/<\/tr>/, '');
 
     tbody.appendChild(tr);
+    autoFillNewRowFromHeader(tr);
 
-    // Re-bind events
     tr.querySelectorAll('input, select').forEach(el => {
       el.addEventListener('change', recalcularTotal);
       el.addEventListener('input', recalcularTotal);
@@ -1016,10 +1172,11 @@
       if (finalizar) {
         Swal.fire('Cotizacion enviada', 'El asesor sera notificado.', 'success');
         cargarPendientesCotizar();
+        cargarResumenKPI();
         document.getElementById('workspace-container').innerHTML = '';
       } else {
         Swal.fire('Borrador guardado', 'Todos los datos se guardaron correctamente.', 'success');
-        // Recargar workspace para reflejar datos guardados con IDs de DB
+        cargarResumenKPI();
         abrirWorkspace(solicitudId);
       }
     } catch (err) {
@@ -1191,9 +1348,14 @@
   }
 
   // =====================================================
-  // BORRADOR DE REPUESTOS (split-screen con proforma)
+  // PHOTO ZOOM STATES
   // =====================================================
   const borradorZoom = { scale: 1, posX: 0, posY: 0 };
+  const workspaceZoom = { scale: 1, posX: 0, posY: 0 };
+
+  // =====================================================
+  // BORRADOR DE REPUESTOS (split-screen con proforma)
+  // =====================================================
 
   async function abrirBorrador(solicitudId) {
     try {
@@ -1380,10 +1542,28 @@
       if (!res.ok) throw new Error(data?.error);
 
       Swal.showValidationMessage('<span style="color:#16a34a;">Borrador guardado correctamente</span>');
-      setTimeout(() => {
-        const vm = document.querySelector('.swal2-validation-message');
-        if (vm) vm.style.display = 'none';
-      }, 2500);
+
+      const saveBtn = document.getElementById('btn-save-borrador');
+      if (saveBtn) {
+        saveBtn.textContent = 'Guardado';
+        saveBtn.disabled = true;
+        saveBtn.style.background = '#16a34a';
+        saveBtn.style.color = 'white';
+      }
+
+      if (!document.getElementById('btn-continuar-cotizar')) {
+        const continuar = document.createElement('button');
+        continuar.type = 'button';
+        continuar.id = 'btn-continuar-cotizar';
+        continuar.className = 'btn-cotizar';
+        continuar.textContent = 'Continuar a Cotizar';
+        continuar.style.cssText = 'padding:8px 18px;font-size:14px;';
+        continuar.addEventListener('click', () => {
+          Swal.close();
+          abrirWorkspace(solicitudId);
+        });
+        saveBtn.parentNode.insertBefore(continuar, saveBtn.nextSibling);
+      }
     } catch (err) {
       Swal.showValidationMessage('Error: ' + err.message);
     }
@@ -1585,13 +1765,13 @@
     doc.save(`Cotizacion_Repuestos_${sol.placa}_${sol.id}.pdf`);
   }
 
-  function initBorradorFotoZoom() {
-    const container = document.getElementById('borrador-foto-container');
-    const img = document.getElementById('borrador-foto');
+  function initPhotoZoom(containerId, imgId, zoomState) {
+    const container = document.getElementById(containerId);
+    const img = document.getElementById(imgId);
     if (!container || !img) return;
 
     let isDragging = false, startX, startY;
-    const z = borradorZoom;
+    const z = zoomState;
     z.scale = 1; z.posX = 0; z.posY = 0;
 
     function applyTransform() {
@@ -1624,7 +1804,6 @@
       applyTransform();
     });
 
-    // Touch: drag + pinch zoom
     let lastDist = 0;
     container.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
@@ -1650,6 +1829,10 @@
       }
     }, { passive: false });
     container.addEventListener('touchend', () => { isDragging = false; lastDist = 0; });
+  }
+
+  function initBorradorFotoZoom() {
+    initPhotoZoom('borrador-foto-container', 'borrador-foto', borradorZoom);
   }
 
   // =====================================================

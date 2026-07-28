@@ -162,6 +162,64 @@
       display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end;
     }
 
+    /* ====== WORKSPACE SPLIT-SCREEN ====== */
+    .ws-body { display: flex; gap: 20px; min-height: 60vh; }
+    .ws-left { flex: 1 1 60%; overflow-y: auto; overflow-x: auto; min-width: 0; }
+    .ws-right {
+      flex: 0 0 38%; border: 1px solid #e2e8f0; border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
+      background: #f8fafc; min-width: 0; position: relative;
+      transition: flex-basis 0.3s, padding 0.3s, border 0.3s;
+    }
+    .ws-right.ws-collapsed { flex-basis: 0 !important; overflow: hidden; padding: 0; border: none; }
+    .ws-right .ws-foto-tabs {
+      display: flex; gap: 4px; padding: 8px 8px 0;
+    }
+    .ws-right .ws-foto-tab {
+      padding: 5px 14px; border: 1px solid #cbd5e1; border-radius: 6px;
+      background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: #64748b;
+    }
+    .ws-right .ws-foto-tab.active { background: #2B7A9E; color: #fff; border-color: #2B7A9E; }
+    .ws-foto-container {
+      flex: 1; overflow: hidden; cursor: grab;
+      display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .ws-foto-container img {
+      max-width: 100%; max-height: 100%; transition: transform 0.15s; user-select: none;
+    }
+    .ws-toggle-btn {
+      position: absolute; top: 50%; left: -14px; z-index: 5;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary, #2B7A9E); color: white; border: none;
+      cursor: pointer; font-size: 16px; display: flex;
+      align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15); transform: translateY(-50%);
+    }
+    .ws-toggle-btn:hover { background: var(--primary-dark, #1E5570); }
+    @media (max-width: 768px) {
+      .ws-body { flex-direction: column; }
+      .ws-right { flex-basis: auto !important; height: 40vh; }
+      .ws-toggle-btn { display: none; }
+    }
+
+    /* ====== PROVIDER HEADER ====== */
+    .ws-provider-header {
+      display: flex; gap: 12px; align-items: flex-end;
+      padding: 12px 14px; background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .ws-provider-header .prov-col {
+      display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px;
+    }
+    .ws-provider-header label {
+      font-size: 11px; font-weight: 600; color: #1e40af;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .ws-provider-header select {
+      padding: 6px 8px; border: 1px solid #93c5fd; border-radius: 6px;
+      font-size: 13px; width: 100%;
+    }
+
     /* ====== OBSERVACIONES RECHAZO ====== */
     .obs-rechazo {
       background: #fef2f2; border: 1px solid #fecaca;
@@ -490,6 +548,34 @@
   <div id="nav-container"></div>
 
   <div class="dashboard-container">
+    <!-- KPI RESUMEN -->
+    <div class="rrhh-kpi-grid" id="cotiz-kpi-grid" style="margin-bottom:18px;">
+      <div class="rrhh-kpi-card" style="border-top-color:#64748b;">
+        <div class="rrhh-kpi-label">Total Activas</div>
+        <div class="rrhh-kpi-value" id="kpi-activas">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#f59e0b;">
+        <div class="rrhh-kpi-label">Pendientes</div>
+        <div class="rrhh-kpi-value" id="kpi-pendiente">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#3b82f6;">
+        <div class="rrhh-kpi-label">En Cotizacion</div>
+        <div class="rrhh-kpi-value" id="kpi-en-cotizacion">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#6366f1;">
+        <div class="rrhh-kpi-label">Cotizadas</div>
+        <div class="rrhh-kpi-value" id="kpi-cotizada">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#f97316;">
+        <div class="rrhh-kpi-label">Por Recibir</div>
+        <div class="rrhh-kpi-value" id="kpi-por-recibir">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#dc2626;">
+        <div class="rrhh-kpi-label">Rechazadas</div>
+        <div class="rrhh-kpi-value" id="kpi-rechazada">--</div>
+      </div>
+    </div>
+
     <!-- TABS -->
     <div class="tabs-bar">
       <button class="tab-btn active" data-tab="solicitudes">Solicitudes</button>
