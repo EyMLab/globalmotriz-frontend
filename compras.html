@@ -22,6 +22,14 @@
     .badge-pendiente { background: #fef3c7; color: #92400e; }
     .badge-finalizada { background: #d1fae5; color: #065f46; }
     .badge-anulada { background: #fee2e2; color: #991b1b; }
+    .badge-parcial { background: #dbeafe; color: #1e40af; }
+
+    .btn-editar {
+      background: #2563eb; color: white; border: none;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-editar:hover { background: #1d4ed8; }
 
     .btn-recibir {
       background: #059669; color: white; border: none;
@@ -80,12 +88,36 @@
 
   <div class="dashboard-container">
 
+    <div class="rrhh-kpi-grid" id="compras-kpi-grid" style="margin-bottom:18px;">
+      <div class="rrhh-kpi-card" style="border-top-color:#64748b;">
+        <div class="rrhh-kpi-label">Total</div>
+        <div class="rrhh-kpi-value" id="kpi-oc-total">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#f59e0b;">
+        <div class="rrhh-kpi-label">Pendientes</div>
+        <div class="rrhh-kpi-value" id="kpi-oc-pendiente">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#3b82f6;">
+        <div class="rrhh-kpi-label">Parcial</div>
+        <div class="rrhh-kpi-value" id="kpi-oc-parcial">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#059669;">
+        <div class="rrhh-kpi-label">Finalizadas</div>
+        <div class="rrhh-kpi-value" id="kpi-oc-finalizada">--</div>
+      </div>
+      <div class="rrhh-kpi-card" style="border-top-color:#dc2626;">
+        <div class="rrhh-kpi-label">Anuladas</div>
+        <div class="rrhh-kpi-value" id="kpi-oc-anulada">--</div>
+      </div>
+    </div>
+
     <div class="filtros insumos" style="margin-bottom:12px; flex-wrap:wrap;">
       <div class="filtro-grupo" style="flex:0 0 140px;">
         <label for="filtro-estado-oc">Estado:</label>
         <select id="filtro-estado-oc">
           <option value="">Todas</option>
           <option value="Pendiente">Pendiente</option>
+          <option value="Parcial">Parcial</option>
           <option value="Finalizada">Finalizada</option>
           <option value="Anulada">Anulada</option>
         </select>

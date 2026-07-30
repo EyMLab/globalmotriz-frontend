@@ -275,7 +275,7 @@ function initNotificaciones() {
     }
   });
 
-  // Marcar todas leidas (ambos módulos)
+  // Marcar todas leidas (todos los módulos)
   document.getElementById('btn-leer-todas')?.addEventListener('click', async () => {
     try {
       const promises = [
@@ -283,6 +283,9 @@ function initNotificaciones() {
       ];
       if (ROLES_RRHH_NOTIF.includes(_navRol)) {
         promises.push(apiFetch('/rrhh/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {}));
+      }
+      if (ROLES_COMPRAS_NOTIF.includes(_navRol)) {
+        promises.push(apiFetch('/compras/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {}));
       }
       await Promise.all(promises);
       cargarNotificaciones();
@@ -296,13 +299,17 @@ function initNotificaciones() {
 }
 
 const ROLES_RRHH_NOTIF = ['admin', 'asistente_contable'];
+const ROLES_COMPRAS_NOTIF = ['admin', 'bodega'];
 
 async function actualizarContadorNotif() {
   try {
-    const [resCot, resRrhh] = await Promise.all([
+    const [resCot, resRrhh, resCompras] = await Promise.all([
       apiFetch('/cotizaciones/notificaciones/count'),
       ROLES_RRHH_NOTIF.includes(_navRol)
         ? apiFetch('/rrhh/notificaciones/count').catch(() => null)
+        : Promise.resolve(null),
+      ROLES_COMPRAS_NOTIF.includes(_navRol)
+        ? apiFetch('/compras/notificaciones/count').catch(() => null)
         : Promise.resolve(null)
     ]);
     const countEl = document.getElementById('notif-count');
@@ -316,6 +323,10 @@ async function actualizarContadorNotif() {
       const d2 = await safeJson(resRrhh);
       total += d2.no_leidas || 0;
     }
+    if (resCompras && resCompras.ok) {
+      const d3 = await safeJson(resCompras);
+      total += d3.no_leidas || 0;
+    }
     countEl.textContent = total;
     countEl.style.display = total > 0 ? 'flex' : 'none';
   } catch (e) { /* ignore */ }
@@ -325,10 +336,13 @@ async function cargarNotificaciones() {
   const list = document.getElementById('notif-list');
   if (!list) return;
   try {
-    const [resCot, resRrhh] = await Promise.all([
+    const [resCot, resRrhh, resCompras] = await Promise.all([
       apiFetch('/cotizaciones/notificaciones?limit=15'),
       ROLES_RRHH_NOTIF.includes(_navRol)
         ? apiFetch('/rrhh/notificaciones?limit=15').catch(() => null)
+        : Promise.resolve(null),
+      ROLES_COMPRAS_NOTIF.includes(_navRol)
+        ? apiFetch('/compras/notificaciones?limit=15').catch(() => null)
         : Promise.resolve(null)
     ]);
 
@@ -348,6 +362,13 @@ async function cargarNotificaciones() {
       }
     }
 
+    if (resCompras && resCompras.ok) {
+      const dataCompras = await safeJson(resCompras);
+      if (dataCompras.items) {
+        todas = todas.concat(dataCompras.items.map(n => ({ ...n, modulo: 'compras' })));
+      }
+    }
+
     if (!todas.length) {
       list.innerHTML = '<div class="notif-empty">Sin notificaciones</div>';
       return;
@@ -356,7 +377,9 @@ async function cargarNotificaciones() {
     todas.sort((a, b) => (b.id || 0) - (a.id || 0));
 
     list.innerHTML = todas.slice(0, 20).map(n => {
-      const moduloTag = n.modulo === 'rrhh' ? '<span class="notif-tag notif-tag-rrhh">RRHH</span> ' : '';
+      let moduloTag = '';
+      if (n.modulo === 'rrhh') moduloTag = '<span class="notif-tag notif-tag-rrhh">RRHH</span> ';
+      else if (n.modulo === 'compras') moduloTag = '<span class="notif-tag notif-tag-compras">OC</span> ';
       return `<div class="notif-item ${n.leida ? '' : 'no-leida'}" onclick="clickNotificacion(${n.id}, ${n.solicitud_id || 'null'}, ${n.leida}, '${n.modulo}')">
         <div>${moduloTag}${n.mensaje}</div>
         <div class="notif-fecha">${n.fecha}</div>
@@ -370,9 +393,10 @@ async function cargarNotificaciones() {
 async function clickNotificacion(id, solicitudId, leida, modulo) {
   if (!leida) {
     try {
-      const endpoint = modulo === 'rrhh'
-        ? `/rrhh/notificaciones/${id}/leer`
-        : `/cotizaciones/notificaciones/${id}/leer`;
+      let endpoint;
+      if (modulo === 'rrhh') endpoint = `/rrhh/notificaciones/${id}/leer`;
+      else if (modulo === 'compras') endpoint = `/compras/notificaciones/${id}/leer`;
+      else endpoint = `/cotizaciones/notificaciones/${id}/leer`;
       await apiFetch(endpoint, { method: 'PATCH' });
       actualizarContadorNotif();
     } catch (e) { /* ignore */ }
@@ -382,6 +406,18 @@ async function clickNotificacion(id, solicitudId, leida, modulo) {
     if (!window.location.pathname.includes('rrhh')) {
       window.location.href = 'rrhh.html';
     } else {
+      document.getElementById('notif-dropdown')?.classList.remove('open');
+    }
+    return;
+  }
+
+  if (modulo === 'compras') {
+    if (!window.location.pathname.includes('compras')) {
+      window.location.href = 'compras.html';
+    } else {
+      if (solicitudId && typeof verOrden === 'function') {
+        verOrden(solicitudId);
+      }
       document.getElementById('notif-dropdown')?.classList.remove('open');
     }
     return;

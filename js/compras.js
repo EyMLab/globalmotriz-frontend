@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Cargar catálogo en background para autocompletado
       cargarCatalogoInsumos();
       cargarOrdenes();
+      cargarResumenKPI();
     } catch {
       if (reintentos > 0) {
         setTimeout(() => verificarSesion(reintentos - 1), 1200);
@@ -127,6 +128,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnNuevaOC) btnNuevaOC.onclick = modalNuevaOC;
   if (btnNuevoProv) btnNuevoProv.onclick = modalNuevoProveedor;
+
+  /* ======================================================
+      KPI DASHBOARD
+  ====================================================== */
+  async function cargarResumenKPI() {
+    try {
+      const res = await apiFetch('/compras/resumen');
+      if (!res || !res.ok) return;
+      const data = await safeJson(res);
+
+      const estados = ['Pendiente', 'Parcial', 'Finalizada', 'Anulada'];
+      const ids = {
+        'Pendiente': 'kpi-oc-pendiente',
+        'Parcial': 'kpi-oc-parcial',
+        'Finalizada': 'kpi-oc-finalizada',
+        'Anulada': 'kpi-oc-anulada'
+      };
+
+      let total = 0;
+      for (const est of estados) {
+        const val = data[est] || 0;
+        total += val;
+        const el = document.getElementById(ids[est]);
+        if (el) el.textContent = val;
+      }
+      const elTotal = document.getElementById('kpi-oc-total');
+      if (elTotal) elTotal.textContent = total;
+    } catch (err) {
+      console.error('Error cargando resumen KPI:', err);
+    }
+  }
 
   /* ======================================================
       CARGAR ÓRDENES
@@ -167,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => {
       const badgeClass =
         item.estado === 'Pendiente' ? 'badge-pendiente' :
+        item.estado === 'Parcial' ? 'badge-parcial' :
         item.estado === 'Finalizada' ? 'badge-finalizada' : 'badge-anulada';
 
       const tr = document.createElement('tr');
@@ -176,7 +209,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="btn-pdf" onclick="imprimirOC(${item.id})">PDF</button>
       `;
 
-      if (item.estado === 'Pendiente' && !state.esAsesor) {
+      if (item.estado === 'Pendiente' && (state.esAdmin || state.esBodega)) {
+        acciones += ` <button class="btn-editar" onclick="modalEditarOC(${item.id})">Editar</button>`;
+      }
+
+      if (['Pendiente', 'Parcial'].includes(item.estado) && !state.esAsesor && !state.esControl) {
         acciones += ` <button class="btn-recibir" onclick="modalRecepcion(${item.id})">Recibir</button>`;
         if (state.esAdmin) {
           acciones += ` <button class="btn-anular" onclick="anularOrden(${item.id})">Anular</button>`;
@@ -596,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       Swal.fire('✅ Orden Creada', `OC #${data.orden_id} registrada como Pendiente.`, 'success');
       cargarOrdenes();
+      cargarResumenKPI();
     } else {
       const err = await safeJson(res);
       Swal.fire('Error', err?.error || 'No se pudo crear la orden', 'error');
@@ -603,7 +641,189 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================================================
-      VER DETALLE DE ORDEN (solo lectura)
+      MODAL: EDITAR ORDEN DE COMPRA (con historial)
+  ====================================================== */
+  async function modalEditarOC(id) {
+    Swal.fire({ title: 'Cargando...', didOpen: () => Swal.showLoading() });
+
+    if (catalogoInsumos.length === 0) {
+      await cargarCatalogoInsumos();
+    }
+
+    const [detRes, provRes] = await Promise.all([
+      apiFetch(`/compras/detalle/${id}`),
+      apiFetch('/proveedores')
+    ]);
+
+    if (!detRes || !detRes.ok) {
+      Swal.fire('Error', 'No se pudo cargar la orden', 'error');
+      return;
+    }
+
+    const detData = await safeJson(detRes);
+    const { orden, detalles } = detData;
+
+    if (orden.estado !== 'Pendiente') {
+      Swal.fire('No permitido', 'Solo se pueden editar órdenes pendientes', 'warning');
+      return;
+    }
+
+    let proveedores = [];
+    if (provRes && provRes.ok) {
+      proveedores = await safeJson(provRes) || [];
+    }
+
+    const optsProv = proveedores.map(p =>
+      `<option value="${p.id}" ${p.id == orden.proveedor_id ? 'selected' : ''}>${p.nombre}</option>`
+    ).join('');
+
+    let filasHtml = '';
+    detalles.forEach((d, idx) => {
+      filasHtml += `
+        <div class="oc-row" style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+          <input type="text" value="${d.codigo}" class="swal2-input oc-codigo" data-preloaded="true" data-selected-codigo="${d.codigo}" data-selected-nombre="${d.insumo || ''}" style="margin:0; height:38px; font-size:14px;" autocomplete="off">
+          <input type="number" value="${d.cantidad_pedida}" class="swal2-input oc-cant" style="margin:0; flex:0 0 80px; height:38px; font-size:14px;" min="1">
+          <button type="button" class="btn-del-oc-row" style="background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; width:36px; min-height:38px; font-size:18px; flex-shrink:0;">&times;</button>
+        </div>
+      `;
+    });
+
+    const htmlForm = `
+      <div style="text-align:left; font-size:0.95rem;">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600; color:#555;">Proveedor</label>
+          <select id="oc-edit-proveedor" class="swal2-select" style="width:100%; margin:0;">${optsProv}</select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600; color:#555;">Observaciones</label>
+          <textarea id="oc-edit-obs" class="swal2-textarea" style="margin:0; width:100%; min-height:60px;">${orden.observaciones || ''}</textarea>
+        </div>
+
+        <label style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px;">Items</label>
+        <p style="font-size:11px; color:#94a3b8; margin:0 0 8px 0;">Escribe codigo o nombre para buscar insumos</p>
+        <div id="oc-edit-items" style="border:1px solid #e2e8f0; border-radius:6px; padding:10px; max-height:220px; overflow-y:auto; background:#f8fafc; margin-bottom:10px;">
+          ${filasHtml}
+        </div>
+        <button type="button" id="btn-add-edit-row" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px;">+ Agregar item</button>
+
+        <div style="margin-top:14px; padding:10px; border:2px solid #f59e0b; border-radius:8px; background:#fffbeb;">
+          <label style="font-size:12px; font-weight:600; color:#92400e; display:block; margin-bottom:4px;">Motivo de edicion (obligatorio)</label>
+          <textarea id="oc-edit-motivo" class="swal2-textarea" placeholder="Explique por que se edita esta orden..." style="margin:0; width:100%; min-height:50px; border-color:#f59e0b;"></textarea>
+        </div>
+      </div>
+    `;
+
+    const { value: form } = await Swal.fire({
+      title: `Editar OC #${id}`,
+      html: htmlForm,
+      width: '580px',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar Cambios',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+      didOpen: () => {
+        const popup = Swal.getPopup();
+        const container = popup.querySelector('#oc-edit-items');
+        const btnAdd = popup.querySelector('#btn-add-edit-row');
+
+        // Activar autocompletado en inputs existentes y mostrar label
+        container.querySelectorAll('.oc-codigo').forEach(input => {
+          activarAutocompletado(input);
+          if (input.dataset.preloaded === 'true' && input.dataset.selectedNombre) {
+            const tag = document.createElement('div');
+            tag.className = 'ac-selected-label';
+            tag.style.cssText = 'font-size:11px; color:#059669; margin-top:2px; font-weight:500;';
+            tag.textContent = `✓ ${input.dataset.selectedNombre}`;
+            input.parentNode.querySelector('.ac-wrapper')?.appendChild(tag) || input.parentNode.appendChild(tag);
+          }
+        });
+
+        btnAdd.addEventListener('click', () => {
+          const div = document.createElement('div');
+          div.className = 'oc-row';
+          div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;';
+          div.innerHTML = `
+            <input type="text" placeholder="Buscar insumo..." class="swal2-input oc-codigo" style="margin:0; height:38px; font-size:14px;" autocomplete="off">
+            <input type="number" placeholder="Cant." class="swal2-input oc-cant" style="margin:0; flex:0 0 80px; height:38px; font-size:14px;" min="1">
+            <button type="button" class="btn-del-oc-row" style="background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; width:36px; min-height:38px; font-size:18px; flex-shrink:0;">&times;</button>
+          `;
+          container.appendChild(div);
+          const nuevoInput = div.querySelector('.oc-codigo');
+          activarAutocompletado(nuevoInput);
+          nuevoInput.focus();
+        });
+
+        container.addEventListener('click', (e) => {
+          const btn = e.target.closest('.btn-del-oc-row');
+          if (btn) {
+            if (container.querySelectorAll('.oc-row').length > 1) {
+              btn.closest('.oc-row').remove();
+            } else {
+              const row = btn.closest('.oc-row');
+              const codigoInput = row.querySelector('.oc-codigo');
+              codigoInput.value = '';
+              delete codigoInput.dataset.selectedCodigo;
+              delete codigoInput.dataset.selectedNombre;
+              row.querySelector('.oc-cant').value = '';
+              const label = row.querySelector('.ac-selected-label');
+              if (label) label.remove();
+            }
+          }
+        });
+      },
+      preConfirm: () => {
+        const proveedor_id = document.getElementById('oc-edit-proveedor').value;
+        const observaciones = document.getElementById('oc-edit-obs').value.trim();
+        const motivo = document.getElementById('oc-edit-motivo').value.trim();
+
+        if (!motivo) {
+          Swal.showValidationMessage('El motivo de edicion es obligatorio');
+          return false;
+        }
+
+        const filas = document.querySelectorAll('#oc-edit-items .oc-row');
+        const items = [];
+        for (const fila of filas) {
+          const codigoInput = fila.querySelector('.oc-codigo');
+          const codigo = (codigoInput.dataset.selectedCodigo || codigoInput.value).trim().toUpperCase();
+          const cantidad_pedida = Number(fila.querySelector('.oc-cant').value);
+          if (codigo && cantidad_pedida > 0) {
+            items.push({ codigo, cantidad_pedida });
+          }
+        }
+
+        if (items.length === 0) {
+          Swal.showValidationMessage('Agrega al menos un item con cantidad valida');
+          return false;
+        }
+
+        return { proveedor_id, observaciones, items, motivo };
+      }
+    });
+
+    if (!form) return;
+
+    Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const editRes = await apiFetch(`/compras/edit/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    });
+
+    if (editRes && editRes.ok) {
+      Swal.fire('Orden Editada', 'Los cambios han sido registrados con historial.', 'success');
+      cargarOrdenes();
+      cargarResumenKPI();
+    } else {
+      const err = await safeJson(editRes);
+      Swal.fire('Error', err?.error || 'No se pudo editar la orden', 'error');
+    }
+  }
+
+  /* ======================================================
+      VER DETALLE DE ORDEN (con historial de ediciones)
   ====================================================== */
   async function verOrden(id) {
     Swal.fire({ title: 'Cargando...', didOpen: () => Swal.showLoading() });
@@ -654,7 +874,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const badgeClass =
       orden.estado === 'Pendiente' ? 'badge-pendiente' :
+      orden.estado === 'Parcial' ? 'badge-parcial' :
       orden.estado === 'Finalizada' ? 'badge-finalizada' : 'badge-anulada';
+
+    // Cargar historial de ediciones
+    let historialHtml = '';
+    try {
+      const histRes = await apiFetch(`/compras/historial/${id}`);
+      if (histRes && histRes.ok) {
+        const historial = await safeJson(histRes);
+        if (historial && historial.length > 0) {
+          let itemsHist = historial.map(h => {
+            const antes = h.datos_anteriores;
+            const despues = h.datos_nuevos;
+            let cambios = '';
+            if (antes.proveedor_nombre !== despues.proveedor_nombre) {
+              cambios += `<div style="font-size:11px; color:#64748b;">Proveedor: ${antes.proveedor_nombre} → ${despues.proveedor_nombre}</div>`;
+            }
+            const antesCount = antes.items?.length || 0;
+            const despuesCount = despues.items?.length || 0;
+            if (antesCount !== despuesCount) {
+              cambios += `<div style="font-size:11px; color:#64748b;">Items: ${antesCount} → ${despuesCount}</div>`;
+            }
+            return `
+              <div style="padding:8px 0; border-bottom:1px solid #e2e8f0;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong style="font-size:12px;">${h.usuario}</strong>
+                  <span style="font-size:11px; color:#94a3b8;">${h.fecha}</span>
+                </div>
+                <div style="font-size:12px; color:#92400e; margin-top:3px; font-style:italic;">Motivo: ${h.motivo}</div>
+                ${cambios}
+              </div>
+            `;
+          }).join('');
+
+          historialHtml = `
+            <details style="margin-top:12px;">
+              <summary style="cursor:pointer; font-weight:600; color:#1e3a5f; font-size:13px;">
+                Historial de ediciones (${historial.length})
+              </summary>
+              <div style="margin-top:8px; max-height:150px; overflow-y:auto;">
+                ${itemsHist}
+              </div>
+            </details>
+          `;
+        }
+      }
+    } catch { }
 
     Swal.fire({
       title: `OC #${orden.id}`,
@@ -666,9 +932,10 @@ document.addEventListener('DOMContentLoaded', () => {
           ${orden.fecha_recepcion ? `<p><strong>Fecha recepción:</strong> ${orden.fecha_recepcion}</p>` : ''}
           <p><strong>Estado:</strong> <span class="badge ${badgeClass}">${orden.estado}</span></p>
           ${orden.observaciones ? `<p><strong>Observaciones:</strong> ${orden.observaciones}</p>` : ''}
-          ${orden.observaciones_recepcion ? `<p><strong>Obs. Recepción:</strong> ${orden.observaciones_recepcion}</p>` : ''}
+          ${orden.observaciones_recepcion ? `<p><strong>Obs. Recepción:</strong> ${orden.observaciones_recepcion.replace(/\n/g, '<br>')}</p>` : ''}
           <hr style="margin:10px 0;">
           ${tablaHtml}
+          ${historialHtml}
         </div>
       `,
       width: '700px',
@@ -677,7 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ======================================================
-      MODAL: RECEPCIÓN (CERRAR ORDEN)
+      MODAL: RECEPCIÓN (soporta parcial y completa)
   ====================================================== */
   async function modalRecepcion(id) {
     Swal.fire({ title: 'Cargando...', didOpen: () => Swal.showLoading() });
@@ -691,29 +958,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await safeJson(res);
     const { orden, detalles } = data;
 
+    const esParcial = orden.estado === 'Parcial';
+
     let filasHtml = '';
     detalles.forEach(d => {
+      const yaM = Number(d.cantidad_recibida_matriz) || 0;
+      const yaS = Number(d.cantidad_recibida_sucursal) || 0;
+      const yaTotal = yaM + yaS;
+      const restante = Number(d.cantidad_pedida) - yaTotal;
+
       filasHtml += `
         <tr>
           <td>${d.codigo}</td>
           <td style="text-align:left; font-size:12px;">${d.insumo || '-'}</td>
           <td><strong>${d.cantidad_pedida}</strong></td>
+          ${esParcial ? `<td style="font-size:12px; color:#1e40af; font-weight:600;">${yaM} / ${yaS}</td>` : ''}
           <td><input type="number" class="rec-matriz" data-id="${d.id}" value="0" min="0" style="width:70px; padding:4px; border:1px solid #cbd5e1; border-radius:4px; text-align:center;"></td>
           <td><input type="number" class="rec-sucursal" data-id="${d.id}" value="0" min="0" style="width:70px; padding:4px; border:1px solid #cbd5e1; border-radius:4px; text-align:center;"></td>
-          <td class="rec-total" data-id="${d.id}" data-pedido="${d.cantidad_pedida}" style="font-weight:600; min-width:80px;">0 / ${d.cantidad_pedida}</td>
+          <td class="rec-total" data-id="${d.id}" data-pedido="${d.cantidad_pedida}" data-yamatriz="${yaM}" data-yasucursal="${yaS}" style="font-weight:600; min-width:80px;">${yaTotal} / ${d.cantidad_pedida}</td>
         </tr>
       `;
     });
+
+    const thYaRecibido = esParcial ? '<th>Ya Rec. (M/S)</th>' : '';
 
     const { isConfirmed } = await Swal.fire({
       title: `Recibir OC #${id}`,
       html: `
         <div style="text-align:left; font-size:14px;">
           <p style="margin-bottom:5px;"><strong>Proveedor:</strong> ${orden.proveedor || '-'}</p>
+          ${esParcial ? '<p style="margin-bottom:5px;"><span class="badge badge-parcial">Recepción Parcial</span></p>' : ''}
           ${orden.observaciones ? `<p style="margin-bottom:10px; color:#64748b;"><em>${orden.observaciones}</em></p>` : ''}
 
           <p style="font-size:12px; color:#64748b; margin-bottom:8px;">
-            Ingresa las cantidades que realmente llegaron para cada localidad:
+            Ingresa las cantidades que llegan <strong>ahora</strong> para cada localidad:
           </p>
 
           <div style="max-height:260px; overflow-y:auto;">
@@ -723,6 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <th>Código</th>
                   <th>Insumo</th>
                   <th>Pedido</th>
+                  ${thYaRecibido}
                   <th>Rec. Matriz</th>
                   <th>Rec. Sucursal</th>
                   <th>Total / Pedido</th>
@@ -738,9 +1017,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `,
-      width: '780px',
+      width: esParcial ? '880px' : '780px',
       showCancelButton: true,
-      confirmButtonText: 'Finalizar Orden',
+      confirmButtonText: 'Registrar Recepción',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#059669',
       didOpen: () => {
@@ -752,11 +1031,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const inputS = tbody.querySelector(`.rec-sucursal[data-id="${detId}"]`);
           const tdTotal = tbody.querySelector(`.rec-total[data-id="${detId}"]`);
           const pedido = Number(tdTotal.dataset.pedido);
-          const total = (Number(inputM?.value) || 0) + (Number(inputS?.value) || 0);
+          const yaM = Number(tdTotal.dataset.yamatriz);
+          const yaS = Number(tdTotal.dataset.yasucursal);
+          const nuevoM = Number(inputM?.value) || 0;
+          const nuevoS = Number(inputS?.value) || 0;
+          const total = yaM + yaS + nuevoM + nuevoS;
           tdTotal.textContent = `${total} / ${pedido}`;
           tdTotal.className = 'rec-total';
           tdTotal.dataset.id = detId;
           tdTotal.dataset.pedido = pedido;
+          tdTotal.dataset.yamatriz = yaM;
+          tdTotal.dataset.yasucursal = yaS;
           if (total === pedido) {
             tdTotal.classList.add('diff-zero');
           } else if (total > pedido) {
@@ -782,16 +1067,18 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
 
-    // Advertencia naranja si algún ítem tiene excedente
+    // Advertencia si algún ítem supera el restante
     const hayExcedentes = detallesEnvio.some((d, i) => {
       const pedido = Number(detalles[i].cantidad_pedida);
-      return (d.cantidad_recibida_matriz + d.cantidad_recibida_sucursal) > pedido;
+      const yaRec = Number(detalles[i].cantidad_recibida_matriz) + Number(detalles[i].cantidad_recibida_sucursal);
+      const restante = pedido - yaRec;
+      return (d.cantidad_recibida_matriz + d.cantidad_recibida_sucursal) > restante;
     });
 
     if (hayExcedentes) {
       const warnResult = await Swal.fire({
         title: 'Hay ítems con excedente',
-        text: 'Algunos ítems recibidos superan la cantidad pedida. ¿Deseas continuar de todas formas?',
+        text: 'Algunos ítems superan la cantidad restante por recibir. ¿Deseas continuar?',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, continuar',
@@ -803,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const confirm2 = await Swal.fire({
       title: '¿Confirmar recepción?',
-      text: 'Se sumará el stock a cada localidad y la orden pasará a "Finalizada".',
+      text: 'Se sumará el stock recibido a cada localidad.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, confirmar',
@@ -822,11 +1109,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (closeRes && closeRes.ok) {
-      Swal.fire('✅ Orden Finalizada', 'El stock ha sido actualizado en ambas localidades.', 'success');
+      const result = await safeJson(closeRes);
+      const titulo = result.estado === 'Finalizada' ? 'Orden Finalizada' : 'Recepción Parcial Registrada';
+      Swal.fire(`✅ ${titulo}`, result.message, 'success');
       cargarOrdenes();
+      cargarResumenKPI();
     } else {
       const err = await safeJson(closeRes);
-      Swal.fire('Error', err?.error || 'No se pudo cerrar la orden', 'error');
+      Swal.fire('Error', err?.error || 'No se pudo procesar la recepción', 'error');
     }
   }
 
@@ -856,6 +1146,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res && res.ok) {
       Swal.fire('✅ Orden anulada', '', 'success');
       cargarOrdenes();
+      cargarResumenKPI();
     } else {
       const err = await safeJson(res);
       Swal.fire('Error', err?.error || 'No se pudo anular', 'error');
@@ -925,16 +1216,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Título — condicional por estado
       const esFinalizada = orden.estado === 'Finalizada';
-      const tituloPDF = esFinalizada ? 'COMPROBANTE DE RECEPCION' : 'ORDEN DE COMPRA';
+      const esParcialPDF = orden.estado === 'Parcial';
+      const tieneRecepcion = esFinalizada || esParcialPDF;
+      const tituloPDF = esFinalizada ? 'COMPROBANTE DE RECEPCION' : esParcialPDF ? 'RECEPCION PARCIAL' : 'ORDEN DE COMPRA';
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.setTextColor(...darkText);
       doc.text(tituloPDF, pageW / 2, 40, { align: 'center' });
 
-      // Datos — caja crece si hay fecha de recepción (Finalizada)
-      const tieneObsRec = esFinalizada && !!orden.observaciones_recepcion;
+      // Datos — caja crece si hay fecha de recepción
+      const tieneObsRec = tieneRecepcion && !!orden.observaciones_recepcion;
       const tieneObs = !!orden.observaciones;
-      const tieneFechaRec = esFinalizada && !!orden.fecha_recepcion;
+      const tieneFechaRec = tieneRecepcion && !!orden.fecha_recepcion;
       const boxH = tieneFechaRec ? 31 : 22;
 
       const boxY = 46;
@@ -970,7 +1263,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFontSize(11);
       doc.setTextColor(...primaryColor);
 
-      if (esFinalizada) {
+      if (tieneRecepcion) {
         doc.text('DETALLE DE RECEPCION', marginL, tableStartY);
 
         const tableBody = detalles.map((d, i) => {
@@ -1058,8 +1351,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let currentY = doc.lastAutoTable.finalY + 6;
 
       // Observaciones post-tabla
-      if (esFinalizada) {
-        // Finalizada: dos columnas lado a lado (orden | recepción)
+      if (tieneRecepcion) {
+        // Finalizada/Parcial: dos columnas lado a lado (orden | recepción)
         if (tieneObs || tieneObsRec) {
           const colW = (contentW - 6) / 2;
           const obsL = marginL;
@@ -1117,6 +1410,20 @@ document.addEventListener('DOMContentLoaded', () => {
         currentY += blockH + 6;
       }
 
+      // Nota de ediciones si existen
+      try {
+        const histPdf = await apiFetch(`/compras/historial/${id}`);
+        if (histPdf && histPdf.ok) {
+          const histData = await safeJson(histPdf);
+          if (histData && histData.length > 0) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(...grayText);
+            const nota = `Nota: Esta orden fue editada ${histData.length} vez${histData.length > 1 ? '/veces' : ''}. Consulte el historial en el sistema.`;
+            doc.text(nota, marginL, currentY);
+            currentY += 6;
+          }
+        }
+      } catch { }
+
       // Firmas — condicionales por estado
       if (currentY > 230) { doc.addPage(); currentY = 30; }
 
@@ -1133,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setDrawColor(...primaryColor); doc.setLineWidth(0.4);
       doc.line(firma1X, firmaY + 25, firma1X + firmaLineW, firmaY + 25);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...darkText);
-      doc.text(esFinalizada ? 'Recibido por:' : 'Solicitado por:', firma1X + firmaLineW / 2, firmaY + 31, { align: 'center' });
+      doc.text(tieneRecepcion ? 'Recibido por:' : 'Solicitado por:', firma1X + firmaLineW / 2, firmaY + 31, { align: 'center' });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grayText);
       doc.text('(Bodega)', firma1X + firmaLineW / 2, firmaY + 36, { align: 'center' });
       doc.setFontSize(8);
@@ -1143,7 +1450,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setDrawColor(...accentColor); doc.setLineWidth(0.4);
       doc.line(firma2X, firmaY + 25, firma2X + firmaLineW, firmaY + 25);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...darkText);
-      doc.text(esFinalizada ? 'Conforme:' : 'Autorizado por:', firma2X + firmaLineW / 2, firmaY + 31, { align: 'center' });
+      doc.text(tieneRecepcion ? 'Conforme:' : 'Autorizado por:', firma2X + firmaLineW / 2, firmaY + 31, { align: 'center' });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grayText);
       doc.text('(Gerencia)', firma2X + firmaLineW / 2, firmaY + 36, { align: 'center' });
 
@@ -1157,7 +1464,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.text(`Impreso: ${new Date().toLocaleString('es-EC')}`, pageW / 2, pageH - 3, { align: 'center' });
 
       // Nombre de archivo condicional
-      const prefijoPDF = esFinalizada ? 'RECEPCION' : 'OC';
+      const prefijoPDF = esFinalizada ? 'RECEPCION' : esParcialPDF ? 'PARCIAL' : 'OC';
       doc.save(`${prefijoPDF}_${orden.id}_GlobalMotriz.pdf`);
       Swal.close();
 
@@ -1191,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
   ====================================================== */
   window.verOrden = verOrden;
   window.modalRecepcion = modalRecepcion;
+  window.modalEditarOC = modalEditarOC;
   window.anularOrden = anularOrden;
   window.imprimirOC = imprimirOC;
 
