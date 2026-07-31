@@ -103,18 +103,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('tabla-caja-chica');
     tbody.innerHTML = `<tr><td colspan="9">Cargando...</td></tr>`;
 
+    // Leer filtros actuales y enviarlos al backend
+    const q       = document.getElementById('cc-filtro-texto')?.value.trim() || '';
+    const tipodoc = document.getElementById('cc-filtro-tipo')?.value         || '';
+    const desde   = document.getElementById('cc-filtro-desde')?.value        || '';
+    const hasta   = document.getElementById('cc-filtro-hasta')?.value        || '';
+
+    const qs = new URLSearchParams({ tipo, page: _cajachicaPage, pageSize: CC_PAGE_SIZE });
+    if (q)       qs.set('q', q);
+    if (tipodoc) qs.set('tipo_doc', tipodoc);
+    if (desde)   qs.set('desde', desde);
+    if (hasta)   qs.set('hasta', hasta);
+
     try {
-      const res = await apiFetch(`/finanzas/caja-chica?tipo=${tipo}&page=${_cajachicaPage}&pageSize=${CC_PAGE_SIZE}`);
+      const res  = await apiFetch(`/finanzas/caja-chica?${qs}`);
       const data = await safeJson(res);
 
       if (!res.ok) throw new Error(data?.error || 'Error al cargar');
 
-      _cajachicaData = data.historial;
+      _cajachicaData  = data.historial;
       _cajachicaTotal = data.total || 0;
-      _cajachicaPage = data.page || _cajachicaPage;
+      _cajachicaPage  = data.page  || _cajachicaPage;
       renderBalance(data.acumulado, data.limite);
       poblarFiltroTipoDocCC(_cajachicaData);
-      filtrarCajaChica();
+      renderTablaCajaChica(_cajachicaData);
       renderPaginacionCajaChica();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
@@ -139,43 +151,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (_cajachicaPage < maxPag) cargarCajaChica(tipoCajaActual, _cajachicaPage + 1);
   });
 
-  // Auto-detectar tipos de documento únicos para el select
+  // Acumula tipos de documento de todas las páginas visitadas
+  const _allTiposCC = new Set();
+
   function poblarFiltroTipoDocCC(historial) {
     const sel = document.getElementById('cc-filtro-tipo');
     if (!sel) return;
     const valorPrevio = sel.value;
-    const tipos = [...new Set(historial.filter(r => !r.es_reposicion && r.tipo_doc).map(r => r.tipo_doc))].sort();
+    historial.filter(r => !r.es_reposicion && r.tipo_doc).forEach(r => _allTiposCC.add(r.tipo_doc));
+    const tipos = [..._allTiposCC].sort();
     sel.innerHTML = '<option value="">Todos los tipos</option>' +
       tipos.map(t => `<option value="${t}">${t}</option>`).join('');
-    if (valorPrevio && tipos.includes(valorPrevio)) sel.value = valorPrevio;
+    if (valorPrevio && _allTiposCC.has(valorPrevio)) sel.value = valorPrevio;
   }
 
+  // Los filtros ahora se envían al backend — resetea a página 1 y recarga
   function filtrarCajaChica() {
-    const texto = (document.getElementById('cc-filtro-texto')?.value || '').toLowerCase().trim();
-    const tipo  = document.getElementById('cc-filtro-tipo')?.value || '';
-    const desde = document.getElementById('cc-filtro-desde')?.value || '';
-    const hasta = document.getElementById('cc-filtro-hasta')?.value || '';
-
-    const filtrados = _cajachicaData.filter(r => {
-      // Reposiciones siempre se muestran (son separadores visuales del histórico)
-      // a menos que se aplique un filtro específico de tipo que no las incluya.
-      const esRepo = r.es_reposicion;
-
-      if (tipo && (esRepo || r.tipo_doc !== tipo)) return false;
-
-      if (texto && !esRepo) {
-        const blob = `${r.proveedor || ''} ${r.concepto || ''} ${r.num_documento || ''}`.toLowerCase();
-        if (!blob.includes(texto)) return false;
-      }
-      if (texto && esRepo) return false; // si hay búsqueda texto, ocultar reposiciones
-
-      const fechaR = (r.fecha || '').slice(0, 10);
-      if (desde && fechaR < desde) return false;
-      if (hasta && fechaR > hasta) return false;
-
-      return true;
-    });
-    renderTablaCajaChica(filtrados);
+    cargarCajaChica(tipoCajaActual, 1);
   }
 
   window.limpiarFiltrosCajaChica = function () {
@@ -183,12 +175,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
-    filtrarCajaChica();
+    cargarCajaChica(tipoCajaActual, 1);
   };
 
-  // Listeners de filtros Caja Chica
-  ['cc-filtro-texto', 'cc-filtro-tipo', 'cc-filtro-desde', 'cc-filtro-hasta'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input',  filtrarCajaChica);
+  // Debounce para el campo de texto (evita llamadas por cada letra)
+  let _ccFiltroTimer = null;
+  document.getElementById('cc-filtro-texto')?.addEventListener('input', () => {
+    clearTimeout(_ccFiltroTimer);
+    _ccFiltroTimer = setTimeout(filtrarCajaChica, 350);
+  });
+  // Selects y fechas: reacción inmediata
+  ['cc-filtro-tipo', 'cc-filtro-desde', 'cc-filtro-hasta'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', filtrarCajaChica);
   });
 
