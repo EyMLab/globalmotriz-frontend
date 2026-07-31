@@ -13,10 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const esAdmin = localStorage.getItem('rol') === 'admin';
   let tipoCajaActual = 'GENERAL';
   const LIMITES = { GENERAL: 150, COMBUSTIBLE: 100 };
-  let _cajachicaData = [];
+  let _cajachicaData    = [];   // página actual del servidor
+  let _cajachicaAllData = [];   // todos los registros (usados cuando hay filtros activos)
   let _cierreData = [];
   const CC_PAGE_SIZE = 20;
-  let _cajachicaPage = 1;
+  let _cajachicaPage  = 1;
   let _cajachicaTotal = 0;
 
   // Helper: formatea "YYYY-MM-DD" sin bug de timezone
@@ -52,7 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.btn-tipo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       tipoCajaActual = btn.dataset.tipo;
+      _cajachicaAllData = [];
       cargarCajaChica(tipoCajaActual, 1);
+      cargarTodosCajaChica(tipoCajaActual);
     });
   });
 
@@ -92,33 +95,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // Carga inicial
   // =========================================================
   cargarCajaChica(tipoCajaActual);
+  cargarTodosCajaChica(tipoCajaActual);  // carga completa para filtrado cliente
   cargarCierreCaja(mesDefault);
   cargarDeducibles();
 
   // =========================================================
   // CAJA CHICA - Cargar
   // =========================================================
+  // Carga una página del servidor (sin filtros) — actualiza balance y datos base
   async function cargarCajaChica(tipo, page) {
     if (page) _cajachicaPage = page;
     const tbody = document.getElementById('tabla-caja-chica');
     tbody.innerHTML = `<tr><td colspan="9">Cargando...</td></tr>`;
 
-    // Leer filtros actuales y enviarlos al backend
-    const q       = document.getElementById('cc-filtro-texto')?.value.trim() || '';
-    const tipodoc = document.getElementById('cc-filtro-tipo')?.value         || '';
-    const desde   = document.getElementById('cc-filtro-desde')?.value        || '';
-    const hasta   = document.getElementById('cc-filtro-hasta')?.value        || '';
-
-    const qs = new URLSearchParams({ tipo, page: _cajachicaPage, pageSize: CC_PAGE_SIZE });
-    if (q)       qs.set('q', q);
-    if (tipodoc) qs.set('tipo_doc', tipodoc);
-    if (desde)   qs.set('desde', desde);
-    if (hasta)   qs.set('hasta', hasta);
-
     try {
+      const qs = new URLSearchParams({ tipo, page: _cajachicaPage, pageSize: CC_PAGE_SIZE });
       const res  = await apiFetch(`/finanzas/caja-chica?${qs}`);
       const data = await safeJson(res);
-
       if (!res.ok) throw new Error(data?.error || 'Error al cargar');
 
       _cajachicaData  = data.historial;
@@ -126,11 +119,22 @@ document.addEventListener('DOMContentLoaded', () => {
       _cajachicaPage  = data.page  || _cajachicaPage;
       renderBalance(data.acumulado, data.limite);
       poblarFiltroTipoDocCC(_cajachicaData);
-      renderTablaCajaChica(_cajachicaData);
-      renderPaginacionCajaChica();
+      filtrarCajaChica();   // aplica filtros sobre los datos recibidos
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9">Error: ${err.message}</td></tr>`;
     }
+  }
+
+  // Carga TODOS los registros para poder filtrar y paginar correctamente en el cliente
+  async function cargarTodosCajaChica(tipo) {
+    try {
+      const qs = new URLSearchParams({ tipo, page: 1, pageSize: 9999 });
+      const res  = await apiFetch(`/finanzas/caja-chica?${qs}`);
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Error al cargar');
+      _cajachicaAllData = data.historial || [];
+      poblarFiltroTipoDocCC(_cajachicaAllData);
+    } catch { /* no crítico */ }
   }
 
   function renderPaginacionCajaChica() {
@@ -143,12 +147,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnNext) btnNext.disabled = _cajachicaPage >= maxPag;
   }
 
+  function hayFiltroCC() {
+    return !!(
+      document.getElementById('cc-filtro-texto')?.value.trim() ||
+      document.getElementById('cc-filtro-tipo')?.value ||
+      document.getElementById('cc-filtro-desde')?.value ||
+      document.getElementById('cc-filtro-hasta')?.value
+    );
+  }
+
   document.getElementById('cc-btn-prev')?.addEventListener('click', () => {
-    if (_cajachicaPage > 1) cargarCajaChica(tipoCajaActual, _cajachicaPage - 1);
+    if (_cajachicaPage <= 1) return;
+    _cajachicaPage--;
+    hayFiltroCC() ? filtrarCajaChica() : cargarCajaChica(tipoCajaActual, _cajachicaPage);
   });
   document.getElementById('cc-btn-next')?.addEventListener('click', () => {
     const maxPag = Math.max(1, Math.ceil(_cajachicaTotal / CC_PAGE_SIZE));
-    if (_cajachicaPage < maxPag) cargarCajaChica(tipoCajaActual, _cajachicaPage + 1);
+    if (_cajachicaPage >= maxPag) return;
+    _cajachicaPage++;
+    hayFiltroCC() ? filtrarCajaChica() : cargarCajaChica(tipoCajaActual, _cajachicaPage);
   });
 
   // Acumula tipos de documento de todas las páginas visitadas
@@ -165,9 +182,49 @@ document.addEventListener('DOMContentLoaded', () => {
     if (valorPrevio && _allTiposCC.has(valorPrevio)) sel.value = valorPrevio;
   }
 
-  // Los filtros ahora se envían al backend — resetea a página 1 y recarga
+  // Filtra y pagina en el cliente usando _cajachicaAllData (todos los registros)
   function filtrarCajaChica() {
-    cargarCajaChica(tipoCajaActual, 1);
+    const texto  = (document.getElementById('cc-filtro-texto')?.value || '').toLowerCase().trim();
+    const tipo   = document.getElementById('cc-filtro-tipo')?.value  || '';
+    const desde  = document.getElementById('cc-filtro-desde')?.value || '';
+    const hasta  = document.getElementById('cc-filtro-hasta')?.value || '';
+    const hayFiltro = texto || tipo || desde || hasta;
+
+    // Fuente de datos: todos los registros si hay filtro, o la página actual si no
+    const fuente = hayFiltro ? _cajachicaAllData : _cajachicaData;
+
+    const filtrados = fuente.filter(r => {
+      const esRepo = r.es_reposicion;
+      if (tipo && (esRepo || r.tipo_doc !== tipo)) return false;
+      if (texto && !esRepo) {
+        const blob = `${r.proveedor || ''} ${r.concepto || ''} ${r.num_documento || ''}`.toLowerCase();
+        if (!blob.includes(texto)) return false;
+      }
+      if (texto && esRepo) return false;
+      const fechaR = (r.fecha || '').slice(0, 10);
+      if (desde && fechaR < desde) return false;
+      if (hasta && fechaR > hasta) return false;
+      return true;
+    });
+
+    if (hayFiltro) {
+      // Paginación cliente: mostrar solo la página actual de los filtrados
+      const total   = filtrados.length;
+      const maxPag  = Math.max(1, Math.ceil(total / CC_PAGE_SIZE));
+      if (_cajachicaPage > maxPag) _cajachicaPage = 1;
+      const desde_i = (_cajachicaPage - 1) * CC_PAGE_SIZE;
+      const pagina  = filtrados.slice(desde_i, desde_i + CC_PAGE_SIZE);
+
+      _cajachicaTotal = total;
+      renderTablaCajaChica(pagina);
+      renderPaginacionCajaChica();
+    } else {
+      // Sin filtro: usar datos del servidor (paginación servidor)
+      _cajachicaTotal = parseInt(document.getElementById('cc-page-info')
+        ?.textContent.match(/\((\d+) registros\)/)?.[1] || _cajachicaTotal);
+      renderTablaCajaChica(_cajachicaData);
+      renderPaginacionCajaChica();
+    }
   }
 
   window.limpiarFiltrosCajaChica = function () {
@@ -175,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    _cajachicaPage = 1;
     cargarCajaChica(tipoCajaActual, 1);
   };
 
@@ -182,11 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let _ccFiltroTimer = null;
   document.getElementById('cc-filtro-texto')?.addEventListener('input', () => {
     clearTimeout(_ccFiltroTimer);
-    _ccFiltroTimer = setTimeout(filtrarCajaChica, 350);
+    _ccFiltroTimer = setTimeout(() => { _cajachicaPage = 1; filtrarCajaChica(); }, 350);
   });
   // Selects y fechas: reacción inmediata
   ['cc-filtro-tipo', 'cc-filtro-desde', 'cc-filtro-hasta'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', filtrarCajaChica);
+    document.getElementById(id)?.addEventListener('change', () => { _cajachicaPage = 1; filtrarCajaChica(); });
   });
 
   function renderBalance(acumulado, limite) {
@@ -1666,7 +1724,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error');
       await Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
+      _cajachicaAllData = [];
       cargarCajaChica(tipoCajaActual);
+      cargarTodosCajaChica(tipoCajaActual);
     } catch (err) { Swal.fire('Error', err.message, 'error'); }
   };
 
@@ -1691,7 +1751,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data?.error || 'Error al eliminar');
       await Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1000, showConfirmButton: false });
+      _cajachicaAllData = [];
       cargarCajaChica(tipoCajaActual);
+      cargarTodosCajaChica(tipoCajaActual);
     } catch (err) { Swal.fire('Error', err.message, 'error'); }
   };
 
