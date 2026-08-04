@@ -77,11 +77,6 @@
       <input id="buscar-input" class="buscar-input" type="text" placeholder="Buscar por código o nombre..." autocomplete="off">
     </div>
     <div id="resultados-lista" class="resultados-lista"></div>
-    <div id="buscar-footer" class="buscar-footer" style="display:none">
-      <button id="btn-ver-pedido" class="btn btn-success btn-ver-pedido">
-        Ver pedido (<span id="pedido-count">0</span> items)
-      </button>
-    </div>
   </div>
 
   <!-- ===== PANTALLA: CANTIDAD ===== -->
@@ -155,6 +150,12 @@
 
   <!-- ===== BOTON CANCELAR FLOTANTE ===== -->
   <button id="btn-cancelar-flotante" class="btn-cancelar-flotante">Cancelar</button>
+
+  <!-- ===== BOTON FLOTANTE: VER PEDIDO ===== -->
+  <button id="btn-ver-pedido" class="btn-pedido-flotante">
+    <span class="pedido-flotante-count" id="pedido-count">0</span>
+    <span>Ver pedido</span>
+  </button>
 
   <!-- ===== MODAL: SIMULAR TAG ===== -->
   <div id="modal-simular" class="modal-overlay">

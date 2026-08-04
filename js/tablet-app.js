@@ -58,6 +58,8 @@ function showScreen(name) {
   const showCancel = ['buscar', 'cantidad', 'ot'].includes(name);
   cancelBtn.classList.toggle('visible', showCancel);
 
+  el('btn-ver-pedido').classList.toggle('visible', name === 'buscar' && listaItems.length > 0);
+
   resetInactivityTimer();
 }
 
@@ -276,14 +278,8 @@ function showToast(message) {
 }
 
 function updateListaBadge() {
-  const footer = el('buscar-footer');
-  const count = el('pedido-count');
-  if (listaItems.length > 0) {
-    footer.style.display = '';
-    count.textContent = listaItems.length;
-  } else {
-    footer.style.display = 'none';
-  }
+  el('pedido-count').textContent = listaItems.length;
+  el('btn-ver-pedido').classList.toggle('visible', currentScreen === 'buscar' && listaItems.length > 0);
 }
 
 async function renderResultados(query) {
