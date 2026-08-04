@@ -1,0 +1,615 @@
+/* ======================================================
+   tablet.css — Estilos para la PWA de tablet de insumos
+   Optimizado para pantalla táctil ~10", alto contraste
+====================================================== */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-input: #252833;
+  --text: #e8eaed;
+  --text-dim: #8b8fa3;
+  --accent: #4e8cff;
+  --accent-hover: #6ba0ff;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --border: #2e3140;
+  --radius: 12px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* --- Layout principal --- */
+
+.tablet-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* --- Status bar (indicadores arriba) --- */
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.status-bar .status-left {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.status-bar .status-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.online { background: var(--green); }
+.status-dot.offline { background: var(--red); }
+.status-dot.ws-connected { background: var(--green); }
+.status-dot.ws-disconnected { background: var(--yellow); }
+
+.badge-pendientes {
+  background: var(--yellow);
+  color: #000;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* --- Pantallas (contenido principal) --- */
+
+.screen {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* --- Pantalla de espera --- */
+
+.screen-espera .espera-icon {
+  font-size: 72px;
+  margin-bottom: 24px;
+  opacity: 0.8;
+}
+
+.screen-espera h1 {
+  font-size: 36px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.screen-espera p {
+  color: var(--text-dim);
+  font-size: 18px;
+}
+
+.btn-simular {
+  margin-top: 32px;
+  padding: 14px 28px;
+  background: var(--bg-card);
+  border: 2px dashed var(--border);
+  color: var(--text-dim);
+  border-radius: var(--radius);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-simular:active {
+  background: var(--bg-input);
+}
+
+/* --- Pantalla de bienvenida --- */
+
+.screen-bienvenida h1 {
+  font-size: 28px;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+
+.screen-bienvenida .nombre-empleado {
+  font-size: 42px;
+  font-weight: 700;
+}
+
+/* --- Pantalla de configuración --- */
+
+.screen-config {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.screen-config h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.config-form label {
+  font-size: 15px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.config-form select,
+.config-form input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 18px;
+  outline: none;
+}
+
+.config-form select:focus,
+.config-form input:focus {
+  border-color: var(--accent);
+}
+
+/* --- Buscador de insumos --- */
+
+.screen-buscar {
+  justify-content: flex-start;
+  padding-top: 16px;
+}
+
+.buscar-header {
+  width: 100%;
+  max-width: 700px;
+  margin-bottom: 12px;
+}
+
+.buscar-header .empleado-actual {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.buscar-header .empleado-actual strong {
+  color: var(--text);
+}
+
+.buscar-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--bg-input);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 22px;
+  outline: none;
+}
+
+.buscar-input:focus {
+  border-color: var(--accent);
+}
+
+.buscar-input::placeholder {
+  color: var(--text-dim);
+}
+
+.resultados-lista {
+  width: 100%;
+  max-width: 700px;
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.resultado-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.resultado-item:active {
+  border-color: var(--accent);
+  background: var(--bg-input);
+}
+
+.resultado-info {
+  flex: 1;
+}
+
+.resultado-info .codigo {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.resultado-info .nombre {
+  font-size: 18px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.resultado-info .tipo-unidad {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.resultado-stock {
+  text-align: right;
+  font-size: 14px;
+}
+
+.resultado-stock .stock-num {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.resultado-stock .stock-label {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.stock-green .stock-num { color: var(--green); }
+.stock-yellow .stock-num { color: var(--yellow); }
+.stock-red .stock-num { color: var(--red); }
+
+/* --- Teclado numérico --- */
+
+.screen-cantidad,
+.screen-ot {
+  justify-content: flex-start;
+  padding-top: 24px;
+}
+
+.numpad-header {
+  text-align: center;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.numpad-header h2 {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.numpad-header .insumo-seleccionado {
+  font-size: 16px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.numpad-header .stock-info {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.numpad-display {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  background: var(--bg-input);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  margin-bottom: 16px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.numpad-btn {
+  padding: 20px;
+  font-size: 28px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.numpad-btn:active {
+  background: var(--bg-input);
+}
+
+.numpad-btn.btn-borrar {
+  background: var(--bg-input);
+  color: var(--red);
+  font-size: 20px;
+}
+
+.numpad-btn.btn-confirmar {
+  background: var(--accent);
+  color: #fff;
+  font-size: 20px;
+}
+
+.numpad-btn.btn-confirmar:active {
+  background: var(--accent-hover);
+}
+
+/* --- Pantalla resumen --- */
+
+.screen-resumen {
+  max-width: 500px;
+}
+
+.screen-resumen h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+.resumen-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+}
+
+.resumen-tabla td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 18px;
+}
+
+.resumen-tabla td:first-child {
+  color: var(--text-dim);
+  font-size: 14px;
+  width: 120px;
+  vertical-align: top;
+}
+
+.resumen-tabla td:last-child {
+  font-weight: 600;
+}
+
+.resumen-botones {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+/* --- Pantalla resultado --- */
+
+.screen-resultado {
+  text-align: center;
+}
+
+.screen-resultado .resultado-icon {
+  font-size: 72px;
+  margin-bottom: 16px;
+}
+
+.screen-resultado h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.screen-resultado p {
+  font-size: 18px;
+  color: var(--text-dim);
+}
+
+.resultado-ok h1 { color: var(--green); }
+.resultado-offline h1 { color: var(--yellow); }
+.resultado-error h1 { color: var(--red); }
+
+/* --- Botones generales --- */
+
+.btn {
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex: 1;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-success {
+  background: var(--green);
+  color: #000;
+}
+
+.btn-cancel {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-config {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+/* --- Modal de simulación --- */
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 90%;
+  max-width: 450px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.modal-empleado-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.modal-empleado-item:active {
+  border-color: var(--accent);
+}
+
+.modal-empleado-item .emp-nombre {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.modal-empleado-item .emp-cargo {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.modal-close {
+  margin-top: 12px;
+  width: 100%;
+}
+
+/* --- Boton cancelar flotante --- */
+
+.btn-cancelar-flotante {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 50;
+  display: none;
+}
+
+.btn-cancelar-flotante.visible {
+  display: block;
+}
+
+/* --- Scrollbar personalizado --- */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}

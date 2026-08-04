@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Insumos — Tablet</title>
+  <link rel="stylesheet" href="css/tablet.css">
+  <link rel="manifest" href="manifest-tablet.json">
+</head>
+<body>
+
+<div class="tablet-container">
+
+  <!-- ===== STATUS BAR ===== -->
+  <div class="status-bar">
+    <div class="status-left">
+      <span class="status-indicator">
+        <span id="dot-internet" class="status-dot offline"></span>
+        <span id="label-internet">Offline</span>
+      </span>
+      <span class="status-indicator">
+        <span id="dot-ws" class="status-dot ws-disconnected"></span>
+        <span id="label-ws">WS: —</span>
+      </span>
+      <span id="pendientes-badge" class="badge-pendientes" style="display:none">0 pendientes</span>
+    </div>
+    <div class="status-right">
+      <span id="label-localidad" style="color:var(--text-dim)">—</span>
+      <button id="btn-config-bar" class="btn-config">Config</button>
+    </div>
+  </div>
+
+  <!-- ===== PANTALLA: CONFIGURACIÓN INICIAL ===== -->
+  <div id="screen-config" class="screen screen-config">
+    <h1>Configuración Inicial</h1>
+    <div class="config-form">
+      <div>
+        <label>Localidad</label>
+        <select id="cfg-localidad">
+          <option value="MATRIZ">MATRIZ</option>
+          <option value="SUCURSAL">SUCURSAL</option>
+        </select>
+      </div>
+      <div>
+        <label>URL WebSocket del ESP32 (opcional por ahora)</label>
+        <input id="cfg-ws-url" type="text" placeholder="ws://192.168.1.50:81">
+      </div>
+      <div>
+        <label>Device Key</label>
+        <input id="cfg-device-key" type="text" placeholder="devkey123" value="devkey123">
+      </div>
+      <button id="btn-guardar-config" class="btn btn-primary" style="margin-top:12px">Guardar y Sincronizar</button>
+      <p id="cfg-status" style="text-align:center;color:var(--text-dim);font-size:14px"></p>
+    </div>
+  </div>
+
+  <!-- ===== PANTALLA: ESPERA (pase su tag) ===== -->
+  <div id="screen-espera" class="screen screen-espera">
+    <div class="espera-icon">&#128179;</div>
+    <h1>Pase su tarjeta</h1>
+    <p>Acerque su TAG al lector para identificarse</p>
+    <button id="btn-simular-tag" class="btn-simular">Simular TAG (desarrollo)</button>
+  </div>
+
+  <!-- ===== PANTALLA: BIENVENIDA ===== -->
+  <div id="screen-bienvenida" class="screen screen-bienvenida">
+    <h1>Bienvenido</h1>
+    <div id="nombre-empleado" class="nombre-empleado"></div>
+  </div>
+
+  <!-- ===== PANTALLA: BUSCAR INSUMO ===== -->
+  <div id="screen-buscar" class="screen screen-buscar">
+    <div class="buscar-header">
+      <div class="empleado-actual">Registrando para: <strong id="buscar-empleado-nombre"></strong></div>
+      <input id="buscar-input" class="buscar-input" type="text" placeholder="Buscar por código o nombre..." autocomplete="off">
+    </div>
+    <div id="resultados-lista" class="resultados-lista"></div>
+  </div>
+
+  <!-- ===== PANTALLA: CANTIDAD ===== -->
+  <div id="screen-cantidad" class="screen screen-cantidad">
+    <div class="numpad-header">
+      <h2>Ingrese cantidad</h2>
+      <div id="cant-insumo-nombre" class="insumo-seleccionado"></div>
+      <div id="cant-stock-info" class="stock-info"></div>
+    </div>
+    <div id="cant-display" class="numpad-display">_</div>
+    <div class="numpad-grid" id="numpad-cantidad">
+      <button class="numpad-btn" data-val="1">1</button>
+      <button class="numpad-btn" data-val="2">2</button>
+      <button class="numpad-btn" data-val="3">3</button>
+      <button class="numpad-btn" data-val="4">4</button>
+      <button class="numpad-btn" data-val="5">5</button>
+      <button class="numpad-btn" data-val="6">6</button>
+      <button class="numpad-btn" data-val="7">7</button>
+      <button class="numpad-btn" data-val="8">8</button>
+      <button class="numpad-btn" data-val="9">9</button>
+      <button class="numpad-btn btn-borrar" data-val="borrar">Borrar</button>
+      <button class="numpad-btn" data-val="0">0</button>
+      <button class="numpad-btn btn-confirmar" data-val="ok">OK</button>
+    </div>
+  </div>
+
+  <!-- ===== PANTALLA: ORDEN DE TRABAJO ===== -->
+  <div id="screen-ot" class="screen screen-ot">
+    <div class="numpad-header">
+      <h2>Orden de Trabajo</h2>
+      <p style="color:var(--text-dim);font-size:14px">Ingrese los 4 dígitos de la OT</p>
+    </div>
+    <div id="ot-display" class="numpad-display">_ _ _ _</div>
+    <div class="numpad-grid" id="numpad-ot">
+      <button class="numpad-btn" data-val="1">1</button>
+      <button class="numpad-btn" data-val="2">2</button>
+      <button class="numpad-btn" data-val="3">3</button>
+      <button class="numpad-btn" data-val="4">4</button>
+      <button class="numpad-btn" data-val="5">5</button>
+      <button class="numpad-btn" data-val="6">6</button>
+      <button class="numpad-btn" data-val="7">7</button>
+      <button class="numpad-btn" data-val="8">8</button>
+      <button class="numpad-btn" data-val="9">9</button>
+      <button class="numpad-btn btn-borrar" data-val="borrar">Borrar</button>
+      <button class="numpad-btn" data-val="0">0</button>
+      <button class="numpad-btn btn-confirmar" data-val="ok">OK</button>
+    </div>
+  </div>
+
+  <!-- ===== PANTALLA: RESUMEN ===== -->
+  <div id="screen-resumen" class="screen screen-resumen">
+    <h1>Confirmar Registro</h1>
+    <table class="resumen-tabla">
+      <tr><td>Empleado</td><td id="res-empleado"></td></tr>
+      <tr><td>Insumo</td><td id="res-insumo"></td></tr>
+      <tr><td>Código</td><td id="res-codigo"></td></tr>
+      <tr><td>Cantidad</td><td id="res-cantidad"></td></tr>
+      <tr><td>OT</td><td id="res-ot"></td></tr>
+      <tr><td>Localidad</td><td id="res-localidad"></td></tr>
+    </table>
+    <div class="resumen-botones">
+      <button id="btn-resumen-cancelar" class="btn btn-cancel">Cancelar</button>
+      <button id="btn-resumen-confirmar" class="btn btn-success">Confirmar</button>
+    </div>
+  </div>
+
+  <!-- ===== PANTALLA: RESULTADO ===== -->
+  <div id="screen-resultado" class="screen screen-resultado">
+    <div id="resultado-icon" class="resultado-icon"></div>
+    <h1 id="resultado-titulo"></h1>
+    <p id="resultado-mensaje"></p>
+  </div>
+
+  <!-- ===== BOTON CANCELAR FLOTANTE ===== -->
+  <button id="btn-cancelar-flotante" class="btn-cancelar-flotante">Cancelar</button>
+
+  <!-- ===== MODAL: SIMULAR TAG ===== -->
+  <div id="modal-simular" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Seleccionar empleado (simulación)</h2>
+      <div id="modal-empleados-lista"></div>
+      <button id="modal-cerrar" class="btn btn-cancel modal-close">Cerrar</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/tablet-offline.js"></script>
+<script src="js/tablet-app.js"></script>
+
+</body>
+</html>
