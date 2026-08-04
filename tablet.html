@@ -77,6 +77,11 @@
       <input id="buscar-input" class="buscar-input" type="text" placeholder="Buscar por código o nombre..." autocomplete="off">
     </div>
     <div id="resultados-lista" class="resultados-lista"></div>
+    <div id="buscar-footer" class="buscar-footer" style="display:none">
+      <button id="btn-ver-pedido" class="btn btn-success btn-ver-pedido">
+        Ver pedido (<span id="pedido-count">0</span> items)
+      </button>
+    </div>
   </div>
 
   <!-- ===== PANTALLA: CANTIDAD ===== -->
@@ -126,20 +131,18 @@
     </div>
   </div>
 
-  <!-- ===== PANTALLA: RESUMEN ===== -->
+  <!-- ===== PANTALLA: RESUMEN / PEDIDO ===== -->
   <div id="screen-resumen" class="screen screen-resumen">
-    <h1>Confirmar Registro</h1>
-    <table class="resumen-tabla">
-      <tr><td>Empleado</td><td id="res-empleado"></td></tr>
-      <tr><td>Insumo</td><td id="res-insumo"></td></tr>
-      <tr><td>Código</td><td id="res-codigo"></td></tr>
-      <tr><td>Cantidad</td><td id="res-cantidad"></td></tr>
-      <tr><td>OT</td><td id="res-ot"></td></tr>
-      <tr><td>Localidad</td><td id="res-localidad"></td></tr>
-    </table>
+    <div class="resumen-header-info">
+      <h1>Confirmar Pedido</h1>
+      <div class="empleado-actual">Empleado: <strong id="res-empleado"></strong></div>
+      <div style="color:var(--text-dim);font-size:14px">Localidad: <span id="res-localidad"></span></div>
+    </div>
+    <div id="lista-pedido" class="lista-pedido"></div>
     <div class="resumen-botones">
-      <button id="btn-resumen-cancelar" class="btn btn-cancel">Cancelar</button>
-      <button id="btn-resumen-confirmar" class="btn btn-success">Confirmar</button>
+      <button id="btn-resumen-cancelar" class="btn btn-cancel">Cancelar todo</button>
+      <button id="btn-agregar-mas" class="btn btn-primary">+ Agregar más</button>
+      <button id="btn-resumen-confirmar" class="btn btn-success">Confirmar pedido</button>
     </div>
   </div>
 
@@ -161,6 +164,9 @@
       <button id="modal-cerrar" class="btn btn-cancel modal-close">Cerrar</button>
     </div>
   </div>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast"></div>
 
 </div>
 

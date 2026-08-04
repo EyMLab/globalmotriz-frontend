@@ -17,6 +17,7 @@ let inactivityTimer = null;
 const INACTIVITY_TIMEOUT = 60000;
 const RESULT_TIMEOUT = 5000;
 let syncInterval = null;
+let listaItems = [];
 
 // --- Elementos DOM ---
 const el = (id) => document.getElementById(id);
@@ -245,6 +246,44 @@ function showBuscarInsumo() {
   showScreen('buscar');
   el('buscar-input').focus();
   renderResultados('');
+  updateListaBadge();
+}
+
+function getStockReservado(codigo) {
+  return listaItems
+    .filter(item => item.insumo.codigo === codigo)
+    .reduce((sum, item) => sum + item.cantidad, 0);
+}
+
+function agregarALista() {
+  listaItems.push({
+    insumo: { ...insumoActual },
+    cantidad: Number(cantidadActual),
+    ot: otActual
+  });
+  showToast(`${insumoActual.nombre} x${cantidadActual} agregado`);
+  insumoActual = null;
+  cantidadActual = '';
+  otActual = '';
+  showBuscarInsumo();
+}
+
+function showToast(message) {
+  const toast = el('toast');
+  toast.textContent = message;
+  toast.classList.add('visible');
+  setTimeout(() => toast.classList.remove('visible'), 2000);
+}
+
+function updateListaBadge() {
+  const footer = el('buscar-footer');
+  const count = el('pedido-count');
+  if (listaItems.length > 0) {
+    footer.style.display = '';
+    count.textContent = listaItems.length;
+  } else {
+    footer.style.display = 'none';
+  }
 }
 
 async function renderResultados(query) {
@@ -258,7 +297,7 @@ async function renderResultados(query) {
   }
 
   resultados.forEach(item => {
-    const stock = Number(item.stock_actual);
+    const stock = Number(item.stock_actual) - getStockReservado(item.codigo);
     const min = Number(item.stock_minimo);
     let stockClass = 'stock-green';
     if (stock <= min) stockClass = 'stock-red';
@@ -302,7 +341,7 @@ function showCantidad() {
   cantidadActual = '';
   el('cant-insumo-nombre').textContent = `${insumoActual.codigo} — ${insumoActual.nombre}`;
 
-  const stock = Number(insumoActual.stock_actual);
+  const stock = Number(insumoActual.stock_actual) - getStockReservado(insumoActual.codigo);
   const es999 = insumoActual.codigo === 'INS999';
   el('cant-stock-info').textContent = es999 ? 'Stock ilimitado' : `Disponible: ${stock} ${insumoActual.unidad || ''}`;
 
@@ -324,16 +363,16 @@ function handleCantInput(val) {
   if (val === 'ok') {
     if (!cantidadActual || Number(cantidadActual) <= 0) return;
 
-    const stock = Number(insumoActual.stock_actual);
+    const stockDisponible = Number(insumoActual.stock_actual) - getStockReservado(insumoActual.codigo);
     const qty = Number(cantidadActual);
     const es999 = insumoActual.codigo === 'INS999';
 
-    if (!es999 && qty > stock) {
-      el('cant-stock-info').textContent = `Sin stock suficiente (disponible: ${stock})`;
+    if (!es999 && qty > stockDisponible) {
+      el('cant-stock-info').textContent = `Sin stock suficiente (disponible: ${stockDisponible})`;
       el('cant-stock-info').style.color = 'var(--red)';
       setTimeout(() => {
         el('cant-stock-info').style.color = '';
-        el('cant-stock-info').textContent = `Disponible: ${stock} ${insumoActual.unidad || ''}`;
+        el('cant-stock-info').textContent = `Disponible: ${stockDisponible} ${insumoActual.unidad || ''}`;
       }, 2000);
       return;
     }
@@ -341,7 +380,7 @@ function handleCantInput(val) {
     const esStock = insumoActual.tipo === 'STOCK' || es999;
     if (esStock) {
       otActual = '0000';
-      showResumen();
+      agregarALista();
     } else {
       showOT();
     }
@@ -376,7 +415,7 @@ function handleOTInput(val) {
 
   if (val === 'ok') {
     if (otActual.length !== 4) return;
-    showResumen();
+    agregarALista();
     return;
   }
 
@@ -388,45 +427,90 @@ function handleOTInput(val) {
 
 // --- Resumen ---
 
-function showResumen() {
+function showPedido() {
+  if (listaItems.length === 0) return;
   el('res-empleado').textContent = `${empleadoActual.nombre} ${empleadoActual.apellido}`;
-  el('res-insumo').textContent = insumoActual.nombre;
-  el('res-codigo').textContent = insumoActual.codigo;
-  el('res-cantidad').textContent = `${cantidadActual} ${insumoActual.unidad || ''}`;
-  el('res-ot').textContent = otActual;
   el('res-localidad').textContent = localidad;
+
+  const lista = el('lista-pedido');
+  lista.innerHTML = '';
+
+  listaItems.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'pedido-item';
+    div.innerHTML = `
+      <div class="pedido-item-info">
+        <span class="pedido-codigo">${item.insumo.codigo}</span>
+        <span class="pedido-nombre">${item.insumo.nombre}</span>
+      </div>
+      <div class="pedido-item-detalle">
+        <span class="pedido-cant">x${item.cantidad}</span>
+        <span class="pedido-ot">OT: ${item.ot}</span>
+      </div>
+      <button class="pedido-item-remove" data-index="${index}">✕</button>
+    `;
+    lista.appendChild(div);
+  });
+
+  lista.querySelectorAll('.pedido-item-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      eliminarDeLista(Number(e.target.dataset.index));
+    });
+  });
+
   showScreen('resumen');
+}
+
+function eliminarDeLista(index) {
+  listaItems.splice(index, 1);
+  if (listaItems.length === 0) {
+    showBuscarInsumo();
+  } else {
+    showPedido();
+  }
 }
 
 // --- Enviar registro ---
 
 async function enviarRegistro() {
-  const registro = {
-    orden_trabajo: otActual,
-    codigo_barras: insumoActual.codigo,
-    cantidad: Number(cantidadActual),
+  if (listaItems.length === 0) return;
+
+  const registros = listaItems.map(item => ({
+    orden_trabajo: item.ot,
+    codigo_barras: item.insumo.codigo,
+    cantidad: item.cantidad,
     localidad: localidad,
     empleado_id: empleadoActual.id
-  };
+  }));
+
+  const totalItems = listaItems.length;
+  const resumen = listaItems.map(i => `${i.insumo.nombre} x${i.cantidad}`).join(', ');
 
   if (estaOnline()) {
     try {
-      await enviarRegistroDirecto(registro, deviceKey);
-      await decrementarStockLocal(insumoActual.codigo, Number(cantidadActual));
-      showResultado('ok', 'Registro exitoso', `${insumoActual.nombre} x${cantidadActual}`);
+      await enviarRegistrosBatch(registros, deviceKey);
+      for (const item of listaItems) {
+        await decrementarStockLocal(item.insumo.codigo, item.cantidad);
+      }
+      listaItems = [];
+      showResultado('ok', 'Pedido registrado', `${totalItems} item(s): ${resumen}`);
     } catch (e) {
-      await guardarOffline(registro);
+      await guardarTodoOffline(registros);
     }
   } else {
-    await guardarOffline(registro);
+    await guardarTodoOffline(registros);
   }
 }
 
-async function guardarOffline(registro) {
-  const pendientes = await agregarPendiente(registro);
-  await decrementarStockLocal(registro.codigo_barras, registro.cantidad);
+async function guardarTodoOffline(registros) {
+  for (const reg of registros) {
+    await agregarPendiente(reg);
+    await decrementarStockLocal(reg.codigo_barras, reg.cantidad);
+  }
+  listaItems = [];
+  const pendientes = await contarPendientes();
   updatePendientesBadge(pendientes);
-  showResultado('offline', 'Guardado offline', `${pendientes} registro(s) pendiente(s)`);
+  showResultado('offline', 'Guardado offline', `${registros.length} item(s), ${pendientes} pendiente(s)`);
 }
 
 // --- Resultado ---
@@ -455,6 +539,7 @@ function reiniciar() {
   insumoActual = null;
   cantidadActual = '';
   otActual = '';
+  listaItems = [];
   showScreen('espera');
 }
 
@@ -555,12 +640,23 @@ function setupEventListeners() {
     }
   });
 
-  // Resumen
+  // Pedido
   el('btn-resumen-confirmar').addEventListener('click', () => enviarRegistro());
   el('btn-resumen-cancelar').addEventListener('click', () => reiniciar());
+  el('btn-agregar-mas').addEventListener('click', () => showBuscarInsumo());
+  el('btn-ver-pedido').addEventListener('click', () => showPedido());
 
-  // Cancelar flotante
-  el('btn-cancelar-flotante').addEventListener('click', () => reiniciar());
+  // Cancelar flotante: en cantidad/ot vuelve a buscar; en buscar cancela todo
+  el('btn-cancelar-flotante').addEventListener('click', () => {
+    if (['cantidad', 'ot'].includes(currentScreen)) {
+      insumoActual = null;
+      cantidadActual = '';
+      otActual = '';
+      showBuscarInsumo();
+    } else {
+      reiniciar();
+    }
+  });
 
   // Actualizar pendientes al cargar
   updatePendientesBadge();

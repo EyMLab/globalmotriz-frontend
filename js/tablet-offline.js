@@ -208,6 +208,22 @@ async function limpiarPendientes() {
   await dbClear('cola_pendientes');
 }
 
+// --- Envío batch (online, múltiples items) ---
+
+async function enviarRegistrosBatch(registros, deviceKey) {
+  const res = await fetch(`${TABLET_API}/insumos/sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-device-key': deviceKey
+    },
+    body: JSON.stringify({ registros })
+  });
+
+  if (!res.ok) throw new Error('Error al enviar registros');
+  return res.json();
+}
+
 // --- Envío directo (online) ---
 
 async function enviarRegistroDirecto(registro, deviceKey) {
