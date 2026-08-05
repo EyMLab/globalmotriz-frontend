@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
 
         if (btn.dataset.tab === 'resumen') cargarResumen();
+        if (btn.dataset.tab === 'anual') cargarResumenAnual();
         if (btn.dataset.tab === 'nuevo') cargarEmpleados();
       });
     });
@@ -133,6 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Config dia corte
     btnGuardarCorte.addEventListener('click', guardarDiaCorte);
     cargarConfiguracion();
+
+    // Resumen anual
+    const filtroAnio = document.getElementById('filtro-anio');
+    const anioActual = new Date().getFullYear();
+    for (let y = anioActual; y >= anioActual - 5; y--) {
+      filtroAnio.appendChild(Object.assign(document.createElement('option'), { value: y, textContent: y }));
+    }
+    filtroAnio.addEventListener('change', cargarResumenAnual);
+    document.getElementById('btn-exportar-anual').addEventListener('click', exportarAnual);
 
     // Cargar datos iniciales
     cargarPrestamos();
@@ -300,14 +310,16 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        tablaResumen.innerHTML = data.empleados.map((e, i) => `
+        tablaResumen.innerHTML = data.empleados.map((e, i) => {
+          const cuotaInfo = (e.detalle || []).map(d => `${d.numero_cuota}/${d.cuotas_mes}`).join(', ');
+          return `
           <tr>
             <td style="text-align:center;">${i + 1}</td>
             <td>${e.cedula || '-'}</td>
             <td>${e.nombre} ${e.apellido}</td>
             <td>${e.cargo || '-'}</td>
             <td style="text-align:right;font-weight:600;">${formatMoney(e.total_descuento)}</td>
-            <td style="text-align:center;">${e.num_cuotas}</td>
+            <td style="text-align:center;">${cuotaInfo}</td>
             <td style="text-align:center;">
               ${e.todas_pagadas
                 ? '<span style="color:#10b981;font-weight:600;">Procesado</span>'
@@ -316,8 +328,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <td style="text-align:center;">
               <button onclick="verDetalleResumen(${e.empleado_id}, '${mes}')" class="btn-obs" style="font-size:11px;padding:2px 8px;">Ver</button>
             </td>
-          </tr>
-        `).join('');
+          </tr>`;
+        }).join('');
       })
       .catch(err => {
         console.error(err);
@@ -335,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const detalleHtml = emp.detalle.map(d => `
           <tr>
             <td>${tipoLabel(d.tipo)}</td>
+            <td style="text-align:center;">${d.numero_cuota}/${d.cuotas_mes}</td>
             <td style="text-align:right;">${formatMoney(d.valor_total)}</td>
             <td style="text-align:right;font-weight:600;">${formatMoney(d.monto)}</td>
             <td style="text-align:center;">${d.pagada ? 'Pagada' : 'Pendiente'}</td>
@@ -350,8 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <thead>
                   <tr style="background:#f1f5f9;">
                     <th style="padding:4px 8px;">Tipo</th>
+                    <th style="padding:4px 8px;text-align:center;">Cuota #</th>
                     <th style="padding:4px 8px;text-align:right;">Valor Prest.</th>
-                    <th style="padding:4px 8px;text-align:right;">Cuota Mes</th>
+                    <th style="padding:4px 8px;text-align:right;">Monto Cuota</th>
                     <th style="padding:4px 8px;">Estado</th>
                   </tr>
                 </thead>
@@ -533,6 +547,101 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGuardar.textContent = 'Guardar Prestamo';
         Swal.fire('Error', err.message, 'error');
       });
+  }
+
+  // ==========================================================
+  // PANEL: RESUMEN ANUAL
+  // ==========================================================
+  const MESES_NOMBRE = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function cargarResumenAnual() {
+    const anio = document.getElementById('filtro-anio').value;
+    const tEmpleados = document.getElementById('tabla-anual-empleados');
+    const tMeses = document.getElementById('tabla-anual-meses');
+    const tTipos = document.getElementById('tabla-anual-tipos');
+
+    tEmpleados.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+    tMeses.innerHTML = '';
+    tTipos.innerHTML = '';
+
+    apiFetch('/descuentos/resumen-anual?anio=' + anio)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('kpi-anual-total').textContent = formatMoney(data.total_cobrado + data.total_pendiente);
+        document.getElementById('kpi-anual-prestamos').textContent = data.total_prestamos;
+        document.getElementById('kpi-anual-empleados').textContent = data.total_empleados;
+        document.getElementById('kpi-anual-pendiente').textContent = formatMoney(data.total_pendiente);
+
+        if (!data.por_empleado.length) {
+          tEmpleados.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Sin datos para este anio</td></tr>';
+          document.getElementById('anual-total-cobrado').textContent = '$0.00';
+          document.getElementById('anual-total-pendiente').textContent = '$0.00';
+          return;
+        }
+
+        tEmpleados.innerHTML = data.por_empleado.map((e, i) => `
+          <tr>
+            <td style="text-align:center;">${i + 1}</td>
+            <td>${e.cedula || '-'}</td>
+            <td>${e.nombre} ${e.apellido}</td>
+            <td>${e.cargo || '-'}</td>
+            <td style="text-align:right;">${formatMoney(e.total_cobrado)}</td>
+            <td style="text-align:right;">${formatMoney(e.total_pendiente)}</td>
+            <td style="text-align:center;">${e.num_prestamos}</td>
+          </tr>
+        `).join('');
+
+        document.getElementById('anual-total-cobrado').textContent = formatMoney(data.total_cobrado);
+        document.getElementById('anual-total-pendiente').textContent = formatMoney(data.total_pendiente);
+
+        tMeses.innerHTML = data.por_mes.map(m => {
+          const [, mn] = m.mes.split('-').map(Number);
+          return `
+          <tr>
+            <td>${MESES_NOMBRE[mn - 1]}</td>
+            <td style="text-align:center;">${m.empleados}</td>
+            <td style="text-align:center;">${m.num_cuotas}</td>
+            <td style="text-align:right;">${formatMoney(m.monto)}</td>
+            <td style="text-align:center;">
+              ${m.todas_pagadas
+                ? '<span style="color:#10b981;font-weight:600;">Procesado</span>'
+                : '<span style="color:#f59e0b;font-weight:600;">Pendiente</span>'}
+            </td>
+          </tr>`;
+        }).join('');
+
+        tTipos.innerHTML = data.por_tipo.map(t => `
+          <tr>
+            <td>${tipoLabel(t.tipo)}</td>
+            <td style="text-align:center;">${t.cantidad}</td>
+            <td style="text-align:right;">${formatMoney(t.monto_total)}</td>
+            <td style="text-align:right;">${formatMoney(t.cobrado)}</td>
+            <td style="text-align:right;">${formatMoney(t.pendiente)}</td>
+          </tr>
+        `).join('');
+      })
+      .catch(err => {
+        tEmpleados.innerHTML = `<tr><td colspan="7">Error: ${err.message}</td></tr>`;
+      });
+  }
+
+  function exportarAnual() {
+    const anio = document.getElementById('filtro-anio').value;
+    const url = API_BASE_URL + '/descuentos/resumen-anual/exportar?anio=' + anio;
+    const token = getToken();
+    fetch(url, { headers: { Authorization: 'Bearer ' + token } })
+      .then(res => {
+        if (!res.ok) throw new Error('Error al exportar');
+        return res.blob();
+      })
+      .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `descuentos-anual-${anio}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch(err => Swal.fire('Error', err.message, 'error'));
   }
 
   // ==========================================================
