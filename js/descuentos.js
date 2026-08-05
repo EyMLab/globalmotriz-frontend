@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(err => {
         console.error(err);
-        tablaPrestamos.innerHTML = `<tr><td colspan="10">Error: ${err.message}</td></tr>`;
+        tablaPrestamos.innerHTML = `<tr><td colspan="11">Error: ${err.message}</td></tr>`;
       });
   }
 
@@ -168,12 +168,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('contador-prestamos').textContent = `${total} prestamo(s) encontrado(s)`;
 
     if (!data.length) {
-      tablaPrestamos.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;">No hay prestamos</td></tr>';
+      tablaPrestamos.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#94a3b8;">No hay prestamos</td></tr>';
       paginacionDiv.innerHTML = '';
       return;
     }
 
-    tablaPrestamos.innerHTML = data.map((p, i) => `
+    tablaPrestamos.innerHTML = data.map((p, i) => {
+      const cuotasRestantes = p.cuotas_mes - (p.cuotas_pagadas || 0);
+      const montoRestante = +(p.valor - (p.monto_pagado || 0)).toFixed(2);
+      return `
       <tr>
         <td style="text-align:center;">${(page - 1) * pageSize + i + 1}</td>
         <td>${formatFecha(p.fecha)}</td>
@@ -181,14 +184,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${p.cargo || '-'}</td>
         <td>${tipoLabel(p.tipo)}</td>
         <td style="text-align:right;">${formatMoney(p.valor)}</td>
-        <td style="text-align:center;">${p.cuotas_mes}</td>
-        <td style="text-align:right;">${formatMoney(p.valor_cuota)}</td>
+        <td style="text-align:right;">${formatMoney(montoRestante)}</td>
+        <td style="text-align:center;">${p.cuotas_pagadas || 0}/${p.cuotas_mes}</td>
+        <td style="text-align:center;">${cuotasRestantes}</td>
         <td>${estadoBadge(p.estado)}</td>
         <td style="text-align:center;">
           <button onclick="verDetalle(${p.id})" class="btn-obs" style="font-size:12px;padding:3px 10px;">Ver</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
 
     // Paginación
     const totalPages = Math.ceil(total / pageSize);
@@ -443,10 +447,10 @@ document.addEventListener('DOMContentLoaded', () => {
     html += '<br><span style="font-size:12px;color:#64748b;">Meses: ';
 
     const meses = [];
+    const [anio, mesNum] = fecha.split('-').map(Number);
     for (let i = 0; i < Math.min(cuotas, 12); i++) {
-      const d = new Date(fecha);
-      d.setMonth(d.getMonth() + i);
-      meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      const totalMes = (anio * 12 + (mesNum - 1)) + i;
+      meses.push(`${Math.floor(totalMes / 12)}-${String((totalMes % 12) + 1).padStart(2, '0')}`);
     }
     html += meses.join(', ');
     if (cuotas > 12) html += '...';
