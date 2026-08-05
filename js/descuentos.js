@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const inpDiaCorte     = document.getElementById('dia-corte');
 
   let paginaActual = 1;
+  let diaCorte = 25;
   const PAGE_SIZE = 20;
 
   // === Helpers ===
@@ -447,9 +448,10 @@ document.addEventListener('DOMContentLoaded', () => {
     html += '<br><span style="font-size:12px;color:#64748b;">Meses: ';
 
     const meses = [];
-    const [anio, mesNum] = fecha.split('-').map(Number);
+    const [anio, mesNum, dia] = fecha.split('-').map(Number);
+    const mesOffset = dia > diaCorte ? 1 : 0;
     for (let i = 0; i < Math.min(cuotas, 12); i++) {
-      const totalMes = (anio * 12 + (mesNum - 1)) + i;
+      const totalMes = (anio * 12 + (mesNum - 1)) + i + mesOffset;
       meses.push(`${Math.floor(totalMes / 12)}-${String((totalMes % 12) + 1).padStart(2, '0')}`);
     }
     html += meses.join(', ');
@@ -528,7 +530,10 @@ document.addEventListener('DOMContentLoaded', () => {
     apiFetch('/descuentos/configuracion')
       .then(res => res.json())
       .then(config => {
-        if (config.dia_corte) inpDiaCorte.value = config.dia_corte;
+        if (config.dia_corte) {
+          inpDiaCorte.value = config.dia_corte;
+          diaCorte = parseInt(config.dia_corte);
+        }
       })
       .catch(() => {});
   }
@@ -545,6 +550,8 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res => res.json())
       .then(data => {
         if (data.error) return Swal.fire('Error', data.error, 'error');
+        diaCorte = parseInt(dia);
+        actualizarPreview();
         Swal.fire({ title: 'Guardado', text: 'Dia de corte actualizado', icon: 'success', timer: 1500, showConfirmButton: false });
       })
       .catch(err => Swal.fire('Error', err.message, 'error'));
