@@ -819,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="check-opt"><div class="check-box"></div> SI SE AUTORIZA</div>
         <div class="check-opt"><div class="check-box"></div> NO SE AUTORIZA</div>
       </div>
-      <p style="margin-top:14px;">El monto aprobado es de USD _____________, que ser&aacute; descontado en <span class="valor-dest">${cuotas}</span> cuotas, a partir del mes de <span class="valor-dest">${primerMes}</span>.</p>
+      <p style="margin-top:14px;">El monto aprobado es de USD <span class="valor-dest">${valor}</span>, que ser&aacute; descontado en <span class="valor-dest">${cuotas}</span> cuotas, a partir del mes de <span class="valor-dest">${primerMes}</span>.</p>
 
       <div class="firmas-row">
         <div class="firma-col">
