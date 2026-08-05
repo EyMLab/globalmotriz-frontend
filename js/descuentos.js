@@ -572,109 +572,158 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================
   // IMPRIMIR SOLICITUD
   // ==========================================================
+  const MOTIVO_LABELS = {
+    PRESTAMO: 'Prestamo personal',
+    PRESTAMO_TALLER: 'Prestamo por servicio de taller',
+    ANTICIPO: 'Anticipo de sueldo',
+    QUINCENA: 'Quincena',
+    REPROCESO: 'Descuento por reproceso',
+    FALTA_INJUSTIFICADA: 'Falta injustificada',
+    RIFA_SOLIDARIO: 'Apoyo rifa solidario',
+    USO_PERSONAL: 'Uso personal'
+  };
+
   function imprimirSolicitud(p) {
-    const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.trim();
+    const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.trim().toUpperCase();
     const cedula = p.cedula || '';
     const fechaSol = formatFecha(p.fecha);
     const valorNum = parseFloat(p.valor);
     const valor = formatMoney(valorNum);
     const cuotas = p.cuotas_mes || (p.cuotas ? p.cuotas.length : 1);
-    const tipoTxt = tipoLabel(p.tipo).toLowerCase();
-    const motivo = p.observacion || '';
+    const motivo = MOTIVO_LABELS[p.tipo] || tipoLabel(p.tipo);
 
-    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const mesesNombre = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     let primerMes = '';
     if (p.cuotas && p.cuotas.length) {
       const [a, m] = p.cuotas[0].mes.split('-').map(Number);
-      primerMes = `${meses[m - 1]} ${a}`;
+      primerMes = `${mesesNombre[m - 1]} ${a}`;
     }
 
-    const w = window.open('', '_blank');
-    w.document.write(`<!DOCTYPE html>
+    const logoUrl = window.location.origin + '/img/logo.png';
+
+    const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Solicitud de Anticipo / Prestamo</title>
+<title>Solicitud - ${nombreCompleto}</title>
 <style>
-  @page { size: letter; margin: 2.5cm 2cm; }
-  body { font-family: Arial, sans-serif; font-size: 12pt; color: #000; line-height: 1.6; }
-  .header { text-align: center; margin-bottom: 30px; }
-  .header h2 { margin: 0; font-size: 14pt; text-decoration: underline; }
-  .header img { height: 60px; margin-bottom: 8px; }
-  .datos { margin-bottom: 24px; }
-  .datos table { width: 100%; border-collapse: collapse; }
-  .datos td { padding: 4px 0; }
-  .datos td.label { font-weight: bold; width: 180px; }
-  .cuerpo { margin-bottom: 30px; text-align: justify; }
-  .linea { border-bottom: 1px solid #000; display: inline-block; min-width: 120px; text-align: center; font-weight: bold; }
-  .motivo { border: 1px solid #999; min-height: 50px; padding: 8px; margin-top: 8px; }
-  .firma-section { margin-top: 50px; }
-  .firma-row { display: flex; justify-content: space-between; margin-top: 60px; }
-  .firma-box { text-align: center; width: 45%; }
-  .firma-linea { border-top: 1px solid #000; padding-top: 4px; }
-  .autorizacion { margin-top: 40px; padding: 16px; border: 1px solid #ccc; }
-  .autorizacion h3 { margin: 0 0 12px; font-size: 12pt; text-decoration: underline; text-align: center; }
-  @media print { body { margin: 0; } }
+  @page { size: letter; margin: 1.8cm 2cm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #1e293b; line-height: 1.5; }
+
+  .page { max-width: 720px; margin: 0 auto; padding: 20px 0; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0f4c81; padding-bottom: 14px; margin-bottom: 20px; }
+  .header-logo img { height: 55px; }
+  .header-title { text-align: right; }
+  .header-title h1 { font-size: 15pt; color: #0f4c81; margin: 0; letter-spacing: 0.5px; }
+  .header-title p { font-size: 9pt; color: #64748b; margin-top: 2px; }
+
+  .datos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #0f4c81; }
+  .dato { display: flex; gap: 8px; }
+  .dato-label { font-weight: 700; font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; min-width: 55px; }
+  .dato-valor { font-weight: 600; color: #1e293b; }
+
+  .cuerpo { margin-bottom: 20px; text-align: justify; font-size: 11pt; }
+  .cuerpo p { margin-bottom: 10px; }
+  .valor-dest { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; padding: 1px 10px; font-weight: 700; color: #0f4c81; }
+
+  .motivo-box { border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-top: 6px; min-height: 40px; font-weight: 600; color: #334155; background: #fff; }
+
+  .firma-center { text-align: center; margin-top: 55px; }
+  .firma-line { width: 260px; border-top: 1.5px solid #334155; margin: 0 auto; padding-top: 6px; font-weight: 700; font-size: 10pt; color: #334155; }
+  .firma-ci { font-size: 9pt; color: #64748b; margin-top: 2px; }
+
+  .autorizacion { margin-top: 30px; border: 1.5px solid #0f4c81; border-radius: 8px; overflow: hidden; }
+  .auto-header { background: #0f4c81; color: #fff; text-align: center; padding: 6px; font-weight: 700; font-size: 11pt; letter-spacing: 1px; }
+  .auto-body { padding: 16px 20px; }
+  .auto-body p { margin-bottom: 10px; }
+  .check-row { display: flex; gap: 40px; margin: 10px 0; }
+  .check-opt { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+  .check-box { width: 16px; height: 16px; border: 1.5px solid #334155; border-radius: 3px; }
+
+  .firmas-row { display: flex; justify-content: space-between; margin-top: 50px; }
+  .firma-col { text-align: center; width: 44%; }
+  .firma-col .firma-line { width: 100%; }
+  .firma-nombre { font-size: 10pt; color: #64748b; margin-top: 3px; }
+
+  .footer { margin-top: 20px; text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+
+  @media print {
+    body { margin: 0; }
+    .page { padding: 0; }
+  }
 </style>
 </head>
 <body>
-<div class="header">
-  <h2>SOLICITUD DE ANTICIPO / PRESTAMO</h2>
-</div>
+<div class="page">
 
-<div class="datos">
-  <table>
-    <tr>
-      <td class="label">FECHA DE SOLICITUD:</td>
-      <td>${fechaSol}</td>
-    </tr>
-    <tr>
-      <td class="label">NOMBRE:</td>
-      <td>${nombreCompleto}</td>
-    </tr>
-    <tr>
-      <td class="label">C.I.:</td>
-      <td>${cedula}</td>
-    </tr>
-  </table>
-</div>
-
-<div class="cuerpo">
-  <p>Por medio del presente solicito su autorizacion para que me otorgue un ${tipoTxt} de USD <span class="linea">${valor}</span>, el cual lo cancelar&eacute; en <span class="linea">${cuotas}</span> cuotas. Autorizo para que el valor correspondiente sea descontado de mi rol de pagos.</p>
-
-  <p>El anticipo o pr&eacute;stamo lo solicito por el siguiente motivo:</p>
-  <div class="motivo">${motivo}</div>
-</div>
-
-<div class="firma-section">
-  <div style="text-align:center;margin-top:60px;">
-    <div class="firma-linea" style="width:250px;margin:0 auto;">FIRMA DEL SOLICITANTE</div>
-    <div style="margin-top:4px;">C.I. ${cedula}</div>
-  </div>
-</div>
-
-<div class="autorizacion">
-  <h3>AUTORIZACION</h3>
-  <p>Revisada su solicitud informo que ______ <strong>SI SE AUTORIZA</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ______ <strong>NO SE AUTORIZA</strong></p>
-  <p>El monto aprobado es de USD _____________, que sera descontado en <span class="linea">${cuotas}</span> cuotas, a partir del mes de <span class="linea">${primerMes}</span>.</p>
-
-  <div class="firma-row">
-    <div class="firma-box">
-      <div class="firma-linea">AUTORIZADO POR:</div>
-      <div style="margin-top:4px;">SANTIAGO ALBAN</div>
-    </div>
-    <div class="firma-box">
-      <div class="firma-linea">REGISTRADO POR:</div>
-      <div style="margin-top:4px;">RRHH / CONTABILIDAD</div>
+  <div class="header">
+    <div class="header-logo"><img src="${logoUrl}" alt="Global Motriz"></div>
+    <div class="header-title">
+      <h1>SOLICITUD DE ANTICIPO / PRESTAMO</h1>
+      <p>Global Motriz S.A. &mdash; Recursos Humanos</p>
     </div>
   </div>
-</div>
 
+  <div class="datos-grid">
+    <div class="dato"><span class="dato-label">Fecha:</span><span class="dato-valor">${fechaSol}</span></div>
+    <div class="dato"><span class="dato-label">C.I.:</span><span class="dato-valor">${cedula}</span></div>
+    <div class="dato" style="grid-column:1/-1;"><span class="dato-label">Nombre:</span><span class="dato-valor">${nombreCompleto}</span></div>
+  </div>
+
+  <div class="cuerpo">
+    <p>Por medio del presente solicito su autorizaci&oacute;n para que me otorgue un anticipo / pr&eacute;stamo de USD <span class="valor-dest">${valor}</span>, el cual lo cancelar&eacute; en <span class="valor-dest">${cuotas}</span> cuotas. Autorizo para que el valor correspondiente sea descontado de mi rol de pagos.</p>
+    <p>El anticipo o pr&eacute;stamo lo solicito por el siguiente motivo:</p>
+    <div class="motivo-box">${motivo}</div>
+  </div>
+
+  <div class="firma-center">
+    <div class="firma-line">FIRMA DEL SOLICITANTE</div>
+    <div class="firma-ci">C.I. ${cedula}</div>
+  </div>
+
+  <div class="autorizacion">
+    <div class="auto-header">AUTORIZACI&Oacute;N</div>
+    <div class="auto-body">
+      <p>Revisada su solicitud informo que:</p>
+      <div class="check-row">
+        <div class="check-opt"><div class="check-box"></div> SI SE AUTORIZA</div>
+        <div class="check-opt"><div class="check-box"></div> NO SE AUTORIZA</div>
+      </div>
+      <p style="margin-top:14px;">El monto aprobado es de USD _____________, que ser&aacute; descontado en <span class="valor-dest">${cuotas}</span> cuotas, a partir del mes de <span class="valor-dest">${primerMes}</span>.</p>
+
+      <div class="firmas-row">
+        <div class="firma-col">
+          <div class="firma-line">AUTORIZADO POR:</div>
+          <div class="firma-nombre">SANTIAGO ALBAN</div>
+        </div>
+        <div class="firma-col">
+          <div class="firma-line">REGISTRADO POR:</div>
+          <div class="firma-nombre">RRHH / CONTABILIDAD</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Documento generado por Sistema Global Motriz &mdash; ${new Date().toLocaleDateString('es-EC')}</div>
+
+</div>
 </body>
-</html>`);
-    w.document.close();
-    w.focus();
-    w.print();
+</html>`;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+    document.body.appendChild(iframe);
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+
+    iframe.contentWindow.onafterprint = () => document.body.removeChild(iframe);
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 300);
   }
 
 });
