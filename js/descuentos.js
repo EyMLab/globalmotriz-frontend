@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selNuevoTipo    = document.getElementById('nuevo-tipo');
   const inpValor        = document.getElementById('nuevo-valor');
   const inpCuotas       = document.getElementById('nuevo-cuotas');
+  const inpValorCuota   = document.getElementById('nuevo-valor-cuota');
   const inpObservacion  = document.getElementById('nuevo-observacion');
   const previewCuotas   = document.getElementById('preview-cuotas');
   const btnGuardar      = document.getElementById('btn-guardar-prestamo');
@@ -120,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Preview cuotas
     inpValor.addEventListener('input', actualizarPreview);
     inpCuotas.addEventListener('input', actualizarPreview);
+    inpValorCuota.addEventListener('input', actualizarPreview);
     inpFecha.addEventListener('change', actualizarPreview);
 
     // Guardar prestamo
@@ -475,8 +477,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const valorCuota = Math.floor((valor / cuotas) * 100) / 100;
-    const ultima = +(valor - valorCuota * (cuotas - 1)).toFixed(2);
+    const manual = parseFloat(inpValorCuota.value);
+    let valorCuota, ultima;
+    if (manual > 0 && manual * (cuotas - 1) < valor) {
+      valorCuota = Math.floor(manual * 100) / 100;
+      ultima = +(valor - valorCuota * (cuotas - 1)).toFixed(2);
+    } else {
+      valorCuota = Math.floor((valor / cuotas) * 100) / 100;
+      ultima = +(valor - valorCuota * (cuotas - 1)).toFixed(2);
+    }
 
     let html = `<strong>Preview:</strong> ${cuotas} cuota(s) de ${formatMoney(valorCuota)}`;
     if (ultima !== valorCuota) html += ` (ultima: ${formatMoney(ultima)})`;
@@ -521,7 +530,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tipo,
         valor: parseFloat(valor),
         cuotas_mes: parseInt(cuotas_mes),
-        observacion: observacion || null
+        observacion: observacion || null,
+        valor_cuota_manual: parseFloat(inpValorCuota.value) > 0 ? parseFloat(inpValorCuota.value) : undefined
       })
     })
       .then(res => res.json())
@@ -548,6 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selNuevoTipo.value = '';
         inpValor.value = '';
         inpCuotas.value = '1';
+        inpValorCuota.value = '';
         inpObservacion.value = '';
         previewCuotas.style.display = 'none';
 
