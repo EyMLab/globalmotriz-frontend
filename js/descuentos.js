@@ -274,10 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
               </table>
             </div>
           `,
-          width: 580,
-          showCloseButton: false,
+          customClass: { popup: 'swal-wide' },
+          showCancelButton: true,
           confirmButtonText: 'Imprimir solicitud',
-          confirmButtonColor: '#6366f1'
+          confirmButtonColor: '#6366f1',
+          cancelButtonText: 'Cerrar',
+          cancelButtonColor: '#64748b'
         }).then(r => {
           if (r.isConfirmed) imprimirSolicitud(p);
         });
@@ -389,9 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </table>
             </div>
           `,
-          width: 580,
-          showCloseButton: false,
-          showConfirmButton: true,
+          customClass: { popup: 'swal-wide' },
           confirmButtonText: 'Cerrar',
           confirmButtonColor: '#64748b'
         });
