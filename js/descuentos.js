@@ -227,45 +227,56 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res => res.json())
       .then(p => {
         const cuotasHtml = p.cuotas.map(c => `
-          <tr>
-            <td style="text-align:center;">${c.numero_cuota}</td>
-            <td>${c.mes}</td>
-            <td style="text-align:right;">${formatMoney(c.monto)}</td>
-            <td style="text-align:center;">
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:6px 10px;text-align:center;">${c.numero_cuota}</td>
+            <td style="padding:6px 10px;">${c.mes}</td>
+            <td style="padding:6px 10px;text-align:right;">${formatMoney(c.monto)}</td>
+            <td style="padding:6px 10px;text-align:center;">
               ${c.pagada
                 ? '<span style="color:#10b981;font-weight:600;">Pagada</span>'
                 : '<span style="color:#f59e0b;font-weight:600;">Pendiente</span>'}
             </td>
-            <td style="text-align:center;">
+            <td style="padding:6px 10px;text-align:center;">
               ${!c.pagada && p.estado !== 'ANULADO'
-                ? `<button onclick="marcarPagada(${c.id}, ${id})" style="background:#10b981;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Pagar</button>`
+                ? `<button onclick="marcarPagada(${c.id}, ${id})" style="background:#10b981;color:#fff;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-weight:600;">Pagar</button>`
                 : (c.pagada_por ? `<span style="font-size:11px;color:#94a3b8;">${c.pagada_por}</span>` : '')}
             </td>
           </tr>
         `).join('');
 
+        const cuotasPagadas = p.cuotas.filter(c => c.pagada).length;
+        const montoPagado = p.cuotas.filter(c => c.pagada).reduce((s, c) => s + parseFloat(c.monto), 0);
+
         Swal.fire({
           title: `${p.nombre} ${p.apellido}`,
           html: `
-            <div style="text-align:left;font-size:13px;">
-              <p><strong>Tipo:</strong> ${tipoLabel(p.tipo)} | <strong>Estado:</strong> ${p.estado.replace('_', ' ')}</p>
-              <p><strong>Valor total:</strong> ${formatMoney(p.valor)} | <strong>Cuotas:</strong> ${p.cuotas_mes} x ${formatMoney(p.valor_cuota)}</p>
-              <p><strong>Fecha:</strong> ${formatFecha(p.fecha)}${p.observacion ? ' | <strong>Obs:</strong> ' + p.observacion : ''}</p>
-              <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;">
+            <div style="text-align:left;font-size:13px;line-height:1.6;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:12px;">
+                <div><span style="color:#64748b;">Tipo:</span> <strong>${tipoLabel(p.tipo)}</strong></div>
+                <div><span style="color:#64748b;">Estado:</span> <strong>${p.estado.replace('_', ' ')}</strong></div>
+                <div><span style="color:#64748b;">Valor total:</span> <strong>${formatMoney(p.valor)}</strong></div>
+                <div><span style="color:#64748b;">Cuotas:</span> <strong>${cuotasPagadas}/${p.cuotas_mes}</strong> (${formatMoney(p.valor_cuota)} c/u)</div>
+                <div><span style="color:#64748b;">Fecha:</span> <strong>${formatFecha(p.fecha)}</strong></div>
+                <div><span style="color:#64748b;">Restante:</span> <strong style="color:#dc2626;">${formatMoney(p.valor - montoPagado)}</strong></div>
+              </div>
+              ${p.observacion ? `<div style="background:#f8fafc;padding:6px 10px;border-radius:4px;margin-bottom:10px;font-size:12px;color:#64748b;"><strong>Obs:</strong> ${p.observacion}</div>` : ''}
+              <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:450px;">
                 <thead>
-                  <tr style="background:#f1f5f9;">
-                    <th style="padding:4px 8px;">#</th>
-                    <th style="padding:4px 8px;">Mes</th>
-                    <th style="padding:4px 8px;text-align:right;">Monto</th>
-                    <th style="padding:4px 8px;">Estado</th>
-                    <th style="padding:4px 8px;">Accion</th>
+                  <tr style="background:#0f4c81;color:#fff;">
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">#</th>
+                    <th style="padding:6px 10px;font-weight:600;">Mes</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Monto</th>
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Estado</th>
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Accion</th>
                   </tr>
                 </thead>
                 <tbody>${cuotasHtml}</tbody>
               </table>
+              </div>
             </div>
           `,
-          width: 620,
+          width: 700,
           showCloseButton: true,
           confirmButtonText: 'Imprimir solicitud',
           confirmButtonColor: '#6366f1'
@@ -345,35 +356,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!emp) return;
 
         const detalleHtml = emp.detalle.map(d => `
-          <tr>
-            <td>${tipoLabel(d.tipo)}</td>
-            <td style="text-align:center;">${d.numero_cuota}/${d.cuotas_mes}</td>
-            <td style="text-align:right;">${formatMoney(d.valor_total)}</td>
-            <td style="text-align:right;font-weight:600;">${formatMoney(d.monto)}</td>
-            <td style="text-align:center;">${d.pagada ? 'Pagada' : 'Pendiente'}</td>
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:6px 10px;">${tipoLabel(d.tipo)}</td>
+            <td style="padding:6px 10px;text-align:center;">${d.numero_cuota}/${d.cuotas_mes}</td>
+            <td style="padding:6px 10px;text-align:right;">${formatMoney(d.valor_total)}</td>
+            <td style="padding:6px 10px;text-align:right;font-weight:600;">${formatMoney(d.monto)}</td>
+            <td style="padding:6px 10px;text-align:center;">
+              ${d.pagada
+                ? '<span style="color:#10b981;font-weight:600;">Pagada</span>'
+                : '<span style="color:#f59e0b;font-weight:600;">Pendiente</span>'}
+            </td>
           </tr>
         `).join('');
 
         Swal.fire({
-          title: `${emp.nombre} ${emp.apellido} - ${mes}`,
+          title: `${emp.nombre} ${emp.apellido}`,
           html: `
-            <div style="text-align:left;font-size:13px;">
-              <p><strong>Total descuento:</strong> ${formatMoney(emp.total_descuento)}</p>
-              <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;">
+            <div style="text-align:left;font-size:13px;line-height:1.6;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+                <div><span style="color:#64748b;">Mes:</span> <strong>${mes}</strong></div>
+                <div><span style="color:#64748b;">Total descuento:</span> <strong style="color:#0f4c81;">${formatMoney(emp.total_descuento)}</strong></div>
+              </div>
+              <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:480px;">
                 <thead>
-                  <tr style="background:#f1f5f9;">
-                    <th style="padding:4px 8px;">Tipo</th>
-                    <th style="padding:4px 8px;text-align:center;">Cuota #</th>
-                    <th style="padding:4px 8px;text-align:right;">Valor Prest.</th>
-                    <th style="padding:4px 8px;text-align:right;">Monto Cuota</th>
-                    <th style="padding:4px 8px;">Estado</th>
+                  <tr style="background:#0f4c81;color:#fff;">
+                    <th style="padding:6px 10px;font-weight:600;">Tipo</th>
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Cuota</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Valor Prest.</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Monto Cuota</th>
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Estado</th>
                   </tr>
                 </thead>
                 <tbody>${detalleHtml}</tbody>
               </table>
+              </div>
             </div>
           `,
-          width: 500,
+          width: 650,
           showCloseButton: true,
           showConfirmButton: false
         });
