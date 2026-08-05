@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <title>Descuentos - Global Motriz</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+
+    <!-- ============================================================
+         SUB-TABS NAV
+    ============================================================ -->
+    <div class="subtabs-nav">
+      <button class="subtab-btn active" data-tab="prestamos">Prestamos</button>
+      <button class="subtab-btn" data-tab="resumen">Resumen Mensual</button>
+      <button class="subtab-btn" data-tab="nuevo">Nuevo Prestamo</button>
+    </div>
+
+    <!-- ============================================================
+         PANEL 1: PRESTAMOS
+    ============================================================ -->
+    <div id="panel-prestamos" class="subtab-panel active">
+
+      <div class="section-header" style="margin-bottom:12px;">
+        <h2>Prestamos y Descuentos al Personal</h2>
+      </div>
+
+      <div class="filter-row" style="margin-bottom:16px;">
+        <input id="buscar-prestamo" class="swal2-input" placeholder="Buscar por nombre..."
+               style="width:220px;margin:0;height:36px;font-size:13px;">
+        <select id="filtro-tipo" class="filter-select-md">
+          <option value="">Todos los tipos</option>
+          <option value="PRESTAMO">Prestamo</option>
+          <option value="PRESTAMO_TALLER">Prestamo Taller</option>
+          <option value="ANTICIPO">Anticipo</option>
+          <option value="QUINCENA">Quincena</option>
+          <option value="REPROCESO">Reproceso</option>
+          <option value="FALTA_INJUSTIFICADA">Falta Injustificada</option>
+          <option value="RIFA_SOLIDARIO">Rifa Solidario</option>
+          <option value="USO_PERSONAL">Uso Personal</option>
+        </select>
+        <select id="filtro-estado" class="filter-select-md">
+          <option value="">Todos</option>
+          <option value="EN_PROCESO" selected>En Proceso</option>
+          <option value="FINALIZADO">Finalizado</option>
+          <option value="ANULADO">Anulado</option>
+        </select>
+      </div>
+
+      <div id="contador-prestamos" style="font-size:14px;color:#374151;font-weight:600;margin-bottom:8px;"></div>
+
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar">
+        <thead>
+          <tr>
+            <th style="width:45px;text-align:center;">#</th>
+            <th>Fecha</th>
+            <th>Empleado</th>
+            <th>Cargo</th>
+            <th>Tipo</th>
+            <th style="text-align:right;">Valor</th>
+            <th style="text-align:center;">Cuotas</th>
+            <th style="text-align:right;">Valor Cuota</th>
+            <th>Estado</th>
+            <th style="text-align:center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-prestamos"></tbody>
+      </table>
+      </div>
+
+      <div id="paginacion-prestamos" style="display:flex;justify-content:center;gap:8px;margin-top:12px;"></div>
+
+    </div>
+
+    <!-- ============================================================
+         PANEL 2: RESUMEN MENSUAL
+    ============================================================ -->
+    <div id="panel-resumen" class="subtab-panel">
+
+      <div class="section-header" style="margin-bottom:12px;">
+        <h2>Resumen Mensual de Descuentos</h2>
+      </div>
+
+      <div class="filter-row" style="margin-bottom:16px;align-items:center;">
+        <label style="font-weight:600;font-size:14px;color:#374151;">Mes:</label>
+        <input type="month" id="filtro-mes" class="swal2-input"
+               style="width:180px;margin:0;height:36px;font-size:13px;">
+        <button id="btn-exportar" class="btn-obs"
+                style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;font-weight:600;">
+          Exportar Excel
+        </button>
+        <button id="btn-procesar-mes" class="btn-obs"
+                style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;font-weight:600;margin-left:auto;">
+          Procesar Mes
+        </button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="rrhh-kpi-grid" style="margin-bottom:16px;">
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">Empleados con descuento</div>
+          <div class="rrhh-kpi-value" id="kpi-empleados">—</div>
+        </div>
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">Monto total del mes</div>
+          <div class="rrhh-kpi-value" id="kpi-monto">—</div>
+        </div>
+        <div class="rrhh-kpi-card">
+          <div class="rrhh-kpi-label">Pendientes de procesar</div>
+          <div class="rrhh-kpi-value" id="kpi-pendientes">—</div>
+        </div>
+      </div>
+
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar">
+        <thead>
+          <tr>
+            <th style="width:45px;text-align:center;">#</th>
+            <th>Cedula</th>
+            <th>Nombre Completo</th>
+            <th>Cargo</th>
+            <th style="text-align:right;">Total Descuento</th>
+            <th style="text-align:center;">Cuotas</th>
+            <th style="text-align:center;">Estado</th>
+            <th style="text-align:center;">Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-resumen"></tbody>
+        <tfoot>
+          <tr style="font-weight:700;background:#f1f5f9;">
+            <td colspan="4" style="text-align:right;">TOTAL:</td>
+            <td id="resumen-total" style="text-align:right;">$0.00</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+      </div>
+
+      <!-- Configuración día de corte -->
+      <div style="margin-top:20px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;color:#64748b;font-weight:600;">Dia de corte:</span>
+        <input type="number" id="dia-corte" min="1" max="31" class="swal2-input"
+               style="width:70px;margin:0;height:32px;font-size:13px;text-align:center;">
+        <button id="btn-guardar-corte" class="btn-obs"
+                style="background:#6366f1;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-weight:600;">
+          Guardar
+        </button>
+        <span style="font-size:12px;color:#94a3b8;">Los prestamos creados hasta este dia del mes se incluyen en el resumen.</span>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         PANEL 3: NUEVO PRESTAMO
+    ============================================================ -->
+    <div id="panel-nuevo" class="subtab-panel">
+
+      <div class="section-header" style="margin-bottom:16px;">
+        <h2>Registrar Nuevo Prestamo / Descuento</h2>
+      </div>
+
+      <div style="max-width:600px;">
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:4px;">Empleado *</label>
+          <select id="nuevo-empleado" class="swal2-input" style="width:100%;margin:0;height:40px;font-size:14px;">
+            <option value="">Seleccionar empleado...</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-bottom:14px;">
+          <div style="flex:1;">
+            <label style="display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:4px;">Fecha *</label>
+            <input type="date" id="nuevo-fecha" class="swal2-input" style="width:100%;margin:0;height:40px;font-size:14px;">
+          </div>
+          <div style="flex:1;">
+            <label style="display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:4px;">Tipo *</label>
+            <select id="nuevo-tipo" class="swal2-input" style="width:100%;margin:0;height:40px;font-size:14px;">
+              <option value="">Seleccionar tipo...</option>
+              <option value="PRESTAMO">Prestamo</option>
+              <option value="PRESTAMO_TALLER">Prestamo por Servicio Taller</option>
+              <option value="ANTICIPO">Anticipo</option>
+              <option value="QUINCENA">Quincena</option>
+              <option value="REPROCESO">Descuento Reproceso</option>
+              <option value="FALTA_INJUSTIFICADA">Falta Injustificada</option>
+              <option value="RIFA_SOLIDARIO">Apoyo Rifa Solidario</option>
+              <option value="USO_PERSONAL">Uso Personal</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-bottom:14px;">
+          <div style="flex:1;">
+            <label style="display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:4px;">Valor Total ($) *</label>
+            <input type="number" id="nuevo-valor" step="0.01" min="0.01" class="swal2-input"
+                   placeholder="0.00" style="width:100%;margin:0;height:40px;font-size:14px;">
+          </div>
+          <div style="flex:1;">
+            <label style="display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:4px;">Cuotas (meses) *</label>
+            <input type="number" id="nuevo-cuotas" min="1" value="1" class="swal2-input"
+                   style="width:100%;margin:0;height:40px;font-size:14px;">
+          </div>
+        </div>
+
+        <div id="preview-cuotas" style="margin-bottom:14px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#166534;display:none;">
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:4px;">Observacion</label>
+          <textarea id="nuevo-observacion" class="swal2-input" rows="2" placeholder="Notas opcionales..."
+                    style="width:100%;margin:0;font-size:14px;resize:vertical;min-height:50px;"></textarea>
+        </div>
+
+        <button id="btn-guardar-prestamo" class="btn-obs"
+                style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:15px;cursor:pointer;font-weight:700;">
+          Guardar Prestamo
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- JS -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/descuentos.js"></script>
+
+</body>
+</html>

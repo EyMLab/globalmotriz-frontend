@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       'lpr':            'Taller',
       'cumpleanos':     'Cumpleaños',
       'rrhh':           'RRHH',
-      'asistencia':     'Asistencia'
+      'asistencia':     'Asistencia',
+      'descuentos':     'Descuentos'
     };
 
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
@@ -54,8 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Asistente contable solo puede ver Finanzas, RRHH y Cumpleanos
-    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños') {
+    // Asistente contable solo puede ver Finanzas, RRHH, Cumpleanos y Descuentos
+    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños' && pagina !== 'Descuentos') {
       window.location.href = 'finanzas.html';
       return;
     }
@@ -97,6 +98,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const enlaceCumpleanos = ['admin', 'control', 'asistente_contable'].includes(rol)
       ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleaños' ? 'active' : ''}">Cumpleaños</a>`
+      : "";
+
+    const enlaceDescuentos = ['admin', 'asistente_contable'].includes(rol)
+      ? `<a href="descuentos.html" class="${pagina === 'Descuentos' ? 'active' : ''}">Descuentos</a>`
       : "";
 
     const enlaceFinanzas = ['admin', 'control', 'asistente_contable'].includes(rol)
@@ -141,13 +146,14 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${enlaceControlTaller}
             </div>
           </div>` : ''}
-          ${(enlaceAsistencia || enlaceRRHH || enlaceCumpleanos) ? `
+          ${(enlaceAsistencia || enlaceRRHH || enlaceCumpleanos || enlaceDescuentos) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleaños'].includes(pagina) ? 'active' : ''}">Personal <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Asistencia','RRHH','Cumpleaños','Descuentos'].includes(pagina) ? 'active' : ''}">Personal <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceAsistencia}
               ${enlaceRRHH}
               ${enlaceCumpleanos}
+              ${enlaceDescuentos}
             </div>
           </div>` : ''}
           ${(enlaceFinanzas || enlaceProveedores || enlaceClientes) ? `
