@@ -260,24 +260,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div><span style="color:#64748b;">Restante:</span> <strong style="color:#dc2626;">${formatMoney(p.valor - montoPagado)}</strong></div>
               </div>
               ${p.observacion ? `<div style="background:#f8fafc;padding:6px 10px;border-radius:4px;margin-bottom:10px;font-size:12px;color:#64748b;"><strong>Obs:</strong> ${p.observacion}</div>` : ''}
-              <div style="overflow-x:auto;">
-              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:450px;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <thead>
                   <tr style="background:#0f4c81;color:#fff;">
-                    <th style="padding:6px 10px;text-align:center;font-weight:600;">#</th>
-                    <th style="padding:6px 10px;font-weight:600;">Mes</th>
-                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Monto</th>
-                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Estado</th>
-                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Accion</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;">#</th>
+                    <th style="padding:6px 8px;font-weight:600;">Mes</th>
+                    <th style="padding:6px 8px;text-align:right;font-weight:600;">Monto</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;">Estado</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;">Accion</th>
                   </tr>
                 </thead>
                 <tbody>${cuotasHtml}</tbody>
               </table>
-              </div>
             </div>
           `,
-          width: 700,
-          showCloseButton: true,
+          width: 580,
+          showCloseButton: false,
           confirmButtonText: 'Imprimir solicitud',
           confirmButtonColor: '#6366f1'
         }).then(r => {
@@ -377,25 +375,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div><span style="color:#64748b;">Mes:</span> <strong>${mes}</strong></div>
                 <div><span style="color:#64748b;">Total descuento:</span> <strong style="color:#0f4c81;">${formatMoney(emp.total_descuento)}</strong></div>
               </div>
-              <div style="overflow-x:auto;">
-              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:480px;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <thead>
                   <tr style="background:#0f4c81;color:#fff;">
-                    <th style="padding:6px 10px;font-weight:600;">Tipo</th>
-                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Cuota</th>
-                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Valor Prest.</th>
-                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Monto Cuota</th>
-                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Estado</th>
+                    <th style="padding:6px 8px;font-weight:600;">Tipo</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;">Cuota</th>
+                    <th style="padding:6px 8px;text-align:right;font-weight:600;">Prest.</th>
+                    <th style="padding:6px 8px;text-align:right;font-weight:600;">Monto</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;">Estado</th>
                   </tr>
                 </thead>
                 <tbody>${detalleHtml}</tbody>
               </table>
-              </div>
             </div>
           `,
-          width: 650,
-          showCloseButton: true,
-          showConfirmButton: false
+          width: 580,
+          showCloseButton: false,
+          showConfirmButton: true,
+          confirmButtonText: 'Cerrar',
+          confirmButtonColor: '#64748b'
         });
       });
   };
