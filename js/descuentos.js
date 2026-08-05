@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${p.observacion ? `<div style="background:#f8fafc;padding:6px 10px;border-radius:4px;margin-bottom:10px;font-size:12px;color:#64748b;"><strong>Obs:</strong> ${p.observacion}</div>` : ''}
               <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <thead>
-                  <tr style="background:#0f4c81;color:#fff;">
+                  <tr style="background:#1E5570;color:#fff;">
                     <th style="padding:6px 8px;text-align:center;font-weight:600;">#</th>
                     <th style="padding:6px 8px;font-weight:600;">Mes</th>
                     <th style="padding:6px 8px;text-align:right;font-weight:600;">Monto</th>
@@ -375,11 +375,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="text-align:left;font-size:13px;line-height:1.6;">
               <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
                 <div><span style="color:#64748b;">Mes:</span> <strong>${mes}</strong></div>
-                <div><span style="color:#64748b;">Total descuento:</span> <strong style="color:#0f4c81;">${formatMoney(emp.total_descuento)}</strong></div>
+                <div><span style="color:#64748b;">Total descuento:</span> <strong style="color:#1E5570;">${formatMoney(emp.total_descuento)}</strong></div>
               </div>
               <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <thead>
-                  <tr style="background:#0f4c81;color:#fff;">
+                  <tr style="background:#1E5570;color:#fff;">
                     <th style="padding:6px 8px;font-weight:600;">Tipo</th>
                     <th style="padding:6px 8px;text-align:center;font-weight:600;">Cuota</th>
                     <th style="padding:6px 8px;text-align:right;font-weight:600;">Prest.</th>
@@ -740,20 +740,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   .page { max-width: 720px; margin: 0 auto; padding: 20px 0; }
 
-  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0f4c81; padding-bottom: 14px; margin-bottom: 20px; }
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1E5570; padding-bottom: 14px; margin-bottom: 20px; }
   .header-logo img { height: 55px; }
   .header-title { text-align: right; }
-  .header-title h1 { font-size: 15pt; color: #0f4c81; margin: 0; letter-spacing: 0.5px; }
+  .header-title h1 { font-size: 15pt; color: #1E5570; margin: 0; letter-spacing: 0.5px; }
   .header-title p { font-size: 9pt; color: #64748b; margin-top: 2px; }
 
-  .datos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #0f4c81; }
+  .datos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #1E5570; }
   .dato { display: flex; gap: 8px; }
   .dato-label { font-weight: 700; font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; min-width: 55px; }
   .dato-valor { font-weight: 600; color: #1e293b; }
 
   .cuerpo { margin-bottom: 20px; text-align: justify; font-size: 11pt; }
   .cuerpo p { margin-bottom: 10px; }
-  .valor-dest { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; padding: 1px 10px; font-weight: 700; color: #0f4c81; }
+  .valor-dest { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; padding: 1px 10px; font-weight: 700; color: #1E5570; }
 
   .motivo-box { border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-top: 6px; min-height: 40px; font-weight: 600; color: #334155; background: #fff; }
 
@@ -761,8 +761,8 @@ document.addEventListener('DOMContentLoaded', () => {
   .firma-line { width: 260px; border-top: 1.5px solid #334155; margin: 0 auto; padding-top: 6px; font-weight: 700; font-size: 10pt; color: #334155; }
   .firma-ci { font-size: 9pt; color: #64748b; margin-top: 2px; }
 
-  .autorizacion { margin-top: 30px; border: 1.5px solid #0f4c81; border-radius: 8px; overflow: hidden; }
-  .auto-header { background: #0f4c81; color: #fff; text-align: center; padding: 6px; font-weight: 700; font-size: 11pt; letter-spacing: 1px; }
+  .autorizacion { margin-top: 30px; border: 1.5px solid #1E5570; border-radius: 8px; overflow: hidden; }
+  .auto-header { background: #1E5570; color: #fff; text-align: center; padding: 6px; font-weight: 700; font-size: 11pt; letter-spacing: 1px; }
   .auto-body { padding: 16px 20px; }
   .auto-body p { margin-bottom: 10px; }
   .check-row { display: flex; gap: 40px; margin: 10px 0; }
