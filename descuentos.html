@@ -151,16 +151,24 @@
       </table>
       </div>
 
-      <!-- Configuración día de corte -->
-      <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;">
-        Corte dia
-        <input type="number" id="dia-corte" min="1" max="31"
-               style="width:50px;height:26px;font-size:12px;text-align:center;padding:0 4px;border:1px solid #d1d5db;border-radius:5px;">
-        <button id="btn-guardar-corte"
-                style="background:#6366f1;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;cursor:pointer;font-weight:600;">
-          Guardar
-        </button>
-        <span>— prestamos despues de este dia se cobran el mes siguiente</span>
+      <!-- Configuración día de corte + Importar -->
+      <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;">
+          Corte dia
+          <input type="number" id="dia-corte" min="1" max="31"
+                 style="width:50px;height:26px;font-size:12px;text-align:center;padding:0 4px;border:1px solid #d1d5db;border-radius:5px;">
+          <button id="btn-guardar-corte"
+                  style="background:#6366f1;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;cursor:pointer;font-weight:600;">
+            Guardar
+          </button>
+          <span>— prestamos despues de este dia se cobran el mes siguiente</span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <input type="file" id="archivo-importar" accept=".xlsx,.xls" style="display:none;">
+          <button id="btn-importar" class="btn-secondary" style="font-size:12px;padding:4px 12px;">
+            Importar Excel
+          </button>
+        </div>
       </div>
 
     </div>

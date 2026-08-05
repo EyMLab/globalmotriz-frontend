@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnProcesarMes  = document.getElementById('btn-procesar-mes');
   const btnGuardarCorte = document.getElementById('btn-guardar-corte');
   const inpDiaCorte     = document.getElementById('dia-corte');
+  const btnImportar     = document.getElementById('btn-importar');
+  const archivoImportar = document.getElementById('archivo-importar');
 
   let paginaActual = 1;
   let diaCorte = 25;
@@ -136,6 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Config dia corte
     btnGuardarCorte.addEventListener('click', guardarDiaCorte);
     cargarConfiguracion();
+
+    // Importar
+    btnImportar.addEventListener('click', () => archivoImportar.click());
+    archivoImportar.addEventListener('change', importarExcel);
 
     // Resumen anual
     const filtroAnio = document.getElementById('filtro-anio');
@@ -705,6 +711,49 @@ document.addEventListener('DOMContentLoaded', () => {
         Swal.fire({ title: 'Guardado', text: 'Dia de corte actualizado', icon: 'success', timer: 1500, showConfirmButton: false });
       })
       .catch(err => Swal.fire('Error', err.message, 'error'));
+  }
+
+  // ==========================================================
+  // IMPORTAR EXCEL
+  // ==========================================================
+  function importarExcel() {
+    const file = archivoImportar.files[0];
+    if (!file) return;
+    archivoImportar.value = '';
+
+    Swal.fire({
+      title: 'Importar datos historicos',
+      text: `Se importara "${file.name}". Los prestamos se crearan tal como estan en el archivo.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Importar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+
+      Swal.fire({ title: 'Importando...', text: 'Procesando archivo', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      const fd = new FormData();
+      fd.append('archivo', file);
+
+      apiFetch('/descuentos/importar', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) return Swal.fire('Error', data.error, 'error');
+
+          let html = `<p style="font-size:15px;"><strong>${data.importados}</strong> prestamos importados</p>`;
+          if (data.errores > 0) {
+            html += `<p style="color:#ef4444;font-size:14px;"><strong>${data.errores}</strong> errores:</p>`;
+            html += '<div style="text-align:left;max-height:200px;overflow-y:auto;font-size:12px;background:#fef2f2;padding:8px;border-radius:6px;">';
+            html += data.detalle_errores.map(e => `<div style="margin-bottom:4px;">${e}</div>`).join('');
+            html += '</div>';
+          }
+
+          Swal.fire({ title: 'Importacion completada', html, icon: data.errores > 0 ? 'warning' : 'success' });
+          cargarPrestamos();
+        })
+        .catch(err => Swal.fire('Error', err.message, 'error'));
+    });
   }
 
   // ==========================================================
