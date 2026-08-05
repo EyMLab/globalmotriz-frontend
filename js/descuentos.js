@@ -257,7 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
           `,
           width: 620,
           showCloseButton: true,
-          showConfirmButton: false
+          confirmButtonText: 'Imprimir solicitud',
+          confirmButtonColor: '#6366f1'
+        }).then(r => {
+          if (r.isConfirmed) imprimirSolicitud(p);
         });
       })
       .catch(err => Swal.fire('Error', err.message, 'error'));
@@ -496,7 +499,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.error) return Swal.fire('Error', data.error, 'error');
 
-        Swal.fire('Guardado', `Prestamo #${data.id} creado con ${data.cuotas.length} cuota(s)`, 'success');
+        Swal.fire({
+          title: 'Guardado',
+          text: `Prestamo #${data.id} creado con ${data.cuotas.length} cuota(s)`,
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonText: 'Imprimir solicitud',
+          cancelButtonText: 'Cerrar'
+        }).then(r => {
+          if (r.isConfirmed) imprimirSolicitud(data);
+        });
 
         // Limpiar form
         selEmpleado.value = '';
@@ -555,6 +567,114 @@ document.addEventListener('DOMContentLoaded', () => {
         Swal.fire({ title: 'Guardado', text: 'Dia de corte actualizado', icon: 'success', timer: 1500, showConfirmButton: false });
       })
       .catch(err => Swal.fire('Error', err.message, 'error'));
+  }
+
+  // ==========================================================
+  // IMPRIMIR SOLICITUD
+  // ==========================================================
+  function imprimirSolicitud(p) {
+    const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.trim();
+    const cedula = p.cedula || '';
+    const fechaSol = formatFecha(p.fecha);
+    const valorNum = parseFloat(p.valor);
+    const valor = formatMoney(valorNum);
+    const cuotas = p.cuotas_mes || (p.cuotas ? p.cuotas.length : 1);
+    const tipoTxt = tipoLabel(p.tipo).toLowerCase();
+    const motivo = p.observacion || '';
+
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    let primerMes = '';
+    if (p.cuotas && p.cuotas.length) {
+      const [a, m] = p.cuotas[0].mes.split('-').map(Number);
+      primerMes = `${meses[m - 1]} ${a}`;
+    }
+
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Solicitud de Anticipo / Prestamo</title>
+<style>
+  @page { size: letter; margin: 2.5cm 2cm; }
+  body { font-family: Arial, sans-serif; font-size: 12pt; color: #000; line-height: 1.6; }
+  .header { text-align: center; margin-bottom: 30px; }
+  .header h2 { margin: 0; font-size: 14pt; text-decoration: underline; }
+  .header img { height: 60px; margin-bottom: 8px; }
+  .datos { margin-bottom: 24px; }
+  .datos table { width: 100%; border-collapse: collapse; }
+  .datos td { padding: 4px 0; }
+  .datos td.label { font-weight: bold; width: 180px; }
+  .cuerpo { margin-bottom: 30px; text-align: justify; }
+  .linea { border-bottom: 1px solid #000; display: inline-block; min-width: 120px; text-align: center; font-weight: bold; }
+  .motivo { border: 1px solid #999; min-height: 50px; padding: 8px; margin-top: 8px; }
+  .firma-section { margin-top: 50px; }
+  .firma-row { display: flex; justify-content: space-between; margin-top: 60px; }
+  .firma-box { text-align: center; width: 45%; }
+  .firma-linea { border-top: 1px solid #000; padding-top: 4px; }
+  .autorizacion { margin-top: 40px; padding: 16px; border: 1px solid #ccc; }
+  .autorizacion h3 { margin: 0 0 12px; font-size: 12pt; text-decoration: underline; text-align: center; }
+  @media print { body { margin: 0; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h2>SOLICITUD DE ANTICIPO / PRESTAMO</h2>
+</div>
+
+<div class="datos">
+  <table>
+    <tr>
+      <td class="label">FECHA DE SOLICITUD:</td>
+      <td>${fechaSol}</td>
+    </tr>
+    <tr>
+      <td class="label">NOMBRE:</td>
+      <td>${nombreCompleto}</td>
+    </tr>
+    <tr>
+      <td class="label">C.I.:</td>
+      <td>${cedula}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="cuerpo">
+  <p>Por medio del presente solicito su autorizacion para que me otorgue un ${tipoTxt} de USD <span class="linea">${valor}</span>, el cual lo cancelar&eacute; en <span class="linea">${cuotas}</span> cuotas. Autorizo para que el valor correspondiente sea descontado de mi rol de pagos.</p>
+
+  <p>El anticipo o pr&eacute;stamo lo solicito por el siguiente motivo:</p>
+  <div class="motivo">${motivo}</div>
+</div>
+
+<div class="firma-section">
+  <div style="text-align:center;margin-top:60px;">
+    <div class="firma-linea" style="width:250px;margin:0 auto;">FIRMA DEL SOLICITANTE</div>
+    <div style="margin-top:4px;">C.I. ${cedula}</div>
+  </div>
+</div>
+
+<div class="autorizacion">
+  <h3>AUTORIZACION</h3>
+  <p>Revisada su solicitud informo que ______ <strong>SI SE AUTORIZA</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ______ <strong>NO SE AUTORIZA</strong></p>
+  <p>El monto aprobado es de USD _____________, que sera descontado en <span class="linea">${cuotas}</span> cuotas, a partir del mes de <span class="linea">${primerMes}</span>.</p>
+
+  <div class="firma-row">
+    <div class="firma-box">
+      <div class="firma-linea">AUTORIZADO POR:</div>
+      <div style="margin-top:4px;">SANTIAGO ALBAN</div>
+    </div>
+    <div class="firma-box">
+      <div class="firma-linea">REGISTRADO POR:</div>
+      <div style="margin-top:4px;">RRHH / CONTABILIDAD</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>`);
+    w.document.close();
+    w.focus();
+    w.print();
   }
 
 });
