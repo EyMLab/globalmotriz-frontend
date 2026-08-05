@@ -732,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Solicitud - ${nombreCompleto}</title>
+<title> </title>
 <style>
   @page { size: letter; margin: 1.8cm 2cm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -746,14 +746,14 @@ document.addEventListener('DOMContentLoaded', () => {
   .header-title h1 { font-size: 15pt; color: #1E5570; margin: 0; letter-spacing: 0.5px; }
   .header-title p { font-size: 9pt; color: #64748b; margin-top: 2px; }
 
-  .datos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #1E5570; }
+  .datos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 6px; }
   .dato { display: flex; gap: 8px; }
   .dato-label { font-weight: 700; font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; min-width: 55px; }
   .dato-valor { font-weight: 600; color: #1e293b; }
 
   .cuerpo { margin-bottom: 20px; text-align: justify; font-size: 11pt; }
   .cuerpo p { margin-bottom: 10px; }
-  .valor-dest { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; padding: 1px 10px; font-weight: 700; color: #1E5570; }
+  .valor-dest { font-weight: 700; color: #000; }
 
   .motivo-box { border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-top: 6px; min-height: 40px; font-weight: 600; color: #334155; background: #fff; }
 
@@ -779,6 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
   @media print {
     body { margin: 0; }
     .page { padding: 0; }
+    @page { margin: 1.8cm 2cm; }
   }
 </style>
 </head>
@@ -833,7 +834,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 
-  <div class="footer">Documento generado por Sistema Global Motriz &mdash; ${new Date().toLocaleDateString('es-EC')}</div>
 
 </div>
 </body>
