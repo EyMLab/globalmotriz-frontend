@@ -10,9 +10,8 @@ let cantidadActual = '';
 let otActual = '';
 let localidad = '';
 let deviceKey = '';
-let wsUrl = '';
-let ws = null;
-let wsReconnectTimer = null;
+let rfidBuffer = '';
+let rfidTimer = null;
 let inactivityTimer = null;
 const INACTIVITY_TIMEOUT = 60000;
 const RESULT_TIMEOUT = 5000;
@@ -28,14 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   localidad = await getConfig('localidad');
   deviceKey = await getConfig('deviceKey', 'devkey123');
-  wsUrl = await getConfig('wsUrl', '');
 
   if (!localidad) {
     showScreen('config');
   } else {
     el('label-localidad').textContent = localidad;
     showScreen('espera');
-    initWebSocket();
+    initRfidListener();
     scheduleSync();
   }
 
@@ -69,17 +67,14 @@ function setupConfigScreen() {
   el('btn-guardar-config').addEventListener('click', async () => {
     const loc = el('cfg-localidad').value;
     const dk = el('cfg-device-key').value.trim() || 'devkey123';
-    const wsu = el('cfg-ws-url').value.trim();
 
     if (!loc) return;
 
     await setConfig('localidad', loc);
     await setConfig('deviceKey', dk);
-    await setConfig('wsUrl', wsu);
 
     localidad = loc;
     deviceKey = dk;
-    wsUrl = wsu;
 
     el('label-localidad').textContent = localidad;
     el('cfg-status').textContent = 'Sincronizando datos...';
@@ -101,7 +96,7 @@ function setupConfigScreen() {
 
     setTimeout(() => {
       showScreen('espera');
-      initWebSocket();
+      initRfidListener();
       scheduleSync();
     }, 1500);
   });
@@ -109,68 +104,43 @@ function setupConfigScreen() {
   el('btn-config-bar').addEventListener('click', async () => {
     el('cfg-localidad').value = localidad || 'MATRIZ';
     el('cfg-device-key').value = deviceKey || 'devkey123';
-    el('cfg-ws-url').value = wsUrl || '';
     el('cfg-status').textContent = '';
     showScreen('config');
   });
 }
 
-// --- WebSocket (ESP32 Gateway) ---
+// --- Lector RFID vía BLE HID (teclado Bluetooth) ---
 
-function initWebSocket() {
-  if (!wsUrl) {
-    el('label-ws').textContent = 'WS: no configurado';
+function initRfidListener() {
+  el('dot-ws').className = 'status-dot ws-connected';
+  el('label-ws').textContent = 'RFID: listo';
+
+  window.addEventListener('keydown', handleRfidKeydown);
+}
+
+function handleRfidKeydown(e) {
+  if (currentScreen !== 'espera') {
+    rfidBuffer = '';
     return;
   }
 
-  connectWebSocket();
-}
-
-function connectWebSocket() {
-  if (ws && ws.readyState <= 1) return;
-
-  try {
-    ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-      el('dot-ws').className = 'status-dot ws-connected';
-      el('label-ws').textContent = 'WS: conectado';
-      if (wsReconnectTimer) {
-        clearTimeout(wsReconnectTimer);
-        wsReconnectTimer = null;
-      }
-    };
-
-    ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.type === 'tag' && data.uid) {
-          handleTagRead(data.uid);
-        }
-      } catch { /* ignorar mensajes no JSON */ }
-    };
-
-    ws.onclose = () => {
-      el('dot-ws').className = 'status-dot ws-disconnected';
-      el('label-ws').textContent = 'WS: desconectado';
-      scheduleWsReconnect();
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
-
-  } catch {
-    scheduleWsReconnect();
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (rfidBuffer.length >= 4) {
+      const uid = rfidBuffer;
+      rfidBuffer = '';
+      clearTimeout(rfidTimer);
+      handleTagRead(uid);
+    }
+    return;
   }
-}
 
-function scheduleWsReconnect() {
-  if (wsReconnectTimer) return;
-  wsReconnectTimer = setTimeout(() => {
-    wsReconnectTimer = null;
-    connectWebSocket();
-  }, 3000);
+  if (e.key.length === 1) {
+    e.preventDefault();
+    rfidBuffer += e.key.toUpperCase();
+    clearTimeout(rfidTimer);
+    rfidTimer = setTimeout(() => { rfidBuffer = ''; }, 500);
+  }
 }
 
 // --- Tag leído (WebSocket o simulación) ---
