@@ -101,19 +101,19 @@ function setupConfigScreen() {
     }, 1500);
   });
 
-  el('btn-config-bar').addEventListener('click', async () => {
-    el('cfg-localidad').value = localidad || 'MATRIZ';
-    el('cfg-device-key').value = deviceKey || 'devkey123';
-    el('cfg-status').textContent = '';
-    showScreen('config');
+  el('btn-config-bar').addEventListener('click', () => {
+    el('admin-clave').value = '';
+    el('admin-error').style.display = 'none';
+    el('modal-admin').classList.add('active');
+    setTimeout(() => el('admin-clave').focus(), 100);
   });
 }
 
 // --- Lector RFID vía BLE HID (teclado Bluetooth) ---
 
 function initRfidListener() {
-  el('dot-ws').className = 'status-dot ws-connected';
-  el('label-ws').textContent = 'RFID: listo';
+  el('dot-ws').className = 'status-dot bt-idle';
+  el('label-ws').textContent = 'BT';
 
   window.addEventListener('keydown', handleRfidKeydown);
 }
@@ -148,6 +148,13 @@ function handleRfidKeydown(e) {
 async function handleTagRead(uid) {
   if (currentScreen !== 'espera') return;
 
+  el('dot-ws').className = 'status-dot ws-connected';
+  el('label-ws').textContent = 'BT: tag';
+  setTimeout(() => {
+    el('dot-ws').className = 'status-dot bt-idle';
+    el('label-ws').textContent = 'BT';
+  }, 3000);
+
   const empleado = await buscarEmpleadoPorTag(uid);
 
   if (!empleado) {
@@ -170,42 +177,28 @@ function showBienvenida() {
   }, 2000);
 }
 
-// --- Simulación de TAG ---
+// --- Admin modal (proteger config) ---
 
-function setupSimulacion() {
-  el('btn-simular-tag').addEventListener('click', async () => {
-    const empleados = await getEmpleados();
-
-    if (empleados.length === 0) {
-      alert('No hay empleados en cache. Sincronice primero desde Configuración.');
-      return;
+function setupAdminModal() {
+  el('admin-ok').addEventListener('click', () => {
+    const clave = el('admin-clave').value.trim();
+    if (clave === deviceKey) {
+      el('modal-admin').classList.remove('active');
+      el('cfg-localidad').value = localidad || 'MATRIZ';
+      el('cfg-device-key').value = deviceKey || 'devkey123';
+      el('cfg-status').textContent = '';
+      showScreen('config');
+    } else {
+      el('admin-error').style.display = '';
     }
-
-    const lista = el('modal-empleados-lista');
-    lista.innerHTML = '';
-
-    empleados.forEach(emp => {
-      const div = document.createElement('div');
-      div.className = 'modal-empleado-item';
-      div.innerHTML = `
-        <div>
-          <div class="emp-nombre">${emp.nombre} ${emp.apellido}</div>
-          <div class="emp-cargo">${emp.cargo || '—'}</div>
-        </div>
-      `;
-      div.addEventListener('click', () => {
-        el('modal-simular').classList.remove('active');
-        empleadoActual = emp;
-        showBienvenida();
-      });
-      lista.appendChild(div);
-    });
-
-    el('modal-simular').classList.add('active');
   });
 
-  el('modal-cerrar').addEventListener('click', () => {
-    el('modal-simular').classList.remove('active');
+  el('admin-cancelar').addEventListener('click', () => {
+    el('modal-admin').classList.remove('active');
+  });
+
+  el('admin-clave').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') el('admin-ok').click();
   });
 }
 
@@ -585,7 +578,7 @@ function scheduleSync() {
 
 function setupEventListeners() {
   setupConfigScreen();
-  setupSimulacion();
+  setupAdminModal();
   setupBuscador();
 
   // Numpad cantidad

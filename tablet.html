@@ -54,10 +54,9 @@
 
   <!-- ===== PANTALLA: ESPERA (pase su tag) ===== -->
   <div id="screen-espera" class="screen screen-espera">
-    <div class="espera-icon">&#128179;</div>
-    <h1>Pase su tarjeta</h1>
-    <p>Acerque su TAG al lector para identificarse</p>
-    <button id="btn-simular-tag" class="btn-simular">Simular TAG (desarrollo)</button>
+    <div class="rfid-icon"><span></span><span></span><span></span></div>
+    <h1>Pase su TAG</h1>
+    <p>Acerque su tarjeta al lector RFID</p>
   </div>
 
   <!-- ===== PANTALLA: BIENVENIDA ===== -->
@@ -153,12 +152,16 @@
     <span>Ver pedido</span>
   </button>
 
-  <!-- ===== MODAL: SIMULAR TAG ===== -->
-  <div id="modal-simular" class="modal-overlay">
+  <!-- ===== MODAL: ADMIN ===== -->
+  <div id="modal-admin" class="modal-overlay">
     <div class="modal-content">
-      <h2>Seleccionar empleado (simulación)</h2>
-      <div id="modal-empleados-lista"></div>
-      <button id="modal-cerrar" class="btn btn-cancel modal-close">Cerrar</button>
+      <h2>Acceso Administrador</h2>
+      <input id="admin-clave" type="password" placeholder="Clave de acceso" class="buscar-input" style="font-size:18px;margin-bottom:12px">
+      <p id="admin-error" style="color:var(--red);font-size:14px;margin-bottom:12px;display:none">Clave incorrecta</p>
+      <div style="display:flex;gap:12px">
+        <button id="admin-cancelar" class="btn btn-cancel">Cancelar</button>
+        <button id="admin-ok" class="btn btn-primary">Entrar</button>
+      </div>
     </div>
   </div>
 
