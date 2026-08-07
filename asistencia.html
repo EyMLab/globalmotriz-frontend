@@ -35,6 +35,19 @@
       </div>
 
       <div class="filtro-grupo">
+        <label for="filtro-estado">Estado:</label>
+        <select id="filtro-estado">
+          <option value="">Todos</option>
+          <option value="puntual">Puntual</option>
+          <option value="tolerancia">Tolerancia</option>
+          <option value="atraso">Atraso</option>
+          <option value="temprana">Temprana</option>
+          <option value="tardia">Tardía</option>
+          <option value="auto">Auto (cierre)</option>
+        </select>
+      </div>
+
+      <div class="filtro-grupo">
         <label for="filtro-localidad">Localidad:</label>
         <select id="filtro-localidad">
           <option value="">Todas</option>
@@ -79,6 +92,7 @@
           <th>Empleado</th>
           <th>Localidad</th>
           <th>Tipo</th>
+          <th>Estado</th>
           <th>Fecha / Hora</th>
           <th>Foto</th>
         </tr>
@@ -102,9 +116,11 @@
       border-radius: var(--r-lg);
       padding: 32px;
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
       position: relative;
       box-shadow: var(--shadow-lg);
+      max-height: 90vh;
+      overflow-y: auto;
     ">
       <span id="btn-cerrar-config" style="
         position:absolute;top:16px;right:20px;
@@ -112,28 +128,63 @@
       ">&times;</span>
 
       <h2 style="margin:0 0 6px;color:var(--primary);font-size:18px;">⚙️ Configuración de horarios</h2>
-      <p style="margin:0 0 24px;color:var(--text-light);font-size:13px;">
-        Define el rango de horario de almuerzo por localidad.<br>
-        El sistema usará estos rangos para detectar automáticamente las salidas y regresos de almuerzo.
+      <p style="margin:0 0 20px;color:var(--text-light);font-size:13px;">
+        Define horarios de jornada, almuerzo y tolerancias por localidad.
       </p>
 
       <!-- MATRIZ -->
       <div class="config-card" id="card-matriz">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <p class="config-card-title" style="margin:0;">🏢 MATRIZ</p>
+        <p class="config-card-title">🏢 MATRIZ</p>
+
+        <p class="config-section-label">Jornada</p>
+        <div class="config-row">
+          <div>
+            <label>Hora entrada</label>
+            <input type="time" id="cfg-matriz-hora-entrada">
+          </div>
+          <div>
+            <label>Tolerancia (min)</label>
+            <input type="number" id="cfg-matriz-tol-entrada" min="0" max="60" value="10">
+          </div>
+        </div>
+        <div class="config-row" style="margin-top:8px;">
+          <div>
+            <label>Hora salida</label>
+            <input type="time" id="cfg-matriz-hora-salida">
+          </div>
+          <div>
+            <label>Tolerancia (min)</label>
+            <input type="number" id="cfg-matriz-tol-salida" min="0" max="120" value="30">
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+          <p class="config-section-label" style="margin:0;">Almuerzo</p>
           <label class="toggle-switch" title="Activar/desactivar detección de almuerzo">
             <input type="checkbox" id="cfg-matriz-activo" checked>
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="config-row" id="cfg-matriz-horarios">
-          <div>
-            <label>Inicio almuerzo</label>
-            <input type="time" id="cfg-matriz-inicio">
+        <div id="cfg-matriz-horarios">
+          <div class="config-row" style="margin-top:8px;">
+            <div>
+              <label>Ventana inicio</label>
+              <input type="time" id="cfg-matriz-inicio">
+            </div>
+            <div>
+              <label>Ventana fin</label>
+              <input type="time" id="cfg-matriz-fin">
+            </div>
           </div>
-          <div>
-            <label>Fin almuerzo</label>
-            <input type="time" id="cfg-matriz-fin">
+          <div class="config-row" style="margin-top:8px;">
+            <div>
+              <label>Duración (min)</label>
+              <input type="number" id="cfg-matriz-dur-almuerzo" min="1" max="180" value="60">
+            </div>
+            <div>
+              <label>Tolerancia (min)</label>
+              <input type="number" id="cfg-matriz-tol-almuerzo" min="0" max="60" value="10">
+            </div>
           </div>
         </div>
         <p class="toggle-hint" id="hint-matriz" style="display:none;">
@@ -143,21 +194,57 @@
 
       <!-- SUCURSAL -->
       <div class="config-card" id="card-sucursal" style="margin-bottom:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <p class="config-card-title" style="margin:0;">🏪 SUCURSAL</p>
+        <p class="config-card-title">🏪 SUCURSAL</p>
+
+        <p class="config-section-label">Jornada</p>
+        <div class="config-row">
+          <div>
+            <label>Hora entrada</label>
+            <input type="time" id="cfg-sucursal-hora-entrada">
+          </div>
+          <div>
+            <label>Tolerancia (min)</label>
+            <input type="number" id="cfg-sucursal-tol-entrada" min="0" max="60" value="10">
+          </div>
+        </div>
+        <div class="config-row" style="margin-top:8px;">
+          <div>
+            <label>Hora salida</label>
+            <input type="time" id="cfg-sucursal-hora-salida">
+          </div>
+          <div>
+            <label>Tolerancia (min)</label>
+            <input type="number" id="cfg-sucursal-tol-salida" min="0" max="120" value="30">
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+          <p class="config-section-label" style="margin:0;">Almuerzo</p>
           <label class="toggle-switch" title="Activar/desactivar detección de almuerzo">
             <input type="checkbox" id="cfg-sucursal-activo" checked>
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="config-row" id="cfg-sucursal-horarios">
-          <div>
-            <label>Inicio almuerzo</label>
-            <input type="time" id="cfg-sucursal-inicio">
+        <div id="cfg-sucursal-horarios">
+          <div class="config-row" style="margin-top:8px;">
+            <div>
+              <label>Ventana inicio</label>
+              <input type="time" id="cfg-sucursal-inicio">
+            </div>
+            <div>
+              <label>Ventana fin</label>
+              <input type="time" id="cfg-sucursal-fin">
+            </div>
           </div>
-          <div>
-            <label>Fin almuerzo</label>
-            <input type="time" id="cfg-sucursal-fin">
+          <div class="config-row" style="margin-top:8px;">
+            <div>
+              <label>Duración (min)</label>
+              <input type="number" id="cfg-sucursal-dur-almuerzo" min="1" max="180" value="60">
+            </div>
+            <div>
+              <label>Tolerancia (min)</label>
+              <input type="number" id="cfg-sucursal-tol-almuerzo" min="0" max="60" value="10">
+            </div>
           </div>
         </div>
         <p class="toggle-hint" id="hint-sucursal" style="display:none;">

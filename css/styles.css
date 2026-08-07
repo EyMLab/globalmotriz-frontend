@@ -2515,6 +2515,31 @@ div.swal2-backdrop-show {
   pointer-events: none;
 }
 
+.config-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  margin: 0 0 6px;
+}
+
+/* Badges de estado de puntualidad */
+.badge-estado {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.badge-puntual     { background: #dcfce7; color: #15803d; }
+.badge-tolerancia  { background: #fef9c3; color: #a16207; }
+.badge-atraso      { background: #fee2e2; color: #b91c1c; }
+.badge-temprana    { background: #fee2e2; color: #b91c1c; }
+.badge-tardia      { background: #fee2e2; color: #b91c1c; }
+.badge-auto        { background: #f1f5f9; color: #64748b; }
+
 @media (max-width: 768px) {
   .cumpleanos-grid {
     grid-template-columns: 1fr;
