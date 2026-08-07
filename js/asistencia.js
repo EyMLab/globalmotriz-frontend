@@ -217,6 +217,24 @@ function bindModalConfig() {
   document.getElementById('modal-config').addEventListener('click', e => {
     if (e.target === document.getElementById('modal-config')) cerrarModalConfig();
   });
+
+  ['matriz', 'sucursal'].forEach(loc => {
+    document.getElementById(`cfg-${loc}-activo`).addEventListener('change', e => {
+      toggleHorarios(loc, e.target.checked);
+    });
+  });
+}
+
+function toggleHorarios(loc, activo) {
+  const row  = document.getElementById(`cfg-${loc}-horarios`);
+  const hint = document.getElementById(`hint-${loc}`);
+  if (activo) {
+    row.classList.remove('disabled');
+    hint.style.display = 'none';
+  } else {
+    row.classList.add('disabled');
+    hint.style.display = 'block';
+  }
 }
 
 async function abrirModalConfig() {
@@ -234,8 +252,13 @@ async function abrirModalConfig() {
     const loc = cfg.localidad.toLowerCase();
     const elInicio = document.getElementById(`cfg-${loc}-inicio`);
     const elFin    = document.getElementById(`cfg-${loc}-fin`);
+    const elActivo = document.getElementById(`cfg-${loc}-activo`);
     if (elInicio) elInicio.value = cfg.almuerzo_inicio;
     if (elFin)    elFin.value    = cfg.almuerzo_fin;
+    if (elActivo) {
+      elActivo.checked = cfg.almuerzo_activo;
+      toggleHorarios(loc, cfg.almuerzo_activo);
+    }
   });
 }
 
@@ -245,17 +268,16 @@ function cerrarModalConfig() {
 
 async function guardarConfig() {
   const localidades = [
-    { key: 'MATRIZ',   inicio: document.getElementById('cfg-matriz-inicio').value,   fin: document.getElementById('cfg-matriz-fin').value },
-    { key: 'SUCURSAL', inicio: document.getElementById('cfg-sucursal-inicio').value, fin: document.getElementById('cfg-sucursal-fin').value },
+    { key: 'MATRIZ',   inicio: document.getElementById('cfg-matriz-inicio').value,   fin: document.getElementById('cfg-matriz-fin').value,   activo: document.getElementById('cfg-matriz-activo').checked },
+    { key: 'SUCURSAL', inicio: document.getElementById('cfg-sucursal-inicio').value, fin: document.getElementById('cfg-sucursal-fin').value, activo: document.getElementById('cfg-sucursal-activo').checked },
   ];
 
-  // Validar que todos tengan valores
   for (const loc of localidades) {
-    if (!loc.inicio || !loc.fin) {
+    if (loc.activo && (!loc.inicio || !loc.fin)) {
       Swal.fire('Atención', `Completa los horarios de ${loc.key}.`, 'warning');
       return;
     }
-    if (loc.inicio >= loc.fin) {
+    if (loc.activo && loc.inicio >= loc.fin) {
       Swal.fire('Atención', `En ${loc.key}: la hora de inicio debe ser menor a la de fin.`, 'warning');
       return;
     }
@@ -271,7 +293,7 @@ async function guardarConfig() {
       localidades.map(loc =>
         apiFetch(`/asistencia/configuracion/${loc.key}`, {
           method: 'PUT',
-          body: JSON.stringify({ almuerzo_inicio: loc.inicio, almuerzo_fin: loc.fin })
+          body: JSON.stringify({ almuerzo_inicio: loc.inicio, almuerzo_fin: loc.fin, almuerzo_activo: loc.activo })
         })
       )
     );

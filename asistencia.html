@@ -118,9 +118,15 @@
       </p>
 
       <!-- MATRIZ -->
-      <div class="config-card">
-        <p class="config-card-title">🏢 MATRIZ</p>
-        <div class="config-row">
+      <div class="config-card" id="card-matriz">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <p class="config-card-title" style="margin:0;">🏢 MATRIZ</p>
+          <label class="toggle-switch" title="Activar/desactivar detección de almuerzo">
+            <input type="checkbox" id="cfg-matriz-activo" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="config-row" id="cfg-matriz-horarios">
           <div>
             <label>Inicio almuerzo</label>
             <input type="time" id="cfg-matriz-inicio">
@@ -130,12 +136,21 @@
             <input type="time" id="cfg-matriz-fin">
           </div>
         </div>
+        <p class="toggle-hint" id="hint-matriz" style="display:none;">
+          Detección de almuerzo desactivada — solo registra entrada y salida.
+        </p>
       </div>
 
       <!-- SUCURSAL -->
-      <div class="config-card" style="margin-bottom:24px;">
-        <p class="config-card-title">🏪 SUCURSAL</p>
-        <div class="config-row">
+      <div class="config-card" id="card-sucursal" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <p class="config-card-title" style="margin:0;">🏪 SUCURSAL</p>
+          <label class="toggle-switch" title="Activar/desactivar detección de almuerzo">
+            <input type="checkbox" id="cfg-sucursal-activo" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="config-row" id="cfg-sucursal-horarios">
           <div>
             <label>Inicio almuerzo</label>
             <input type="time" id="cfg-sucursal-inicio">
@@ -145,6 +160,9 @@
             <input type="time" id="cfg-sucursal-fin">
           </div>
         </div>
+        <p class="toggle-hint" id="hint-sucursal" style="display:none;">
+          Detección de almuerzo desactivada — solo registra entrada y salida.
+        </p>
       </div>
 
       <button id="btn-guardar-config" style="
