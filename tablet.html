@@ -57,6 +57,19 @@
     <div class="rfid-icon"><span></span><span></span><span></span></div>
     <h1>Pase su TAG</h1>
     <p>Acerque su tarjeta al lector RFID</p>
+    <button id="btn-simular" class="btn btn-simular">Simular TAG (prueba)</button>
+  </div>
+
+  <!-- ===== MODAL: SIMULAR TAG ===== -->
+  <div id="modal-simular" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Seleccionar Empleado</h2>
+      <select id="sim-empleado" class="buscar-input" style="font-size:18px;margin-bottom:12px"></select>
+      <div style="display:flex;gap:12px">
+        <button id="sim-cancelar" class="btn btn-cancel">Cancelar</button>
+        <button id="sim-ok" class="btn btn-primary">Simular</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== PANTALLA: BIENVENIDA ===== -->

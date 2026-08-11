@@ -163,6 +163,21 @@ html, body {
   100% { opacity: 0; transform: scale(1.2); }
 }
 
+.btn-simular {
+  margin-top: 32px;
+  padding: 14px 32px;
+  font-size: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--yellow);
+  cursor: pointer;
+}
+
+.btn-simular:active {
+  background: var(--bg-input);
+}
+
 /* --- Pantalla de bienvenida --- */
 
 .screen-bienvenida h1 {

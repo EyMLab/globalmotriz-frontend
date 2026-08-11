@@ -574,11 +574,39 @@ function scheduleSync() {
   }, 5 * 60 * 1000);
 }
 
+// --- Simulación de TAG (modo prueba) ---
+
+function setupSimulacion() {
+  el('btn-simular').addEventListener('click', async () => {
+    const empleados = await getEmpleados();
+    const select = el('sim-empleado');
+    select.innerHTML = '';
+    empleados.forEach(emp => {
+      const opt = document.createElement('option');
+      opt.value = emp.tag_uid || '';
+      opt.textContent = `${emp.nombre} ${emp.apellido} — ${emp.cargo || 'Sin cargo'}`;
+      select.appendChild(opt);
+    });
+    el('modal-simular').classList.add('active');
+  });
+
+  el('sim-ok').addEventListener('click', () => {
+    const uid = el('sim-empleado').value;
+    el('modal-simular').classList.remove('active');
+    if (uid) handleTagRead(uid);
+  });
+
+  el('sim-cancelar').addEventListener('click', () => {
+    el('modal-simular').classList.remove('active');
+  });
+}
+
 // --- Event listeners ---
 
 function setupEventListeners() {
   setupConfigScreen();
   setupAdminModal();
+  setupSimulacion();
   setupBuscador();
 
   // Numpad cantidad
