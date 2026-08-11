@@ -1,10 +1,10 @@
-const CACHE_NAME = 'tablet-insumos-v2';
+const CACHE_NAME = 'tablet-insumos-v3';
 
 const ASSETS = [
-  'tablet.html',
-  'css/tablet.css',
-  'js/tablet-offline.js',
-  'js/tablet-app.js'
+  '/tablet.html',
+  '/css/tablet.css',
+  '/js/tablet-offline.js',
+  '/js/tablet-app.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -37,16 +37,12 @@ self.addEventListener('fetch', (e) => {
   }
 
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetchPromise = fetch(e.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return response;
-      }).catch(() => cached);
-
-      return cached || fetchPromise;
-    })
+    fetch(e.request).then(response => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(e.request))
   );
 });
