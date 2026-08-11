@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindPaginacion();
   bindModalFoto();
   bindModalConfig();
+  bindExportar();
 });
 
 // =========================================================
@@ -356,5 +357,42 @@ async function guardarConfig() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Guardar cambios';
+  }
+}
+
+// =========================================================
+// Exportar Excel
+// =========================================================
+function bindExportar() {
+  document.getElementById('btn-exportar').addEventListener('click', exportarExcel);
+}
+
+async function exportarExcel() {
+  const params = construirParams();
+  const btn = document.getElementById('btn-exportar');
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+
+  try {
+    const res = await apiFetch(`/asistencia/reporte?${params.toString()}`);
+    if (!res || !res.ok) {
+      Swal.fire('Error', 'No se pudo generar el reporte.', 'error');
+      return;
+    }
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `Asistencia_${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch {
+    Swal.fire('Error', 'No se pudo generar el reporte.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Excel';
   }
 }

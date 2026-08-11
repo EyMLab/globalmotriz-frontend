@@ -4,7 +4,7 @@
 
 const TABLET_API = 'https://globalmotriz-backend.onrender.com';
 const DB_NAME = 'TabletInsumosDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let _db = null;
 
@@ -28,6 +28,9 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains('config')) {
         db.createObjectStore('config', { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains('ordenes')) {
+        db.createObjectStore('ordenes', { keyPath: 'numero_orden' });
       }
     };
 
@@ -183,6 +186,41 @@ async function decrementarStockLocal(codigo, cantidad) {
   }
 }
 
+// --- Órdenes de trabajo (validación OT) ---
+
+const VALIDAR_OT = false; // activar cuando se quite el modo simulación
+
+async function syncOrdenes(deviceKey, localidad) {
+  const res = await fetch(`${TABLET_API}/insumos/ordenes-abiertas?localidad=${encodeURIComponent(localidad)}`, {
+    headers: { 'x-device-key': deviceKey }
+  });
+
+  if (!res.ok) throw new Error('Error al obtener órdenes');
+
+  const ordenes = await res.json();
+  await dbClear('ordenes');
+  await dbPutBulk('ordenes', ordenes);
+  await setConfig('lastSyncOrdenes', new Date().toISOString());
+  return ordenes.length;
+}
+
+async function buscarOrden(numeroOt) {
+  const ordenes = await dbGetAll('ordenes');
+  return ordenes.find(o => o.numero_orden === numeroOt) || null;
+}
+
+async function validarOtLocal(numeroOt) {
+  if (!VALIDAR_OT || !numeroOt || numeroOt === '0000') {
+    return { permitido: true };
+  }
+
+  const orden = await buscarOrden(numeroOt);
+  if (!orden) return { permitido: true, encontrada: false };
+  if (orden.estado === 'ABIERTO') return { permitido: true, encontrada: true, estado: 'ABIERTO' };
+
+  return { permitido: false, encontrada: true, estado: orden.estado, placa: orden.placa, cliente: orden.cliente };
+}
+
 // --- Cola de pendientes ---
 
 async function agregarPendiente(registro) {
@@ -279,7 +317,7 @@ async function syncPendientes(deviceKey) {
 // --- Sync completo ---
 
 async function syncCompleto(deviceKey, localidad) {
-  const resultados = { empleados: 0, catalogo: 0, pendientes: null };
+  const resultados = { empleados: 0, catalogo: 0, ordenes: 0, pendientes: null };
 
   try {
     const pendientes = await contarPendientes();
@@ -300,6 +338,14 @@ async function syncCompleto(deviceKey, localidad) {
     resultados.catalogo = await syncCatalogo(deviceKey, localidad);
   } catch (e) {
     console.error('Error sync catálogo:', e);
+  }
+
+  if (VALIDAR_OT) {
+    try {
+      resultados.ordenes = await syncOrdenes(deviceKey, localidad);
+    } catch (e) {
+      console.error('Error sync órdenes:', e);
+    }
   }
 
   await setConfig('lastSync', new Date().toISOString());

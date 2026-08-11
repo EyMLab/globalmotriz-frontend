@@ -365,7 +365,7 @@ function updateOTDisplay() {
   el('ot-display').textContent = chars.join(' ');
 }
 
-function handleOTInput(val) {
+async function handleOTInput(val) {
   if (val === 'borrar') {
     otActual = otActual.slice(0, -1);
     updateOTDisplay();
@@ -374,6 +374,20 @@ function handleOTInput(val) {
 
   if (val === 'ok') {
     if (otActual.length !== 4) return;
+
+    const check = await validarOtLocal(otActual);
+    if (!check.permitido) {
+      el('ot-display').textContent = `RECHAZADO`;
+      el('ot-display').style.color = 'var(--red)';
+      showToast(`Orden ${otActual} está ${check.estado}`);
+      setTimeout(() => {
+        otActual = '';
+        updateOTDisplay();
+        el('ot-display').style.color = '';
+      }, 3000);
+      return;
+    }
+
     agregarALista();
     return;
   }
