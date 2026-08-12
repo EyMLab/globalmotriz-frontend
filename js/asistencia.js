@@ -29,9 +29,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!res || !res.ok) { redirectLogin(); return; }
 
   const data = await safeJson(res);
-  if (data.rol !== 'admin') {
+  if (!['admin', 'asesor', 'control'].includes(data.rol)) {
     window.location.href = 'inventario.html';
     return;
+  }
+
+  const esAdmin = data.rol === 'admin';
+
+  if (!esAdmin) {
+    document.getElementById('btn-config').style.display = 'none';
   }
 
   document.getElementById('fecha-hasta').value = new Date().toISOString().split('T')[0];
@@ -41,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindFiltros();
   bindPaginacion();
   bindModalFoto();
-  bindModalConfig();
+  if (esAdmin) bindModalConfig();
   bindExportar();
 });
 
