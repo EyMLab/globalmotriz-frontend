@@ -283,7 +283,9 @@
   <div id="modal-foto-asistencia" class="modal" style="display:none;">
     <div class="zoom-container">
       <span class="cerrar" id="btn-cerrar-modal">&times;</span>
-      <img class="modal-contenido" id="foto-modal-img" alt="Evidencia de asistencia">
+      <img class="modal-contenido" id="foto-modal-img" alt="Evidencia de asistencia"
+           oncontextmenu="return false" draggable="false"
+           style="-webkit-user-select:none;user-select:none;pointer-events:auto;">
     </div>
   </div>
 
