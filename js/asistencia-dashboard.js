@@ -63,6 +63,7 @@ async function cargarDashboard() {
   renderChartTendencia(data);
   renderChartLocalidad(data);
   renderChartSalidas(data);
+  renderTablaAusentes(data);
 }
 
 function renderKPIs(d) {
