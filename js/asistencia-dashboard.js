@@ -304,4 +304,23 @@ function renderChartSalidas(d) {
   });
 }
 
+function renderTablaAusentes(d) {
+  const tbody = document.getElementById('tabla-ausentes');
+  const ausentes = d.ausentes || [];
+
+  if (!ausentes.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-light);padding:16px;">
+      Todos los empleados registraron entrada hoy</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = ausentes.map((emp, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${emp.nombre} ${emp.apellido}</td>
+      <td>${emp.cargo || '—'}</td>
+    </tr>
+  `).join('');
+}
+
 bindDashFiltros();
