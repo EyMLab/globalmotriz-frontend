@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindModalFoto();
   if (esAdmin) bindModalConfig();
   bindExportar();
+  bindSubtabs();
 });
 
 // =========================================================
@@ -401,4 +402,26 @@ async function exportarExcel() {
     btn.disabled = false;
     btn.textContent = '📥 Excel';
   }
+}
+
+// =========================================================
+// Subtabs (Registros / Dashboard)
+// =========================================================
+let dashCargado = false;
+
+function bindSubtabs() {
+  const btns = document.querySelectorAll('.subtab-btn[data-tab]');
+  const panels = document.querySelectorAll('.subtab-panel');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`panel-${btn.dataset.tab}`)?.classList.add('active');
+      if (btn.dataset.tab === 'dashboard' && !dashCargado) {
+        dashCargado = true;
+        if (typeof cargarDashboard === 'function') cargarDashboard();
+      }
+    });
+  });
 }

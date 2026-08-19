@@ -14,6 +14,14 @@
 
   <div class="dashboard-container">
 
+    <div class="subtabs-nav">
+      <button class="subtab-btn active" data-tab="registros">Registros</button>
+      <button class="subtab-btn" data-tab="dashboard">Dashboard</button>
+    </div>
+
+    <!-- ===== PANEL REGISTROS ===== -->
+    <div id="panel-registros" class="subtab-panel active">
+
     <div class="filtros insumos">
 
       <div class="filtro-grupo">
@@ -119,6 +127,95 @@
       <span id="page-info">Página 1</span>
       <button id="btn-next">Siguiente</button>
     </div>
+
+    </div><!-- /panel-registros -->
+
+    <!-- ===== PANEL DASHBOARD ===== -->
+    <div id="panel-dashboard" class="subtab-panel">
+
+      <div class="filtros insumos" style="margin-bottom:16px;">
+        <div class="filtro-grupo">
+          <label for="dash-periodo">Periodo:</label>
+          <select id="dash-periodo">
+            <option value="semana">Esta semana</option>
+            <option value="mes" selected>Este mes</option>
+            <option value="mes-anterior">Mes anterior</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="filtro-grupo" id="dash-custom-desde" style="display:none;">
+          <label for="dash-desde">Desde:</label>
+          <input type="date" id="dash-desde">
+        </div>
+        <div class="filtro-grupo" id="dash-custom-hasta" style="display:none;">
+          <label for="dash-hasta">Hasta:</label>
+          <input type="date" id="dash-hasta">
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="bodega-dash-kpi-grid" id="dash-kpis">
+        <div class="bodega-dash-kpi-card">
+          <span class="bodega-dash-kpi-label">Presentes hoy</span>
+          <span class="bodega-dash-kpi-value" id="kpi-presentes">—</span>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <span class="bodega-dash-kpi-label">Ausentes hoy</span>
+          <span class="bodega-dash-kpi-value" id="kpi-ausentes">—</span>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <span class="bodega-dash-kpi-label">% Puntualidad</span>
+          <span class="bodega-dash-kpi-value" id="kpi-puntualidad">—</span>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <span class="bodega-dash-kpi-label">Atrasos (entradas)</span>
+          <span class="bodega-dash-kpi-value" id="kpi-atrasos">—</span>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <span class="bodega-dash-kpi-label">Salidas tempranas</span>
+          <span class="bodega-dash-kpi-value" id="kpi-tempranas">—</span>
+        </div>
+        <div class="bodega-dash-kpi-card">
+          <span class="bodega-dash-kpi-label">Atrasos almuerzo</span>
+          <span class="bodega-dash-kpi-value" id="kpi-atrasos-alm">—</span>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="bodega-dash-charts-grid" style="margin-top:20px;">
+        <div class="bodega-dash-chart-card">
+          <h3>Puntualidad de entradas</h3>
+          <div class="bodega-dash-chart-body">
+            <canvas id="chart-estados"></canvas>
+          </div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Top atrasos por empleado</h3>
+          <div class="bodega-dash-chart-body">
+            <canvas id="chart-atrasos"></canvas>
+          </div>
+        </div>
+        <div class="bodega-dash-chart-card bodega-dash-chart-wide">
+          <h3>Tendencia diaria de puntualidad</h3>
+          <div class="bodega-dash-chart-body">
+            <canvas id="chart-tendencia"></canvas>
+          </div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Puntualidad por localidad</h3>
+          <div class="bodega-dash-chart-body">
+            <canvas id="chart-localidad"></canvas>
+          </div>
+        </div>
+        <div class="bodega-dash-chart-card">
+          <h3>Estados de salida</h3>
+          <div class="bodega-dash-chart-body">
+            <canvas id="chart-salidas"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-dashboard -->
 
   </div>
 
@@ -289,9 +386,11 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/asistencia.js"></script>
+  <script src="js/asistencia-dashboard.js"></script>
 </body>
 </html>
