@@ -139,12 +139,16 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r.value)
       })
-        .then(() => {
+        .then(async res => {
+          if (!res || !res.ok) {
+            const data = await safeJson(res);
+            throw new Error(data?.error);
+          }
           Swal.fire('✅ Usuario creado', '', 'success');
           cargarUsuarios();
         })
-        .catch(() => {
-          Swal.fire('Error', 'No se pudo crear el usuario', 'error');
+        .catch(err => {
+          Swal.fire('Error', err.message || 'No se pudo crear el usuario', 'error');
         });
     });
   };
@@ -209,12 +213,16 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r.value)
       })
-        .then(() => {
+        .then(async res => {
+          if (!res || !res.ok) {
+            const data = await safeJson(res);
+            throw new Error(data?.error);
+          }
           Swal.fire('✅ Usuario actualizado', '', 'success');
           cargarUsuarios();
         })
-        .catch(() => {
-          Swal.fire('Error', 'No se pudo actualizar el usuario', 'error');
+        .catch(err => {
+          Swal.fire('Error', err.message || 'No se pudo actualizar el usuario', 'error');
         });
     });
   };
@@ -252,11 +260,15 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nueva: r.value })
       })
-        .then(() => {
+        .then(async res => {
+          if (!res || !res.ok) {
+            const data = await safeJson(res);
+            throw new Error(data?.error);
+          }
           Swal.fire('✅ Contraseña actualizada', '', 'success');
         })
-        .catch(() => {
-          Swal.fire('Error', 'No se pudo actualizar la contraseña', 'error');
+        .catch(err => {
+          Swal.fire('Error', err.message || 'No se pudo actualizar la contraseña', 'error');
         });
     });
   };
@@ -279,12 +291,16 @@ document.addEventListener('DOMContentLoaded', () => {
       apiFetch(`/usuarios/${id}`, {
         method: 'DELETE'
       })
-        .then(() => {
+        .then(async res => {
+          if (!res || !res.ok) {
+            const data = await safeJson(res);
+            throw new Error(data?.error);
+          }
           Swal.fire('✅ Usuario eliminado', '', 'success');
           cargarUsuarios();
         })
-        .catch(() => {
-          Swal.fire('Error', 'No se pudo eliminar el usuario', 'error');
+        .catch(err => {
+          Swal.fire('Error', err.message || 'No se pudo eliminar el usuario', 'error');
         });
     });
   };
