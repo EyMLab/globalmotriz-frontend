@@ -120,10 +120,11 @@ form.addEventListener('submit', async function (e) {
 
     // Redirigir al inicio correcto según rol
     const destinos = {
-      seguro:             'lpr.html',
-      asistente_contable: 'finanzas.html',
-      bodega:             'inventario.html',
-      asesor:             'inventario.html'
+      seguro:                    'lpr.html',
+      asistente_contable:        'finanzas.html',
+      asistente_administrativo:  'finanzas.html',
+      bodega:                    'inventario.html',
+      asesor:                    'inventario.html'
     };
     window.location.href = destinos[data.rol] || 'inventario.html';
   } catch (error) {

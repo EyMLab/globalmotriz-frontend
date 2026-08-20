@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Estado global
   // =========================================================
   const esAdmin = localStorage.getItem('rol') === 'admin';
+  // Puede marcar/desmarcar "Registrado" en Caja Chica: admin y asistente_administrativo
+  const puedeRegistrado = esAdmin || localStorage.getItem('rol') === 'asistente_administrativo';
+  // Puede VER la columna "Registrado" (solo lectura si no puede marcarla): cualquier perfil con acceso a Caja Chica
+  const puedeVerRegistrado = puedeRegistrado || ['control', 'asistente_contable'].includes(localStorage.getItem('rol'));
   let tipoCajaActual = 'GENERAL';
   const LIMITES = { GENERAL: 150, COMBUSTIBLE: 100 };
   let _cajachicaData    = [];   // página actual del servidor
@@ -88,6 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ocultar botones de registro (control es de solo lectura + descarga de reportes)
       ['btn-registrar-gasto', 'btn-reposicion', 'btn-registrar-cobro', 'btn-registrar-deducible', 'btn-registrar-anulacion']
         .forEach(id => document.getElementById(id)?.style.setProperty('display', 'none'));
+    } else if (d && d.rol === 'asistente_administrativo') {
+      // Solo ve Caja Chica y Cierre de Caja — oculta las pestañas de Deducibles y Facturas Anuladas
+      document.querySelector('.subtab-btn[data-tab="deducibles"]')?.style.setProperty('display', 'none');
+      document.querySelector('.subtab-btn[data-tab="facturas-anuladas"]')?.style.setProperty('display', 'none');
     }
   });
 
@@ -263,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('tabla-caja-chica');
 
     if (esAdmin) document.getElementById('th-edit-cc').textContent = 'Acciones';
-    if (esAdmin) document.getElementById('th-registrado-cc').textContent = 'Registrado';
+    if (puedeVerRegistrado) document.getElementById('th-registrado-cc').textContent = 'Registrado';
     if (!historial.length) {
       tbody.innerHTML = `<tr><td colspan="${esAdmin ? 11 : 10}">Sin registros</td></tr>`;
       return;
@@ -278,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
              <button class="btn btn-eliminar" style="font-size:11px;padding:4px 8px;" onclick="eliminarCajaChica(${r.id})">Eliminar</button>
            </div>`
         : '';
-      const registradoCell = esAdmin && !esRepo
-        ? `<input type="checkbox" ${r.registrado ? 'checked' : ''} onchange="toggleRegistradoCajaChica(${r.id}, this)">`
+      const registradoCell = puedeVerRegistrado && !esRepo
+        ? `<input type="checkbox" ${r.registrado ? 'checked' : ''} ${puedeRegistrado ? '' : 'disabled'} onchange="toggleRegistradoCajaChica(${r.id}, this)">`
         : '';
       return `<tr style="${esRepo ? 'background:#eff6ff;' : ''}">
         <td>${fecha}</td>

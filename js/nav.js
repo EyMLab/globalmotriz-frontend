@@ -61,6 +61,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Asistente administrativo solo puede ver Finanzas (Caja Chica/Cierre) y Cumpleanos
+    if (rol === 'asistente_administrativo' && pagina !== 'Finanzas' && pagina !== 'Cumpleaños') {
+      window.location.href = 'finanzas.html';
+      return;
+    }
+
     // ============================================
     // Enlaces según rol
     // ============================================
@@ -96,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">Lista de Empleados</a>`
       : "";
 
-    const enlaceCumpleanos = ['admin', 'control', 'asistente_contable'].includes(rol)
+    const enlaceCumpleanos = ['admin', 'control', 'asistente_contable', 'asistente_administrativo'].includes(rol)
       ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleaños' ? 'active' : ''}">Cumpleaños</a>`
       : "";
 
@@ -104,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="descuentos.html" class="${pagina === 'Descuentos' ? 'active' : ''}">Descuentos</a>`
       : "";
 
-    const enlaceFinanzas = ['admin', 'control', 'asistente_contable'].includes(rol)
+    const enlaceFinanzas = ['admin', 'control', 'asistente_contable', 'asistente_administrativo'].includes(rol)
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 
@@ -169,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </nav>
 
         <div class="nav-right">
-          ${['admin', 'control', 'bodega', 'asesor', 'asistente_contable'].includes(rol) ? `
+          ${['admin', 'control', 'bodega', 'asesor', 'asistente_contable', 'asistente_administrativo'].includes(rol) ? `
           <div style="position:relative;display:inline-block;" id="notif-bell-container">
             <button class="notif-bell" id="btn-notif-bell" title="Notificaciones">&#128276;
               <span class="notif-badge" id="notif-count" style="display:none;">0</span>
@@ -196,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
     // Notificaciones (campanita)
     // ============================================
-    if (['admin', 'control', 'bodega', 'asesor', 'asistente_contable'].includes(rol)) {
+    if (['admin', 'control', 'bodega', 'asesor', 'asistente_contable', 'asistente_administrativo'].includes(rol)) {
       initNotificaciones();
     }
 
@@ -304,7 +310,7 @@ function initNotificaciones() {
   setInterval(actualizarContadorNotif, 60000);
 }
 
-const ROLES_RRHH_NOTIF = ['admin', 'asistente_contable'];
+const ROLES_RRHH_NOTIF = ['admin', 'asistente_contable', 'asistente_administrativo'];
 const ROLES_COMPRAS_NOTIF = ['admin', 'bodega'];
 
 async function actualizarContadorNotif() {

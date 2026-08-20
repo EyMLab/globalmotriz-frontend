@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(async res => {
       if (!res || !res.ok) { redirectLogin(); return; }
       const data = await safeJson(res);
-      if (!['admin', 'control', 'asistente_contable'].includes(data.rol)) {
+      if (!['admin', 'control', 'asistente_contable', 'asistente_administrativo'].includes(data.rol)) {
         Swal.fire('Acceso denegado', 'No tienes permisos para este modulo', 'error');
         return window.location.href = 'inventario.html';
       }
