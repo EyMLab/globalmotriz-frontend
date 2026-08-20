@@ -188,7 +188,7 @@ async function decrementarStockLocal(codigo, cantidad) {
 
 // --- Órdenes de trabajo (validación OT) ---
 
-const VALIDAR_OT = false; // activar cuando se quite el modo simulación
+const VALIDAR_OT = true;
 
 async function syncOrdenes(deviceKey, localidad) {
   const res = await fetch(`${TABLET_API}/insumos/ordenes-abiertas?localidad=${encodeURIComponent(localidad)}`, {
@@ -215,8 +215,8 @@ async function validarOtLocal(numeroOt) {
   }
 
   const orden = await buscarOrden(numeroOt);
-  if (!orden) return { permitido: true, encontrada: false };
-  if (orden.estado === 'ABIERTO') return { permitido: true, encontrada: true, estado: 'ABIERTO' };
+  if (!orden) return { permitido: false, encontrada: false, estado: 'NO EXISTE' };
+  if (orden.estado === 'ABIERTO' || orden.estado === 'TERMINADO') return { permitido: true, encontrada: true, estado: orden.estado };
 
   return { permitido: false, encontrada: true, estado: orden.estado, placa: orden.placa, cliente: orden.cliente };
 }

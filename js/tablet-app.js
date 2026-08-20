@@ -379,7 +379,10 @@ async function handleOTInput(val) {
     if (!check.permitido) {
       el('ot-display').textContent = `RECHAZADO`;
       el('ot-display').style.color = 'var(--red)';
-      showToast(`Orden ${otActual} está ${check.estado}`);
+      const msg = check.encontrada === false
+        ? `Orden ${otActual} no existe`
+        : `Orden ${otActual} está ${check.estado}`;
+      showToast(msg);
       setTimeout(() => {
         otActual = '';
         updateOTDisplay();
