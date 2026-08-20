@@ -43,8 +43,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
     const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Inventario';
 
-    // Bloqueo si intenta acceder a Proveedores o Clientes sin ser admin ni control
-    if (!['admin', 'control'].includes(rol) && (pagina === 'Proveedores' || pagina === 'Clientes')) {
+    // Bloqueo si intenta acceder a Clientes sin ser admin ni control
+    if (!['admin', 'control'].includes(rol) && pagina === 'Clientes') {
+      window.location.href = 'inventario.html';
+      return;
+    }
+
+    // Bloqueo si intenta acceder a Proveedores sin ser admin, control o asistente_administrativo
+    if (!['admin', 'control', 'asistente_administrativo'].includes(rol) && pagina === 'Proveedores') {
       window.location.href = 'inventario.html';
       return;
     }
@@ -61,8 +67,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Asistente administrativo solo puede ver Finanzas (Caja Chica/Cierre) y Cumpleanos
-    if (rol === 'asistente_administrativo' && pagina !== 'Finanzas' && pagina !== 'Cumpleaños') {
+    // Asistente administrativo solo puede ver Finanzas (Caja Chica/Cierre), Cumpleanos y Proveedores (solo lectura)
+    if (rol === 'asistente_administrativo' && pagina !== 'Finanzas' && pagina !== 'Cumpleaños' && pagina !== 'Proveedores') {
       window.location.href = 'finanzas.html';
       return;
     }
@@ -114,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 
-    const enlaceProveedores = ['admin', 'control'].includes(rol)
+    const enlaceProveedores = ['admin', 'control', 'asistente_administrativo'].includes(rol)
       ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas por Pagar</a>`
       : "";
 

@@ -604,6 +604,7 @@ body.rol-control .btn-gestion,
 body.rol-control .btn-guardar-abono,
 body.rol-control .btn-total-abonar,
 body.rol-control #btn-guardar-todos,
+body.rol-control #btn-limpiar-resumen,
 body.rol-control .row-check,
 body.rol-control .col-checkbox {
   display: none !important;

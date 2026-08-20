@@ -1287,9 +1287,15 @@ const PROV = (() => {
 
   // ── Init ─────────────────────────────────────────
   async function init() {
-    // Si el usuario es "control" → marca el body para ocultar acciones de escritura
-    if (localStorage.getItem('rol') === 'control') {
+    // Solo lectura: "control" y "asistente_administrativo" → marca el body para ocultar
+    // acciones de escritura (se reutiliza la clase .rol-control para ambos roles)
+    const rolActual = localStorage.getItem('rol');
+    if (['control', 'asistente_administrativo'].includes(rolActual)) {
       document.body.classList.add('rol-control');
+    }
+    // asistente_administrativo tampoco tiene acceso a Costos del Mes (a diferencia de control)
+    if (rolActual === 'asistente_administrativo') {
+      document.querySelector('.prov-tab[data-tab="costos"]')?.style.setProperty('display', 'none');
     }
 
     initTabs();
