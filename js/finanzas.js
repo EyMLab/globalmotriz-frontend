@@ -86,21 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
-  // Detectar rol para ocultar formularios si es control
+  // Ocultar elementos de escritura/pestañas según rol.
+  // Síncrono con localStorage (no esperar /auth/me) para que no haya
+  // parpadeo mostrando esos botones/pestañas antes de ocultarlos.
   // =========================================================
-  let esControlFinanzas = false;
-  apiFetch('/auth/me').then(r => r && r.ok ? safeJson(r) : null).then(d => {
-    if (d && d.rol === 'control') {
-      esControlFinanzas = true;
-      // Ocultar botones de registro (control es de solo lectura + descarga de reportes)
-      ['btn-registrar-gasto', 'btn-reposicion', 'btn-registrar-cobro', 'btn-registrar-deducible', 'btn-registrar-anulacion']
-        .forEach(id => document.getElementById(id)?.style.setProperty('display', 'none'));
-    } else if (d && d.rol === 'asistente_administrativo') {
-      // Solo ve Caja Chica y Cierre de Caja — oculta las pestañas de Deducibles y Facturas Anuladas
-      document.querySelector('.subtab-btn[data-tab="deducibles"]')?.style.setProperty('display', 'none');
-      document.querySelector('.subtab-btn[data-tab="facturas-anuladas"]')?.style.setProperty('display', 'none');
-    }
-  });
+  if (localStorage.getItem('rol') === 'control') {
+    // Ocultar botones de registro (control es de solo lectura + descarga de reportes)
+    ['btn-registrar-gasto', 'btn-reposicion', 'btn-registrar-cobro', 'btn-registrar-deducible', 'btn-registrar-anulacion']
+      .forEach(id => document.getElementById(id)?.style.setProperty('display', 'none'));
+  } else if (!tieneAccesoDeducibles) {
+    // asistente_administrativo: solo ve Caja Chica y Cierre de Caja
+    document.querySelector('.subtab-btn[data-tab="deducibles"]')?.style.setProperty('display', 'none');
+    document.querySelector('.subtab-btn[data-tab="facturas-anuladas"]')?.style.setProperty('display', 'none');
+  }
 
   // =========================================================
   // Carga inicial

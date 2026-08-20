@@ -397,10 +397,13 @@ const PROV = (() => {
   async function cargarResumen() {
     const centro = document.getElementById("f-centro-res")?.value || "";
     const qs = centro ? `?centro_costos=${encodeURIComponent(centro)}` : "";
+    // asistente_administrativo no tiene acceso a Costos del Mes — pedir ese endpoint
+    // igual haría que apiFetch cierre la sesión al recibir el 403
+    const tieneAccesoCostos = localStorage.getItem('rol') !== 'asistente_administrativo';
 
     const [resRes, resCostos] = await Promise.all([
       apiFetch(`/proveedores-pagar/resumen${qs}`),
-      apiFetch(`/proveedores-pagar/costos/${periodoActual()}`),
+      tieneAccesoCostos ? apiFetch(`/proveedores-pagar/costos/${periodoActual()}`) : Promise.resolve(null),
     ]);
 
     if (!resRes || !resRes.ok) return;
@@ -416,11 +419,11 @@ const PROV = (() => {
     const diferencia  = _disponible - conPlan;
 
     document.getElementById("rc-total-deuda").textContent = fmtMoney(totalDeuda);
-    document.getElementById("rc-disponible").textContent  = fmtMoney(_disponible);
+    document.getElementById("rc-disponible").textContent  = tieneAccesoCostos ? fmtMoney(_disponible) : '—';
     document.getElementById("rc-con-plan").textContent    = fmtMoney(conPlan);
-    document.getElementById("rc-diferencia").textContent  = fmtMoney(diferencia);
+    document.getElementById("rc-diferencia").textContent  = tieneAccesoCostos ? fmtMoney(diferencia) : '—';
     const difCard = document.getElementById("rc-diferencia-card");
-    if (difCard) {
+    if (difCard && tieneAccesoCostos) {
       difCard.style.background = diferencia >= 0 ? "#dcfce7" : "#fef2f2";
       difCard.querySelector(".rc-num").style.color = diferencia >= 0 ? "#15803d" : "#b91c1c";
     }
@@ -895,14 +898,15 @@ const PROV = (() => {
       // ── 1. Dibujar header y KPI primero para conocer el y real ──────────────
       let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Resumen · ${hoyStr}`);
 
+      const tieneAccesoCostos = localStorage.getItem('rol') !== 'asistente_administrativo';
       const totalDeudaVal = parseFloat(_resumenData.total_general || 0);
       const conPlanVal    = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar || 0), 0);
       const diferenciaVal = _disponible - conPlanVal;
       const kpis = [
         { label: "TOTAL DEUDA ACTIVA", valor: fmtMoney(totalDeudaVal), color: PDF_PRIMARY },
-        { label: "DISPONIBLE DEL MES",  valor: fmtMoney(_disponible),   color: [21, 128, 61] },
+        { label: "DISPONIBLE DEL MES",  valor: tieneAccesoCostos ? fmtMoney(_disponible) : '—',   color: [21, 128, 61] },
         { label: "CON PLAN DE ABONO",  valor: fmtMoney(conPlanVal),    color: PDF_PRIMARY },
-        { label: "DIFERENCIA",         valor: fmtMoney(diferenciaVal), color: diferenciaVal >= 0 ? [21, 128, 61] : [185, 28, 28] },
+        { label: "DIFERENCIA",         valor: tieneAccesoCostos ? fmtMoney(diferenciaVal) : '—', color: (!tieneAccesoCostos || diferenciaVal >= 0) ? [21, 128, 61] : [185, 28, 28] },
       ];
       doc.setFillColor(241, 245, 249); doc.setDrawColor(210, 220, 230);
       doc.roundedRect(mL, y, boxW, 10, 2, 2, "FD");
