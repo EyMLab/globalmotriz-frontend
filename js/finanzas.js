@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const puedeRegistrado = esAdmin || localStorage.getItem('rol') === 'asistente_administrativo';
   // Puede VER la columna "Registrado" (solo lectura si no puede marcarla): cualquier perfil con acceso a Caja Chica
   const puedeVerRegistrado = puedeRegistrado || ['control', 'asistente_contable'].includes(localStorage.getItem('rol'));
+  // asistente_administrativo no tiene acceso a Deducibles ni Facturas Anuladas (backend ya lo bloquea con 403,
+  // así que estas cargas iniciales deben omitirse para ese rol o apiFetch cierra la sesión automáticamente)
+  const tieneAccesoDeducibles = localStorage.getItem('rol') !== 'asistente_administrativo';
   let tipoCajaActual = 'GENERAL';
   const LIMITES = { GENERAL: 150, COMBUSTIBLE: 100 };
   let _cajachicaData    = [];   // página actual del servidor
@@ -105,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarCajaChica(tipoCajaActual);
   cargarTodosCajaChica(tipoCajaActual);  // carga completa para filtrado cliente
   cargarCierreCaja(mesDefault);
-  cargarDeducibles();
+  if (tieneAccesoDeducibles) cargarDeducibles();
 
   // =========================================================
   // CAJA CHICA - Cargar
@@ -1657,7 +1660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  cargarFacturasAnuladas();
+  if (tieneAccesoDeducibles) cargarFacturasAnuladas();
 
   // =========================================================
   // EDITAR — solo admin
