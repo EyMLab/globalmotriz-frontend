@@ -12,6 +12,9 @@ const PROV = (() => {
   let _resumenData     = null; // cache del último resumen cargado (para PDFs)
   let _cardActiva      = null;
 
+  // control y asistente_administrativo: solo lectura en todo el módulo
+  const soloLectura = ['control', 'asistente_administrativo'].includes(localStorage.getItem('rol'));
+
   const ESTADOS_GESTION_PROV = ["CAJA CHICA", "BANCOS", "SANTIAGO"];
 
   // ── Helpers ─────────────────────────────────────
@@ -167,7 +170,7 @@ const PROV = (() => {
     const opts = PRIOR_OPTS.map(o =>
       `<option value="${o.val}"${String(currentVal||"") === o.val ? " selected" : ""}>${o.label}</option>`
     ).join("");
-    return `<select class="select-prior" data-campo="prioridad" data-proveedor="${provEnc}">${opts}</select>`;
+    return `<select class="select-prior" data-campo="prioridad" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}>${opts}</select>`;
   }
 
   // ── Cargar filtros dinámicos ─────────────────────
@@ -445,13 +448,13 @@ const PROV = (() => {
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
         <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}">${r.proveedor}</td>
-        <td><input type="text" class="input-ref" value="${refEnc}" placeholder="" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}"/></td>
+        <td><input type="text" class="input-ref" value="${refEnc}" placeholder="" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/></td>
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
         <td>${priorSelect(r.prioridad, provEnc)}</td>
         <td>
           <div style="display:flex;align-items:center;gap:4px">
-            <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}"/>
+            <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/>
             <button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>
           </div>
         </td>
@@ -1291,15 +1294,16 @@ const PROV = (() => {
 
   // ── Init ─────────────────────────────────────────
   async function init() {
-    // Solo lectura: "control" y "asistente_administrativo" → marca el body para ocultar
-    // acciones de escritura (se reutiliza la clase .rol-control para ambos roles)
-    const rolActual = localStorage.getItem('rol');
-    if (['control', 'asistente_administrativo'].includes(rolActual)) {
+    // Solo lectura: marca el body para ocultar acciones de escritura
+    // (se reutiliza la clase .rol-control para "control" y "asistente_administrativo")
+    if (soloLectura) {
       document.body.classList.add('rol-control');
     }
-    // asistente_administrativo tampoco tiene acceso a Costos del Mes (a diferencia de control)
-    if (rolActual === 'asistente_administrativo') {
+    // asistente_administrativo tampoco tiene acceso a Costos del Mes (a diferencia de control),
+    // por lo que además de ocultar la pestaña, sus tarjetas de indicadores del Resumen no aplican
+    if (localStorage.getItem('rol') === 'asistente_administrativo') {
       document.querySelector('.prov-tab[data-tab="costos"]')?.style.setProperty('display', 'none');
+      document.querySelector('.resumen-indicadores')?.style.setProperty('display', 'none');
     }
 
     initTabs();
