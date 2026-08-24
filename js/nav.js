@@ -73,6 +73,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Procesos solo puede ver Órdenes de Trabajo (sin valores monetarios, eso lo maneja el backend)
+    if (rol === 'procesos' && pagina !== 'ControlTaller') {
+      window.location.href = 'control-taller.html';
+      return;
+    }
+
     // ============================================
     // Enlaces según rol
     // ============================================
@@ -96,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Monitoreo LPR</a>`
       : "";
 
-    const enlaceControlTaller = ['admin', 'control'].includes(rol)
+    const enlaceControlTaller = ['admin', 'control', 'procesos'].includes(rol)
       ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Órdenes de Trabajo</a>`
       : "";
 

@@ -618,6 +618,20 @@ body.rol-control .prov-table tbody tr td:last-child {
   display: none !important;
 }
 
+/* ======================================================================
+   ROL PROCESOS — Órdenes de Trabajo sin valores monetarios
+   Ve todo el módulo (tabla, dashboard, resumen) excepto cifras de dinero.
+   El backend ya no envía esos campos para este rol; esto es la capa visual
+   (la columna "V. Total" de la tabla se maneja aparte, vía COLS en JS).
+====================================================================== */
+body.rol-procesos #dash-fin-grid,
+body.rol-procesos #fin-grid,
+body.rol-procesos .dash-chart-money,
+body.rol-procesos .cell-val,
+body.rol-procesos .col-valor {
+  display: none !important;
+}
+
 /* Botones navbar y header */
 .btn-nav,
 .header-right button {

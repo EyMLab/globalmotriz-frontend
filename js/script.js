@@ -123,6 +123,7 @@ form.addEventListener('submit', async function (e) {
       seguro:                    'lpr.html',
       asistente_contable:        'finanzas.html',
       asistente_administrativo:  'finanzas.html',
+      procesos:                  'control-taller.html',
       bodega:                    'inventario.html',
       asesor:                    'inventario.html'
     };

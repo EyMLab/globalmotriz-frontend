@@ -295,8 +295,11 @@ const DASH = (() => {
 
   // ── Renderizar todo con datos del resumen ─────────
   function render(d) {
+    // "procesos" no ve valores monetarios en ningún lado del módulo
+    const esProcesos = localStorage.getItem('rol') === 'procesos';
+
     // Financiero
-    renderFinCards(d.totales_financieros || {});
+    if (!esProcesos) renderFinCards(d.totales_financieros || {});
 
     // Estado donut
     renderEstado(d.por_estado || []);
@@ -317,13 +320,15 @@ const DASH = (() => {
     });
 
     // Aseguradoras — valor total
-    renderHBar({
-      id: "chart-aseg-valor",
-      labels: asegLabels,
-      datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
-        backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
-      unit: "$",
-    });
+    if (!esProcesos) {
+      renderHBar({
+        id: "chart-aseg-valor",
+        labels: asegLabels,
+        datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
+          backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
+        unit: "$",
+      });
+    }
 
     // Por usuario (top 12)
     const usrTop = (d.por_usuario || []).slice(0, 12);
@@ -357,16 +362,18 @@ const DASH = (() => {
     });
 
     // Valor mensual (línea)
-    renderLine({
-      id: "chart-mes-valor",
-      labels: mesLabels,
-      datasets: [{
-        label: "Valor Total",
-        data: meses.map(r => parseFloat(r.valor_total) || 0),
-        borderColor: "#2B7A9E", backgroundColor: "rgba(43,122,158,.15)",
-        fill: true, tension: .35, pointRadius: 3,
-      }],
-    });
+    if (!esProcesos) {
+      renderLine({
+        id: "chart-mes-valor",
+        labels: mesLabels,
+        datasets: [{
+          label: "Valor Total",
+          data: meses.map(r => parseFloat(r.valor_total) || 0),
+          borderColor: "#2B7A9E", backgroundColor: "rgba(43,122,158,.15)",
+          fill: true, tension: .35, pointRadius: 3,
+        }],
+      });
+    }
 
     // Por proceso OT
     const procTop = (d.por_proceso || []).slice(0, 12);
@@ -433,6 +440,9 @@ const CT = (() => {
   // cardActiva → _cardActiva (módulo global, compartida con DASH)
 
   // ── Definición de columnas ────────────────────────
+  // "procesos" no ve valores monetarios en ningún lado del módulo
+  const esProcesos = localStorage.getItem('rol') === 'procesos';
+
   const COLS = [
     { id:"orden",     label:"N° Orden",       def:true,  sticky:true },
     { id:"localidad", label:"Localidad",       def:false  },
@@ -449,7 +459,7 @@ const CT = (() => {
     { id:"aseg",      label:"Aseguradora",     def:true   },
     { id:"usuario",   label:"Usuario",         def:false  },
     { id:"factura",   label:"N° Factura",      def:false  },
-    { id:"vtotal",    label:"V. Total",        def:true   },
+    { id:"vtotal",    label:"V. Total",        def:!esProcesos, noToggle:esProcesos },
     { id:"obs",       label:"Observación",     def:false  },
     { id:"acciones",  label:"Acciones",        def:true,  noToggle:true },
   ];
@@ -881,8 +891,8 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo exportar.", "error"); return; }
     const data = await safeJson(res);
     const filas = data.ordenes;
-    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro","total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total","observacion"];
-    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO","TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL","OBSERVACIÓN"];
+    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro", ...(esProcesos ? [] : ["total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total"]),"observacion"];
+    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO", ...(esProcesos ? [] : ["TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL"]),"OBSERVACIÓN"];
     const csv   = [hdr.join(","), ...filas.map(o => cols.map(c => `"${(o[c]??'').toString().replace(/"/g,'""')}"`).join(","))].join("\n");
     const blob  = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8;" });
     const url   = URL.createObjectURL(blob);
@@ -933,25 +943,27 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo cargar el resumen.", "error"); return; }
     const d = await safeJson(res);
 
-    const fin = d.totales_financieros || {};
-    document.getElementById("fin-grid").innerHTML = [
-      { lbl: "Valor Total",     val: fin.valor_total              },
-      { lbl: "Sub Total",       val: fin.sub_total                },
-      { lbl: "Total Servicios", val: fin.total_servicios          },
-      { lbl: "Serv. Terceros",  val: fin.total_servicios_terce    },
-      { lbl: "Total Repuestos", val: fin.total_repuestos          },
-    ].map(it => `
-      <div class="fin-item">
-        <div class="fin-num">${fmtMoney(it.val)}</div>
-        <div class="fin-lbl">${it.lbl}</div>
-      </div>`).join("");
+    if (!esProcesos) {
+      const fin = d.totales_financieros || {};
+      document.getElementById("fin-grid").innerHTML = [
+        { lbl: "Valor Total",     val: fin.valor_total              },
+        { lbl: "Sub Total",       val: fin.sub_total                },
+        { lbl: "Total Servicios", val: fin.total_servicios          },
+        { lbl: "Serv. Terceros",  val: fin.total_servicios_terce    },
+        { lbl: "Total Repuestos", val: fin.total_repuestos          },
+      ].map(it => `
+        <div class="fin-item">
+          <div class="fin-num">${fmtMoney(it.val)}</div>
+          <div class="fin-lbl">${it.lbl}</div>
+        </div>`).join("");
+    }
 
     document.getElementById("res-estado").innerHTML = (d.por_estado || []).map(r =>
-      `<tr><td>${r.estado || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${r.pct}%</td><td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+      `<tr><td>${r.estado || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${r.pct}%</td><td class="num-right col-valor">${fmtMoney(r.valor_total)}</td></tr>`
     ).join("") || `<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-proceso").innerHTML = (d.por_proceso || []).map(r =>
-      `<tr><td>${r.proceso_ot || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right">${fmtMoney(r.valor_total)}</td></tr>`
+      `<tr><td>${r.proceso_ot || "—"}</td><td class="num-right">${r.cantidad}</td><td class="num-right col-valor">${fmtMoney(r.valor_total)}</td></tr>`
     ).join("") || `<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--text-light);">Sin datos</td></tr>`;
 
     document.getElementById("res-aseg").innerHTML = (d.por_aseguradora || []).map(r =>
@@ -992,6 +1004,9 @@ const CT = (() => {
 
   // ── Init ──────────────────────────────────────────
   function init() {
+    // "procesos" no ve valores monetarios en ningún lado del módulo (tablas, dashboard, resumen)
+    if (esProcesos) document.body.classList.add('rol-procesos');
+
     // Tabs — al cambiar de pestaña, recargar con filtros actuales
     document.querySelectorAll(".taller-tab").forEach(btn => {
       btn.addEventListener("click", () => {
