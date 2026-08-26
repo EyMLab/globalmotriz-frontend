@@ -101,6 +101,15 @@ function setupConfigScreen() {
     }, 1500);
   });
 
+  el('btn-reload').addEventListener('click', () => {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    }
+    caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).then(() => {
+      window.location.reload();
+    });
+  });
+
   el('btn-config-bar').addEventListener('click', () => {
     el('admin-clave').value = '';
     el('admin-error').style.display = 'none';
