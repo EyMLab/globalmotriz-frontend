@@ -206,7 +206,7 @@ async function syncOrdenes(deviceKey, localidad) {
 
 async function buscarOrden(numeroOt) {
   const ordenes = await dbGetAll('ordenes');
-  return ordenes.find(o => o.numero_orden === numeroOt) || null;
+  return ordenes.find(o => String(o.numero_orden) === String(numeroOt)) || null;
 }
 
 async function validarOtLocal(numeroOt) {

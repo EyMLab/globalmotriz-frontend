@@ -84,7 +84,7 @@ function setupConfigScreen() {
       if (estaOnline()) {
         const result = await syncCompleto(deviceKey, localidad);
         el('cfg-status').textContent =
-          `Sincronizado: ${result.empleados} empleados, ${result.catalogo} insumos`;
+          `Sincronizado: ${result.empleados} empleados, ${result.catalogo} insumos, ${result.ordenes} órdenes`;
       } else {
         el('cfg-status').textContent = 'Guardado. Se sincronizará cuando haya internet.';
       }
@@ -559,6 +559,7 @@ async function onOnline() {
     }
     if (deviceKey && localidad) {
       await syncCatalogo(deviceKey, localidad);
+      await syncOrdenes(deviceKey, localidad);
     }
   } catch (e) {
     console.error('Error en sync automático:', e);
@@ -593,6 +594,7 @@ function scheduleSync() {
           updatePendientesBadge(0);
         }
         await syncCatalogo(deviceKey, localidad);
+        await syncOrdenes(deviceKey, localidad);
       } catch (e) {
         console.error('Sync periódico falló:', e);
       }

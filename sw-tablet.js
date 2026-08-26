@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tablet-insumos-v6';
+const CACHE_NAME = 'tablet-insumos-v7';
 
 const ASSETS = [
   '/tablet.html',
