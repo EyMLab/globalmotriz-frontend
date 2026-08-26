@@ -214,6 +214,18 @@ async function validarOtLocal(numeroOt) {
     return { permitido: true };
   }
 
+  if (estaOnline()) {
+    try {
+      const dk = await getConfig('deviceKey', 'devkey123');
+      const res = await fetch(`${TABLET_API}/insumos/validar-ot?ot=${encodeURIComponent(numeroOt)}`, {
+        headers: { 'x-device-key': dk }
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Validación online falló, usando cache local:', e.message);
+    }
+  }
+
   const orden = await buscarOrden(numeroOt);
   if (!orden) return { permitido: false, encontrada: false, estado: 'NO EXISTE' };
   if (orden.estado === 'ABIERTO' || orden.estado === 'TERMINADO') return { permitido: true, encontrada: true, estado: orden.estado };
