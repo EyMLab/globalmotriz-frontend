@@ -581,6 +581,36 @@ async function updatePendientesBadge(count) {
   }
 }
 
+// --- Keep-alive backend ---
+
+let keepAliveTimer = null;
+
+function startKeepAlive() {
+  if (keepAliveTimer) clearTimeout(keepAliveTimer);
+
+  function tick() {
+    const hora = new Date().getHours();
+    let intervaloMs;
+
+    if (hora >= 6 && hora < 7) {
+      intervaloMs = 10 * 60 * 1000;
+    } else if (hora >= 7 && hora < 18) {
+      intervaloMs = 30 * 60 * 1000;
+    } else {
+      intervaloMs = 30 * 60 * 1000;
+      keepAliveTimer = setTimeout(tick, intervaloMs);
+      return;
+    }
+
+    if (estaOnline()) {
+      fetch(`${TABLET_API}/health`).catch(() => {});
+    }
+    keepAliveTimer = setTimeout(tick, intervaloMs);
+  }
+
+  tick();
+}
+
 // --- Sync periódico ---
 
 function scheduleSync() {
@@ -600,6 +630,8 @@ function scheduleSync() {
       }
     }
   }, 5 * 60 * 1000);
+
+  startKeepAlive();
 }
 
 
