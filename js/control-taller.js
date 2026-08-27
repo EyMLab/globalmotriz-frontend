@@ -1025,9 +1025,11 @@ const CT = (() => {
     // "procesos" y "bodega" no ven valores monetarios en ningún lado del módulo
     if (esSinValores) document.body.classList.add('rol-sin-valores');
 
-    // "bodega" solo ve la pestaña Órdenes (para confirmar qué ya se importó) + Importar.
-    // Sin Dashboard, sin Resumen, sin exportar, sin editar (esto último ya vía COLS/acciones).
+    // "bodega" solo ve la tabla de Órdenes con sus filtros (para confirmar qué ya se
+    // importó) + Importar. Sin tarjetas, sin Dashboard, sin Resumen, sin exportar,
+    // sin editar (esto último ya vía COLS/acciones).
     if (esBodega) {
+      document.getElementById('cards-estado')?.style.setProperty('display', 'none');
       document.querySelector('.taller-tab[data-tab="dashboard"]')?.style.setProperty('display', 'none');
       document.querySelector('.taller-tab[data-tab="resumen"]')?.style.setProperty('display', 'none');
       document.getElementById('btn-export-csv')?.style.setProperty('display', 'none');
