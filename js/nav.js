@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Monitoreo LPR</a>`
       : "";
 
-    const enlaceControlTaller = ['admin', 'control', 'procesos'].includes(rol)
+    const enlaceControlTaller = ['admin', 'control', 'procesos', 'bodega'].includes(rol)
       ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Órdenes de Trabajo</a>`
       : "";
 

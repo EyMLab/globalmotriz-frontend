@@ -440,8 +440,10 @@ const CT = (() => {
   // cardActiva → _cardActiva (módulo global, compartida con DASH)
 
   // ── Definición de columnas ────────────────────────
-  // "procesos" no ve valores monetarios en ningún lado del módulo
-  const esProcesos = localStorage.getItem('rol') === 'procesos';
+  const _rolCT = localStorage.getItem('rol');
+  const esBodega = _rolCT === 'bodega';
+  // "procesos" y "bodega" no ven valores monetarios en ningún lado del módulo
+  const esSinValores = _rolCT === 'procesos' || esBodega;
 
   const COLS = [
     { id:"orden",     label:"N° Orden",       def:true,  sticky:true },
@@ -459,9 +461,9 @@ const CT = (() => {
     { id:"aseg",      label:"Aseguradora",     def:true   },
     { id:"usuario",   label:"Usuario",         def:false  },
     { id:"factura",   label:"N° Factura",      def:false  },
-    { id:"vtotal",    label:"V. Total",        def:!esProcesos, noToggle:esProcesos },
+    { id:"vtotal",    label:"V. Total",        def:!esSinValores, noToggle:esSinValores },
     { id:"obs",       label:"Observación",     def:false  },
-    { id:"acciones",  label:"Acciones",        def:true,  noToggle:true },
+    { id:"acciones",  label:"Acciones",        def:!esBodega, noToggle:true },
   ];
   const colVisible = {};
   COLS.forEach(c => { colVisible[c.id] = c.def; });
@@ -523,6 +525,23 @@ const CT = (() => {
     document.getElementById("c-garantia").textContent  = d.garantia   ?? 0;
     document.getElementById("c-empleado").textContent  = d.empleado   ?? 0;
     document.getElementById("c-total").textContent     = d.total      ?? 0;
+  }
+
+  // ── Última importación por localidad (persiste entre recargas) ──
+  async function cargarUltimaImportacion() {
+    const el = document.getElementById("import-info");
+    if (!el) return;
+    const res = await apiFetch("/taller/importaciones");
+    if (!res || !res.ok) return;
+    const d = await safeJson(res);
+
+    const fmt = (info) => {
+      if (!info) return "sin importaciones";
+      const f = new Date(info.fecha_hora).toLocaleString("es-EC", { dateStyle: "short", timeStyle: "short" });
+      return info.usuario ? `${f} (${info.usuario})` : f;
+    };
+
+    el.textContent = `Última importación — MATRIZ: ${fmt(d.MATRIZ)} · SUCURSAL: ${fmt(d.SUCURSAL)}`;
   }
 
   // ── Activar / desactivar tarjeta ──────────────────
@@ -736,8 +755,7 @@ const CT = (() => {
     if (!vals) return;   // cancelado o validación fallida
 
     const localidad = vals.localidad;
-    document.getElementById("import-info").textContent =
-      `Última importación: ${new Date().toLocaleString("es-EC")} · ${vals.nuevas} nuevas · ${vals.actualizadas} actualizadas`;
+    await cargarUltimaImportacion();
 
     await cargarFiltros(localidad);
     await cargarCards(localidad);
@@ -891,8 +909,8 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo exportar.", "error"); return; }
     const data = await safeJson(res);
     const filas = data.ordenes;
-    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro", ...(esProcesos ? [] : ["total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total"]),"observacion"];
-    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO", ...(esProcesos ? [] : ["TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL"]),"OBSERVACIÓN"];
+    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro", ...(esSinValores ? [] : ["total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total"]),"observacion"];
+    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO", ...(esSinValores ? [] : ["TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL"]),"OBSERVACIÓN"];
     const csv   = [hdr.join(","), ...filas.map(o => cols.map(c => `"${(o[c]??'').toString().replace(/"/g,'""')}"`).join(","))].join("\n");
     const blob  = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8;" });
     const url   = URL.createObjectURL(blob);
@@ -943,7 +961,7 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo cargar el resumen.", "error"); return; }
     const d = await safeJson(res);
 
-    if (!esProcesos) {
+    if (!esSinValores) {
       const fin = d.totales_financieros || {};
       document.getElementById("fin-grid").innerHTML = [
         { lbl: "Valor Total",     val: fin.valor_total              },
@@ -1004,8 +1022,17 @@ const CT = (() => {
 
   // ── Init ──────────────────────────────────────────
   function init() {
-    // "procesos" no ve valores monetarios en ningún lado del módulo (tablas, dashboard, resumen)
-    if (esProcesos) document.body.classList.add('rol-procesos');
+    // "procesos" y "bodega" no ven valores monetarios en ningún lado del módulo
+    if (esSinValores) document.body.classList.add('rol-sin-valores');
+
+    // "bodega" solo ve la pestaña Órdenes (para confirmar qué ya se importó) + Importar.
+    // Sin Dashboard, sin Resumen, sin exportar, sin editar (esto último ya vía COLS/acciones).
+    if (esBodega) {
+      document.querySelector('.taller-tab[data-tab="dashboard"]')?.style.setProperty('display', 'none');
+      document.querySelector('.taller-tab[data-tab="resumen"]')?.style.setProperty('display', 'none');
+      document.getElementById('btn-export-csv')?.style.setProperty('display', 'none');
+      document.getElementById('btn-export-excel')?.style.setProperty('display', 'none');
+    }
 
     // Tabs — al cambiar de pestaña, recargar con filtros actuales
     document.querySelectorAll(".taller-tab").forEach(btn => {
@@ -1104,6 +1131,7 @@ const CT = (() => {
     cargarFiltros();
     cargarCards();
     cargarOrdenes(1);
+    cargarUltimaImportacion();
   }
 
   document.addEventListener("DOMContentLoaded", init);

@@ -619,16 +619,17 @@ body.rol-control .prov-table tbody tr td:last-child {
 }
 
 /* ======================================================================
-   ROL PROCESOS — Órdenes de Trabajo sin valores monetarios
-   Ve todo el módulo (tabla, dashboard, resumen) excepto cifras de dinero.
-   El backend ya no envía esos campos para este rol; esto es la capa visual
+   ROLES SIN VALORES (procesos, bodega) — Órdenes de Trabajo sin cifras de dinero
+   "procesos" ve todo el módulo (tabla, dashboard, resumen) sin dinero.
+   "bodega" además solo ve la pestaña Órdenes (dashboard/resumen ocultos vía JS).
+   El backend ya no envía esos campos para estos roles; esto es la capa visual
    (la columna "V. Total" de la tabla se maneja aparte, vía COLS en JS).
 ====================================================================== */
-body.rol-procesos #dash-fin-grid,
-body.rol-procesos #fin-grid,
-body.rol-procesos .dash-chart-money,
-body.rol-procesos .cell-val,
-body.rol-procesos .col-valor {
+body.rol-sin-valores #dash-fin-grid,
+body.rol-sin-valores #fin-grid,
+body.rol-sin-valores .dash-chart-money,
+body.rol-sin-valores .cell-val,
+body.rol-sin-valores .col-valor {
   display: none !important;
 }
 
