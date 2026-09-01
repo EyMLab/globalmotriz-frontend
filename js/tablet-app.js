@@ -148,7 +148,7 @@ function handleRfidKeydown(e) {
     e.preventDefault();
     rfidBuffer += e.key.toUpperCase();
     clearTimeout(rfidTimer);
-    rfidTimer = setTimeout(() => { rfidBuffer = ''; }, 500);
+    rfidTimer = setTimeout(() => { rfidBuffer = ''; }, 2000);
   }
 }
 
