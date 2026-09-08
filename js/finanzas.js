@@ -321,11 +321,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error();
       const item = _cajachicaData.find(r => r.id === id);
       if (item) item.registrado = nuevoValor;
+      // asistente_administrativo solo puede marcar una vez: al quedar en true se deja
+      // deshabilitado de inmediato para que no pueda intentar desmarcar (eso daría 403
+      // y —como cualquier 403— cerraría la sesión automáticamente)
+      checkbox.disabled = !(esAdmin || !nuevoValor);
     } catch {
       checkbox.checked = !nuevoValor;
-      Swal.fire('Error', 'No se pudo actualizar', 'error');
-    } finally {
       checkbox.disabled = false;
+      Swal.fire('Error', 'No se pudo actualizar', 'error');
     }
   };
 
