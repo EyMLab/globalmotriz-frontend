@@ -287,8 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
              <button class="btn btn-eliminar" style="font-size:11px;padding:4px 8px;" onclick="eliminarCajaChica(${r.id})">Eliminar</button>
            </div>`
         : '';
+      // asistente_administrativo solo puede marcar, no desmarcar: una vez marcada,
+      // la fila se deshabilita para ese rol (desmarcar queda exclusivo de admin)
+      const puedeInteractuarRegistrado = puedeRegistrado && (esAdmin || !r.registrado);
       const registradoCell = puedeVerRegistrado && !esRepo
-        ? `<input type="checkbox" ${r.registrado ? 'checked' : ''} ${puedeRegistrado ? '' : 'disabled'} onchange="toggleRegistradoCajaChica(${r.id}, this)">`
+        ? `<input type="checkbox" ${r.registrado ? 'checked' : ''} ${puedeInteractuarRegistrado ? '' : 'disabled'} onchange="toggleRegistradoCajaChica(${r.id}, this)">`
         : '';
       return `<tr style="${esRepo ? 'background:#eff6ff;' : ''}">
         <td>${fecha}</td>
