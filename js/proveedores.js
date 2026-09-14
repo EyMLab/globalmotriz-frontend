@@ -505,14 +505,21 @@ const PROV = (() => {
     const totalSaldo = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
 
     const invoiceRows = docs.map((d, i) => `
-      <tr style="border-bottom:1px solid #f3f4f6">
-        <td style="padding:5px 8px;font-size:12px;font-family:monospace">${d.numero_documento}</td>
-        <td style="padding:5px 8px;font-size:12px;text-align:center">${fmtFecha(d.fecha_emision)}</td>
-        <td style="padding:5px 8px;font-size:12px;text-align:right;font-weight:600">${fmtMoney(d.saldo)}</td>
-        <td style="padding:5px 6px;text-align:right">
+      <tr class="dist-row" data-idx="${i}" style="border-bottom:1px solid #e5e7eb;transition:background .1s">
+        <td style="padding:8px 10px;text-align:center;width:36px">
+          <input type="checkbox" class="dist-check" data-idx="${i}" data-saldo="${d.saldo}"
+            style="width:16px;height:16px;cursor:pointer;accent-color:#2B7A9E"/>
+        </td>
+        <td style="padding:8px 10px">
+          <div style="font-size:13px;font-family:monospace;color:#1e3a5f;font-weight:600">${d.numero_documento}</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:1px">${d.tipo_doc || ""}</div>
+        </td>
+        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#6b7280">${fmtFecha(d.fecha_emision)}</td>
+        <td style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:#0c4a6e">${fmtMoney(d.saldo)}</td>
+        <td style="padding:8px 10px;text-align:right;width:120px">
           <input type="number" class="dist-input" data-idx="${i}" data-saldo="${d.saldo}"
-            step="0.01" min="0" value=""
-            style="width:85px;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;text-align:right;font-family:inherit;outline:none"
+            step="0.01" min="0" value="" placeholder="0.00"
+            style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;text-align:right;font-family:inherit;outline:none;box-sizing:border-box"
             onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.12)'"
             onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"/>
         </td>
@@ -521,78 +528,79 @@ const PROV = (() => {
     const histHtml = historial.length ? historial.map(h => {
       const fecha = new Date(h.creado_en).toLocaleDateString("es-EC", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
       const desg = Array.isArray(h.desglose) ? h.desglose : [];
-      const detalle = desg.filter(d => d.monto > 0).map(d => `${d.numero_documento}: ${fmtMoney(d.monto)}`).join(" · ") || "Sin desglose";
-      return `<div style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <span style="color:#6b7280">${fecha}${h.creado_por ? ' &middot; ' + h.creado_por : ''}</span>
-          <span style="font-weight:700;color:#1d4ed8">${fmtMoney(h.monto_total)}</span>
+      const detalle = desg.filter(d => d.monto > 0).map(d => `${d.numero_documento}: ${fmtMoney(d.monto)}`).join("  |  ") || "Sin desglose";
+      return `<div style="padding:10px 14px;border-bottom:1px solid #f3f4f6">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="font-size:12px;color:#6b7280">${fecha}${h.creado_por ? ' &middot; ' + h.creado_por : ''}</span>
+          <span style="font-size:14px;font-weight:700;color:#1d4ed8">${fmtMoney(h.monto_total)}</span>
         </div>
-        ${h.nota ? `<div style="margin-top:3px;color:#374151;font-style:italic">&ldquo;${h.nota.replace(/</g,"&lt;")}&rdquo;</div>` : ''}
-        <div style="margin-top:3px;color:#9ca3af;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detalle.replace(/"/g,'&quot;')}">${detalle}</div>
+        ${h.nota ? `<div style="margin-top:4px;color:#374151;font-size:13px;font-style:italic">&ldquo;${h.nota.replace(/</g,"&lt;")}&rdquo;</div>` : ''}
+        <div style="margin-top:4px;color:#9ca3af;font-size:11px">${detalle}</div>
       </div>`;
-    }).join("") : '<div style="padding:14px;text-align:center;color:#9ca3af;font-size:12px">Sin registros anteriores</div>';
+    }).join("") : '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">Sin registros anteriores</div>';
 
     const html = `
       <div style="text-align:left">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:14px 18px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
           <div>
-            <div style="font-size:14px;font-weight:700;color:#0c4a6e">${provName}</div>
-            <div style="font-size:11px;color:#6b7280;margin-top:2px">${docs.length} documento${docs.length !== 1 ? 's' : ''} activo${docs.length !== 1 ? 's' : ''}</div>
+            <div style="font-size:16px;font-weight:700;color:#0c4a6e">${provName}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:3px">${docs.length} documento${docs.length !== 1 ? 's' : ''} activo${docs.length !== 1 ? 's' : ''}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:20px;font-weight:800;color:#0c4a6e">${fmtMoney(totalSaldo)}</div>
-            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.3px">Deuda total</div>
+            <div style="font-size:22px;font-weight:800;color:#0c4a6e">${fmtMoney(totalSaldo)}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.4px">Deuda total</div>
           </div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:600;color:#92400e;white-space:nowrap">Auto-distribuir:</span>
-          <input type="number" id="dist-auto-monto" step="0.01" min="0" placeholder="Monto total"
-            style="width:110px;padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;text-align:right;font-family:inherit;outline:none"/>
-          <button type="button" id="dist-auto-btn"
-            style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Distribuir</button>
-          <button type="button" id="dist-limpiar-btn"
-            style="padding:5px 10px;background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">Limpiar</button>
-          <div style="flex:1"></div>
-          <div style="text-align:right;white-space:nowrap">
-            <span style="font-size:11px;color:#6b7280">Total asignado:</span>
-            <span id="dist-total" style="font-size:15px;font-weight:800;color:#1d4ed8;margin-left:4px">$0,00</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px">Selecciona las facturas a abonar</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button type="button" id="dist-sel-all"
+              style="padding:4px 10px;background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Todas</button>
+            <button type="button" id="dist-sel-none"
+              style="padding:4px 10px;background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Ninguna</button>
           </div>
         </div>
 
-        <div style="max-height:220px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px">
+        <div style="max-height:280px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:14px">
           <table style="width:100%;border-collapse:collapse">
             <thead>
-              <tr style="background:#1e3a5f;color:#fff;position:sticky;top:0">
-                <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">N&#176; Documento</th>
-                <th style="padding:6px 8px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Fecha</th>
-                <th style="padding:6px 8px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Saldo</th>
-                <th style="padding:6px 8px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Abonar</th>
+              <tr style="background:#1e3a5f;color:#fff;position:sticky;top:0;z-index:1">
+                <th style="padding:8px 10px;width:36px"></th>
+                <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Documento</th>
+                <th style="padding:8px 10px;text-align:center;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Fecha</th>
+                <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Saldo</th>
+                <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;width:120px">Abonar</th>
               </tr>
             </thead>
-            <tbody>${invoiceRows || '<tr><td colspan="4" style="padding:14px;text-align:center;color:#9ca3af;font-size:12px">Sin documentos activos</td></tr>'}</tbody>
+            <tbody id="dist-tbody">${invoiceRows || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">Sin documentos activos</td></tr>'}</tbody>
           </table>
         </div>
 
-        <div style="margin-bottom:12px">
-          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Nota / Motivo</div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px">
+          <span style="font-size:13px;font-weight:600;color:#374151">Total a abonar:</span>
+          <span id="dist-total" style="font-size:20px;font-weight:800;color:#15803d">$0,00</span>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Nota / Motivo</div>
           <textarea id="dist-nota" rows="2" placeholder="Ej: Pago parcial septiembre, prioridad alta..."
-            style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;outline:none"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.5"
             onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.12)'"
             onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"></textarea>
         </div>
 
-        <details style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
-          <summary style="padding:8px 12px;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;background:#f9fafb;user-select:none">
+        <details style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+          <summary style="padding:10px 14px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;background:#f9fafb;user-select:none">
             Historial de asignaciones (${historial.length})
           </summary>
-          <div style="max-height:160px;overflow-y:auto">${histHtml}</div>
+          <div style="max-height:200px;overflow-y:auto">${histHtml}</div>
         </details>
       </div>`;
 
     const result = await Swal.fire({
       title: "Distribución de Abono",
-      width: 700,
+      width: 780,
       html,
       showCancelButton: true,
       confirmButtonText: "Guardar distribución",
@@ -602,27 +610,47 @@ const PROV = (() => {
       focusConfirm: false,
       didOpen: () => {
         const popup = Swal.getPopup();
+
         const updateTotal = () => {
           const sum = [...popup.querySelectorAll(".dist-input")].reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
           popup.querySelector("#dist-total").textContent = fmtMoney(sum);
         };
-        popup.querySelectorAll(".dist-input").forEach(inp => inp.addEventListener("input", updateTotal));
 
-        popup.querySelector("#dist-auto-btn").addEventListener("click", () => {
-          let remaining = parseFloat(popup.querySelector("#dist-auto-monto").value) || 0;
-          popup.querySelectorAll(".dist-input").forEach(inp => {
-            const saldo = parseFloat(inp.dataset.saldo) || 0;
-            const assign = Math.round(Math.min(remaining, saldo) * 100) / 100;
-            inp.value = assign > 0 ? assign.toFixed(2) : "";
-            remaining = Math.round((remaining - assign) * 100) / 100;
-          });
+        const syncCheck = (idx) => {
+          const chk = popup.querySelector(`.dist-check[data-idx="${idx}"]`);
+          const inp = popup.querySelector(`.dist-input[data-idx="${idx}"]`);
+          const row = popup.querySelector(`.dist-row[data-idx="${idx}"]`);
+          if (!chk || !inp) return;
+          if (chk.checked) {
+            inp.value = parseFloat(inp.dataset.saldo).toFixed(2);
+            if (row) row.style.background = "#f0fdf4";
+          } else {
+            inp.value = "";
+            if (row) row.style.background = "";
+          }
           updateTotal();
+        };
+
+        popup.querySelectorAll(".dist-check").forEach(chk => {
+          chk.addEventListener("change", () => syncCheck(chk.dataset.idx));
         });
 
-        popup.querySelector("#dist-limpiar-btn").addEventListener("click", () => {
-          popup.querySelectorAll(".dist-input").forEach(inp => { inp.value = ""; });
-          popup.querySelector("#dist-auto-monto").value = "";
-          updateTotal();
+        popup.querySelectorAll(".dist-input").forEach(inp => {
+          inp.addEventListener("input", () => {
+            const val = parseFloat(inp.value) || 0;
+            const chk = popup.querySelector(`.dist-check[data-idx="${inp.dataset.idx}"]`);
+            const row = popup.querySelector(`.dist-row[data-idx="${inp.dataset.idx}"]`);
+            if (chk) chk.checked = val > 0;
+            if (row) row.style.background = val > 0 ? "#f0fdf4" : "";
+            updateTotal();
+          });
+        });
+
+        popup.querySelector("#dist-sel-all")?.addEventListener("click", () => {
+          popup.querySelectorAll(".dist-check").forEach(chk => { chk.checked = true; syncCheck(chk.dataset.idx); });
+        });
+        popup.querySelector("#dist-sel-none")?.addEventListener("click", () => {
+          popup.querySelectorAll(".dist-check").forEach(chk => { chk.checked = false; syncCheck(chk.dataset.idx); });
         });
       },
       preConfirm: () => {
