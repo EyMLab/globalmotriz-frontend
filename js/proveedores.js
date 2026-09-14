@@ -1192,102 +1192,105 @@ const PROV = (() => {
       });
       y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
 
-// ── 2. Con y real, calcular font+padding exactos ─────────────────────────
-      // Estrategia: llenar TODA la hoja en una sola página, expandiendo las filas.
       const MARGIN_BOTTOM = 10;
-      const tableAvail = pageH - y - MARGIN_BOTTOM - 1; // 1mm de holgura extra
-      const totalRows  = n + 2; // n datos + cabecera + pie
-      const targetRowH = tableAvail / totalRows;
+      const fs = 7.5;
+      const padY = 1.5;
+      const targetRowH = 6;
 
-      // jsPDF usa un factor de línea interno aproximado de 1.15 sobre el tamaño de fuente
-      const LINE_HEIGHT_FACTOR = 1.15;
-      const PT_TO_MM = 0.3527;
+      // ── 3. Tablas separadas por umbral ───────────────────────────────────────
+      const umbralPdf = parseFloat(document.getElementById("f-umbral-res")?.value) || 0;
+      const mayoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) >= umbralPdf);
+      const menoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) < umbralPdf);
 
-      // Definimos un padding vertical mínimo para que no toque los bordes superior/inferior
-      const minPadY = 0.6;
-      const maxTextH = targetRowH - (minPadY * 2);
-
-      // Calculamos la fuente máxima permitida tomando en cuenta el line-height
-      const maxRawFs = maxTextH / (PT_TO_MM * LINE_HEIGHT_FACTOR);
-
-      // Limitamos la fuente: mínimo 6pt (legible), máximo 10.5pt (para que no se vea gigante con pocos datos)
-      let fs = Math.floor(Math.max(6, Math.min(10.5, maxRawFs)) * 10) / 10;
-
-      // Calculamos la altura final de la fuente y distribuimos el espacio restante en el padding Y
-      const actualFontH = fs * PT_TO_MM * LINE_HEIGHT_FACTOR;
-      const padY = (targetRowH - actualFontH) / 2;
-
-      // ── 3. Tabla ─────────────────────────────────────────────────────────────
-      const totalSaldo  = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.total_saldo  || 0), 0);
-      const totalAbonar = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar   || 0), 0);
-
-      doc.autoTable({
-        startY: y,
-        head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
-        body: _resumenData.proveedores.map((r, i) => [
-          i + 1,
-          r.proveedor,
-          r.cantidad_docs,
-          fmtMoney(r.total_saldo),
-          priorMap[String(r.prioridad || "")] || "—",
-          fmtMoney(r.por_abonar || 0),
-        ]),
-        foot: [[
-          { content: "TOTALES", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
-          { content: fmtMoney(totalSaldo),  styles: { fontStyle: "bold", halign: "right" } },
-          "",
-          { content: fmtMoney(totalAbonar), styles: { fontStyle: "bold", halign: "right" } },
-        ]],
-        showFoot: "lastPage",
+      const tableCommon = {
         margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
         styles: {
           fontSize: fs,
           cellPadding: { top: padY, bottom: padY, left: 1.5, right: 1.5 },
           minCellHeight: targetRowH,
-          valign: 'middle', // Fundamental para que el texto se centre perfectamente en el targetRowH
+          valign: 'middle',
           lineColor: [226, 232, 240], lineWidth: 0.2,
           font: "helvetica",
-          overflow: "ellipsize", // Previene tajantemente los saltos de línea que dañan la altura
+          overflow: "ellipsize",
         },
-        headStyles: {
-          fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
-          fontStyle: "bold"
-        },
+        headStyles: { fillColor: PDF_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold" },
         bodyStyles: { fontStyle: "bold" },
-        footStyles: {
-          fillColor: [241, 245, 249], textColor: PDF_DARK,
-          fontStyle: "bold"
-        },
+        footStyles: { fillColor: [241, 245, 249], textColor: PDF_DARK, fontStyle: "bold" },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 9,      halign: "center" },
+          0: { cellWidth: 9, halign: "center" },
           1: { cellWidth: "auto", overflow: "ellipsize" },
-          2: { cellWidth: 12,     halign: "center" },
-          3: { cellWidth: 28,     halign: "right" },
-          4: { cellWidth: 20,     halign: "center" },
-          5: { cellWidth: 28,     halign: "right" },
+          2: { cellWidth: 12, halign: "center" },
+          3: { cellWidth: 28, halign: "right" },
+          4: { cellWidth: 20, halign: "center" },
+          5: { cellWidth: 28, halign: "right" },
         },
-        didParseCell: (data) => {
-          if (data.section === "body") {
-            const prov = _resumenData.proveedores[data.row.index];
-            const prior = String(prov?.prioridad || "");
-            if (prior === "3") {
-              data.cell.styles.fillColor = [254, 226, 226];
-              data.cell.styles.textColor = [127, 29, 29];
-            } else if (prior === "2") {
-              data.cell.styles.fillColor = [254, 249, 195];
-              data.cell.styles.textColor = [113, 63, 18];
-            } else if (prior === "1") {
-              data.cell.styles.fillColor = [220, 252, 231];
-              data.cell.styles.textColor = [20, 83, 45];
-            }
-          }
-        },
-      });
+      };
+
+      const buildDidParseCell = (srcArr) => (data) => {
+        if (data.section === "body") {
+          const prov = srcArr[data.row.index];
+          const prior = String(prov?.prioridad || "");
+          if (prior === "3") { data.cell.styles.fillColor = [254, 226, 226]; data.cell.styles.textColor = [127, 29, 29]; }
+          else if (prior === "2") { data.cell.styles.fillColor = [254, 249, 195]; data.cell.styles.textColor = [113, 63, 18]; }
+          else if (prior === "1") { data.cell.styles.fillColor = [220, 252, 231]; data.cell.styles.textColor = [20, 83, 45]; }
+        }
+      };
+
+      const buildRows = (arr) => arr.map((r, i) => [
+        i + 1, r.proveedor, r.cantidad_docs,
+        fmtMoney(r.total_saldo), priorMap[String(r.prioridad || "")] || "—", fmtMoney(r.por_abonar || 0),
+      ]);
+
+      const buildFoot = (arr) => {
+        const s = arr.reduce((a, r) => a + parseFloat(r.total_saldo || 0), 0);
+        const ab = arr.reduce((a, r) => a + parseFloat(r.por_abonar || 0), 0);
+        return [[
+          { content: `SUBTOTAL (${arr.length})`, colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
+          { content: fmtMoney(s), styles: { fontStyle: "bold", halign: "right" } },
+          "",
+          { content: fmtMoney(ab), styles: { fontStyle: "bold", halign: "right" } },
+        ]];
+      };
+
+      const drawSectionLabel = (doc, label, yPos, color, bgColor) => {
+        doc.setFillColor(...bgColor);
+        doc.roundedRect(mL, yPos, boxW, 6, 1.5, 1.5, "F");
+        doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(...color);
+        doc.text(label, mL + 3, yPos + 4.2);
+        return yPos + 8;
+      };
+
+      // Sección mayores
+      if (mayoresPdf.length) {
+        y = drawSectionLabel(doc, `Mayor o igual a ${fmtMoney(umbralPdf)} (${mayoresPdf.length} proveedores)`, y, [153, 27, 27], [254, 242, 242]);
+        doc.autoTable({
+          ...tableCommon, startY: y, showFoot: "lastPage",
+          head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
+          body: buildRows(mayoresPdf), foot: buildFoot(mayoresPdf),
+          didParseCell: buildDidParseCell(mayoresPdf),
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      }
+
+      // Sección menores
+      if (menoresPdf.length) {
+        if (y + 20 > pageH - MARGIN_BOTTOM) { doc.addPage(); y = 14; }
+        y = drawSectionLabel(doc, `Menor a ${fmtMoney(umbralPdf)} (${menoresPdf.length} proveedores)`, y, [22, 101, 52], [240, 253, 244]);
+        doc.autoTable({
+          ...tableCommon, startY: y, showFoot: "lastPage",
+          head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
+          body: buildRows(menoresPdf), foot: buildFoot(menoresPdf),
+          didParseCell: buildDidParseCell(menoresPdf),
+        });
+        y = doc.lastAutoTable.finalY + 4;
+      }
 
       // Fecha de generación al pie
+      const lastPage = doc.internal.getNumberOfPages();
+      doc.setPage(lastPage);
       doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...PDF_GRAY);
-      doc.text(`Generado: ${hoyStr}  ·  ${n} proveedores`, pageW - mR, pageH - 3, { align: "right" });
+      doc.text(`Generado: ${hoyStr}  ·  ${n} proveedores  ·  Umbral: ${fmtMoney(umbralPdf)}`, pageW - mR, pageH - 3, { align: "right" });
 
       doc.save(`resumen_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
       Swal.close();
@@ -1565,6 +1568,7 @@ const PROV = (() => {
       document.body.classList.add('rol-control');
       const umbralInp = document.getElementById("f-umbral-res");
       if (umbralInp) umbralInp.disabled = true;
+      document.getElementById("btn-aplicar-umbral")?.style.setProperty("display", "none");
       document.getElementById("btn-guardar-todos")?.style.setProperty("display", "none");
       document.getElementById("btn-limpiar-resumen")?.style.setProperty("display", "none");
     }
@@ -1648,6 +1652,7 @@ const PROV = (() => {
 
     // Resumen
     document.getElementById("btn-filtrar-res")?.addEventListener("click",  cargarResumen);
+    document.getElementById("btn-aplicar-umbral")?.addEventListener("click", cargarResumen);
     document.getElementById("btn-guardar-todos")?.addEventListener("click",   guardarTodos);
     document.getElementById("btn-limpiar-resumen")?.addEventListener("click", limpiarResumen);
     document.getElementById("btn-pdf-resumen")?.addEventListener("click",     pdfResumen);

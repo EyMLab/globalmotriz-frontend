@@ -454,10 +454,6 @@
           <option value="">Todos</option>
         </select>
       </div>
-      <div class="fg" style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px">Separar por $</label>
-        <input type="number" id="f-umbral-res" value="1000" min="0" step="100" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;width:110px;font-family:var(--font-main)" />
-      </div>
       <button class="btn-sm" id="btn-filtrar-res" style="margin-top:18px">Buscar</button>
       <button class="btn-sm" id="btn-guardar-todos" style="margin-top:18px">Guardar todos</button>
       <button class="btn-sm btn-sm-danger" id="btn-limpiar-resumen" style="margin-top:18px">Limpiar todo</button>
@@ -483,6 +479,12 @@
         <div class="rc-num" id="rc-diferencia">—</div>
         <div class="rc-lbl">Diferencia</div>
       </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:10px">
+      <label for="f-umbral-res" style="font-size:12px;font-weight:600;color:var(--text-light)">Separar por $</label>
+      <input type="number" id="f-umbral-res" value="1000" min="0" step="100" style="padding:5px 8px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:32px;width:100px;font-family:var(--font-main);text-align:right" />
+      <button class="btn-sm" id="btn-aplicar-umbral" style="font-size:11px;padding:5px 12px;height:32px">Aplicar</button>
     </div>
 
     <div id="resumen-section-mayor" class="res-table-wrap" style="margin-bottom:24px">
