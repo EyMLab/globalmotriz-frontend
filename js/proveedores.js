@@ -180,6 +180,10 @@ const PROV = (() => {
     _cardActiva = null;
     document.getElementById("cards-estado-prov")?.classList.remove("cards-con-activa");
     document.querySelectorAll("#cards-estado-prov .estado-card").forEach(b => b.classList.remove("card-activa"));
+
+    document.getElementById("tbody-docs").innerHTML =
+      '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light)">Cargando documentos…</td></tr>';
+
     cargarDocumentos(1);
   }
 
@@ -464,7 +468,7 @@ const PROV = (() => {
       const refEnc   = (r.referencia || "").replace(/"/g, "&quot;");
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
         <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
-        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}"><a href="#" class="prov-link" onclick="event.preventDefault();PROV.verDocsProveedor('${r.proveedor.replace(/'/g, "\\'")}')">${r.proveedor}</a></td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}"><a href="#" class="prov-link" data-prov="${r.proveedor.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}">${r.proveedor}</a></td>
         <td><input type="text" class="input-ref" value="${refEnc}" placeholder="" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/></td>
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
@@ -1381,6 +1385,14 @@ const PROV = (() => {
       const ca = document.getElementById("check-all-docs");
       if (ca) ca.checked = false;
       actualizarBarraSeleccion();
+    });
+
+    // Click en proveedor del resumen → ver sus documentos
+    document.getElementById("tbody-resumen")?.addEventListener("click", e => {
+      const link = e.target.closest(".prov-link");
+      if (!link) return;
+      e.preventDefault();
+      verDocsProveedor(link.dataset.prov);
     });
 
     // Resumen
