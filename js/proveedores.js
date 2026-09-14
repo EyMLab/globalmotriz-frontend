@@ -489,12 +489,14 @@ const PROV = (() => {
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
         <td>${priorSelect(r.prioridad, provEnc)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/>
-            ${soloLectura ? "" : `<button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>`}
-            ${soloLectura ? "" : `<button class="btn-dist" data-prov="${provEnc}" title="Distribuir por factura y ver historial">&#9783;</button>`}
-          </div>
+        <td${soloLectura ? ' style="text-align:right"' : ""}>
+          ${soloLectura
+            ? `<span style="font-weight:600">${fmtMoney(abonar)}</span>`
+            : `<div style="display:flex;align-items:center;gap:4px">
+            <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}"/>
+            <button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>
+            <button class="btn-dist" data-prov="${provEnc}" title="Distribuir por factura y ver historial">&#9783;</button>
+          </div>`}
         </td>
         <td>${soloLectura ? "" : `<button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">Guardar</button>`}</td>
       </tr>`;
@@ -1561,6 +1563,10 @@ const PROV = (() => {
     // (se reutiliza la clase .rol-control para "control" y "asistente_administrativo")
     if (soloLectura) {
       document.body.classList.add('rol-control');
+      const umbralInp = document.getElementById("f-umbral-res");
+      if (umbralInp) umbralInp.disabled = true;
+      document.getElementById("btn-guardar-todos")?.style.setProperty("display", "none");
+      document.getElementById("btn-limpiar-resumen")?.style.setProperty("display", "none");
     }
     // asistente_administrativo tampoco tiene acceso a Costos del Mes (a diferencia de control),
     // por lo que además de ocultar la pestaña, sus tarjetas de indicadores del Resumen no aplican
