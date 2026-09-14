@@ -506,20 +506,18 @@ const PROV = (() => {
 
     const invoiceRows = docs.map((d, i) => `
       <tr class="dist-row" data-idx="${i}" style="border-bottom:1px solid #e5e7eb;transition:background .1s">
-        <td style="padding:8px 10px;text-align:center;width:36px">
+        <td style="padding:10px 12px;text-align:center;white-space:nowrap">
           <input type="checkbox" class="dist-check" data-idx="${i}" data-saldo="${d.saldo}"
-            style="width:16px;height:16px;cursor:pointer;accent-color:#2B7A9E"/>
+            style="width:17px;height:17px;cursor:pointer;accent-color:#2B7A9E"/>
         </td>
-        <td style="padding:8px 10px">
-          <div style="font-size:13px;font-family:monospace;color:#1e3a5f;font-weight:600">${d.numero_documento}</div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:1px">${d.tipo_doc || ""}</div>
-        </td>
-        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#6b7280">${fmtFecha(d.fecha_emision)}</td>
-        <td style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:#0c4a6e">${fmtMoney(d.saldo)}</td>
-        <td style="padding:8px 10px;text-align:right;width:120px">
+        <td style="padding:10px 12px;white-space:nowrap;font-size:13px;font-family:monospace;color:#1e3a5f;font-weight:600">${d.numero_documento}</td>
+        <td style="padding:10px 12px;white-space:nowrap;font-size:12px;color:#6b7280">${d.tipo_doc || "—"}</td>
+        <td style="padding:10px 12px;white-space:nowrap;text-align:center;font-size:13px;color:#6b7280">${fmtFecha(d.fecha_emision)}</td>
+        <td style="padding:10px 12px;white-space:nowrap;text-align:right;font-size:14px;font-weight:700;color:#0c4a6e">${fmtMoney(d.saldo)}</td>
+        <td style="padding:10px 12px;white-space:nowrap;text-align:right">
           <input type="number" class="dist-input" data-idx="${i}" data-saldo="${d.saldo}"
             step="0.01" min="0" value="" placeholder="0.00"
-            style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;text-align:right;font-family:inherit;outline:none;box-sizing:border-box"
+            style="width:120px;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;text-align:right;font-family:inherit;outline:none;box-sizing:border-box"
             onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.12)'"
             onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"/>
         </td>
@@ -541,66 +539,70 @@ const PROV = (() => {
 
     const html = `
       <div style="text-align:left">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:14px 18px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
-          <div>
-            <div style="font-size:16px;font-weight:700;color:#0c4a6e">${provName}</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:3px">${docs.length} documento${docs.length !== 1 ? 's' : ''} activo${docs.length !== 1 ? 's' : ''}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:16px 22px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:17px;font-weight:700;color:#0c4a6e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${provName}</div>
+            <div style="font-size:13px;color:#6b7280;margin-top:4px">${docs.length} documento${docs.length !== 1 ? 's' : ''} activo${docs.length !== 1 ? 's' : ''}</div>
           </div>
-          <div style="text-align:right">
-            <div style="font-size:22px;font-weight:800;color:#0c4a6e">${fmtMoney(totalSaldo)}</div>
-            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.4px">Deuda total</div>
+          <div style="text-align:right;flex-shrink:0;margin-left:24px">
+            <div style="font-size:26px;font-weight:800;color:#0c4a6e;white-space:nowrap">${fmtMoney(totalSaldo)}</div>
+            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Deuda total</div>
           </div>
         </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px">Selecciona las facturas a abonar</div>
-          <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px">Selecciona las facturas a abonar</div>
+          <div style="display:flex;align-items:center;gap:8px">
             <button type="button" id="dist-sel-all"
-              style="padding:4px 10px;background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Todas</button>
+              style="padding:5px 14px;background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .12s"
+              onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f9fafb'">Todas</button>
             <button type="button" id="dist-sel-none"
-              style="padding:4px 10px;background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Ninguna</button>
+              style="padding:5px 14px;background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .12s"
+              onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f9fafb'">Ninguna</button>
           </div>
         </div>
 
-        <div style="max-height:280px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:14px">
-          <table style="width:100%;border-collapse:collapse">
+        <div style="overflow:auto;max-height:320px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:16px">
+          <table style="width:100%;border-collapse:collapse;white-space:nowrap">
             <thead>
               <tr style="background:#1e3a5f;color:#fff;position:sticky;top:0;z-index:1">
-                <th style="padding:8px 10px;width:36px"></th>
-                <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Documento</th>
-                <th style="padding:8px 10px;text-align:center;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Fecha</th>
-                <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Saldo</th>
-                <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;width:120px">Abonar</th>
+                <th style="padding:10px 12px;width:42px"></th>
+                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">N&#176; Documento</th>
+                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Tipo</th>
+                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Fecha</th>
+                <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Saldo</th>
+                <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Abonar</th>
               </tr>
             </thead>
-            <tbody id="dist-tbody">${invoiceRows || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">Sin documentos activos</td></tr>'}</tbody>
+            <tbody id="dist-tbody">${invoiceRows || '<tr><td colspan="6" style="padding:24px;text-align:center;color:#9ca3af;font-size:13px;white-space:normal">Sin documentos activos</td></tr>'}</tbody>
           </table>
         </div>
 
-        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px">
-          <span style="font-size:13px;font-weight:600;color:#374151">Total a abonar:</span>
-          <span id="dist-total" style="font-size:20px;font-weight:800;color:#15803d">$0,00</span>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:20px;padding:12px 20px;background:#f0fdf4;border:2px solid #bbf7d0;border-radius:10px">
+          <span style="font-size:14px;font-weight:600;color:#374151">Total a abonar:</span>
+          <span id="dist-total" style="font-size:24px;font-weight:800;color:#15803d">$0,00</span>
         </div>
 
-        <div style="margin-bottom:16px">
+        <div style="margin-bottom:18px">
           <div style="font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Nota / Motivo</div>
           <textarea id="dist-nota" rows="2" placeholder="Ej: Pago parcial septiembre, prioridad alta..."
-            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.5"
+            style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.5"
             onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.12)'"
             onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"></textarea>
         </div>
 
         <details style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-          <summary style="padding:10px 14px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;background:#f9fafb;user-select:none">
+          <summary style="padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;background:#f9fafb;user-select:none">
             Historial de asignaciones (${historial.length})
           </summary>
-          <div style="max-height:200px;overflow-y:auto">${histHtml}</div>
+          <div style="max-height:220px;overflow-y:auto">${histHtml}</div>
         </details>
       </div>`;
 
     const result = await Swal.fire({
       title: "Distribución de Abono",
-      width: 780,
+      width: 920,
+      customClass: { popup: 'swal-dist-modal' },
       html,
       showCancelButton: true,
       confirmButtonText: "Guardar distribución",

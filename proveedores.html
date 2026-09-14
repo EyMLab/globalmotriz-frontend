@@ -183,6 +183,10 @@
     .btn-dist { width:28px; height:28px; border-radius:var(--r-md); border:1px solid #bfdbfe; background:#eff6ff; cursor:pointer; font-size:15px; line-height:1; display:inline-flex; align-items:center; justify-content:center; color:#1d4ed8; transition:all .12s; flex-shrink:0; }
     .btn-dist:hover { border-color:#1d4ed8; background:#dbeafe; }
 
+    /* ── Modal distribución (override SweetAlert2) ── */
+    .swal-dist-modal { max-width:95vw !important; }
+    .swal-dist-modal .swal2-html-container { padding:0 24px 8px !important; margin:0 !important; }
+
     /* ── Costos del mes ─────────────────────────── */
     .costos-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
     @media(max-width:640px) { .costos-grid { grid-template-columns:1fr; } }
