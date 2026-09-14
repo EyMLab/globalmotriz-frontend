@@ -1195,21 +1195,21 @@ const PROV = (() => {
       const mayoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) >= umbralPdf);
       const menoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) < umbralPdf);
 
-      const FS = 9;
+      const FS = 8.5;
       const HEAD = ["#", "PROVEEDOR", "DOCS", "TOTAL SALDO", "PRIORIDAD", "POR ABONAR"];
 
       const tableCommon = {
         margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
         tableLineColor: [226, 232, 240], tableLineWidth: 0,
         styles: {
-          font: FONT, fontSize: FS,
+          font: FONT, fontSize: FS, fontStyle: "bold",
           cellPadding: { top: 2.2, bottom: 2.2, left: 2.5, right: 2.5 },
           lineColor: [226, 232, 240], lineWidth: 0.15,
           valign: "middle", overflow: "ellipsize", textColor: PDF_DARK,
         },
         headStyles: {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
-          fontStyle: "bold", fontSize: 8.5,
+          fontStyle: "bold", fontSize: 8,
           cellPadding: { top: 2.5, bottom: 2.5, left: 2.5, right: 2.5 },
         },
         footStyles: {
@@ -1221,9 +1221,9 @@ const PROV = (() => {
           0: { cellWidth: 10, halign: "center", textColor: PDF_GRAY },
           1: { cellWidth: "auto", overflow: "ellipsize" },
           2: { cellWidth: 14, halign: "center" },
-          3: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+          3: { cellWidth: 30, halign: "right" },
           4: { cellWidth: 22, halign: "center" },
-          5: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+          5: { cellWidth: 30, halign: "right" },
         },
       };
 
@@ -1274,11 +1274,12 @@ const PROV = (() => {
           head: [HEAD], body: buildRows(mayoresPdf), foot: buildFoot(mayoresPdf),
           didParseCell: (data) => colorByPriority(data, mayoresPdf),
         });
-        y = doc.lastAutoTable.finalY + 8;
       }
 
-      // ── Sección: < umbral ──
+      // ── Sección: < umbral (siempre en página nueva) ──
       if (menoresPdf.length) {
+        doc.addPage();
+        y = 14;
         y = drawSection(
           `Menor a ${fmtMoney(umbralPdf)}  —  ${menoresPdf.length} proveedores`,
           y, [22, 101, 52], [240, 253, 244], [22, 163, 74]
