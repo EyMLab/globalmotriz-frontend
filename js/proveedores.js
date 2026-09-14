@@ -477,11 +477,184 @@ const PROV = (() => {
           <div style="display:flex;align-items:center;gap:4px">
             <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/>
             <button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>
+            <button class="btn-dist" data-prov="${provEnc}" title="Distribuir por factura y ver historial">&#9783;</button>
           </div>
         </td>
         <td><button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">Guardar</button></td>
       </tr>`;
     }).join("");
+  }
+
+  // ── Modal de distribución de abono ───────────────
+  async function abrirDistribucion(provEnc) {
+    const provName = decodeURIComponent(provEnc);
+    Swal.fire({ title: "Cargando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const [resDoc, resHist] = await Promise.all([
+      apiFetch("/proveedores-pagar/documentos-detalle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proveedores: [provName] }),
+      }),
+      apiFetch(`/proveedores-pagar/resumen/${provEnc}/historial`),
+    ]);
+
+    if (!resDoc || !resDoc.ok) { Swal.fire("Error", "No se pudieron cargar los documentos.", "error"); return; }
+    const { documentos: docs } = await safeJson(resDoc);
+    const historial = resHist?.ok ? (await safeJson(resHist)).historial : [];
+    const totalSaldo = docs.reduce((s, d) => s + parseFloat(d.saldo || 0), 0);
+
+    const invoiceRows = docs.map((d, i) => `
+      <tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:5px 8px;font-size:12px;font-family:monospace">${d.numero_documento}</td>
+        <td style="padding:5px 8px;font-size:12px;text-align:center">${fmtFecha(d.fecha_emision)}</td>
+        <td style="padding:5px 8px;font-size:12px;text-align:right;font-weight:600">${fmtMoney(d.saldo)}</td>
+        <td style="padding:5px 6px;text-align:right">
+          <input type="number" class="dist-input" data-idx="${i}" data-saldo="${d.saldo}"
+            step="0.01" min="0" value=""
+            style="width:85px;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;text-align:right;font-family:inherit;outline:none"
+            onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.12)'"
+            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"/>
+        </td>
+      </tr>`).join("");
+
+    const histHtml = historial.length ? historial.map(h => {
+      const fecha = new Date(h.creado_en).toLocaleDateString("es-EC", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+      const desg = Array.isArray(h.desglose) ? h.desglose : [];
+      const detalle = desg.filter(d => d.monto > 0).map(d => `${d.numero_documento}: ${fmtMoney(d.monto)}`).join(" · ") || "Sin desglose";
+      return `<div style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span style="color:#6b7280">${fecha}${h.creado_por ? ' &middot; ' + h.creado_por : ''}</span>
+          <span style="font-weight:700;color:#1d4ed8">${fmtMoney(h.monto_total)}</span>
+        </div>
+        ${h.nota ? `<div style="margin-top:3px;color:#374151;font-style:italic">&ldquo;${h.nota.replace(/</g,"&lt;")}&rdquo;</div>` : ''}
+        <div style="margin-top:3px;color:#9ca3af;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detalle.replace(/"/g,'&quot;')}">${detalle}</div>
+      </div>`;
+    }).join("") : '<div style="padding:14px;text-align:center;color:#9ca3af;font-size:12px">Sin registros anteriores</div>';
+
+    const html = `
+      <div style="text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#0c4a6e">${provName}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px">${docs.length} documento${docs.length !== 1 ? 's' : ''} activo${docs.length !== 1 ? 's' : ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800;color:#0c4a6e">${fmtMoney(totalSaldo)}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.3px">Deuda total</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:600;color:#92400e;white-space:nowrap">Auto-distribuir:</span>
+          <input type="number" id="dist-auto-monto" step="0.01" min="0" placeholder="Monto total"
+            style="width:110px;padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;text-align:right;font-family:inherit;outline:none"/>
+          <button type="button" id="dist-auto-btn"
+            style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Distribuir</button>
+          <button type="button" id="dist-limpiar-btn"
+            style="padding:5px 10px;background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">Limpiar</button>
+          <div style="flex:1"></div>
+          <div style="text-align:right;white-space:nowrap">
+            <span style="font-size:11px;color:#6b7280">Total asignado:</span>
+            <span id="dist-total" style="font-size:15px;font-weight:800;color:#1d4ed8;margin-left:4px">$0,00</span>
+          </div>
+        </div>
+
+        <div style="max-height:220px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:#1e3a5f;color:#fff;position:sticky;top:0">
+                <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">N&#176; Documento</th>
+                <th style="padding:6px 8px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Fecha</th>
+                <th style="padding:6px 8px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Saldo</th>
+                <th style="padding:6px 8px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Abonar</th>
+              </tr>
+            </thead>
+            <tbody>${invoiceRows || '<tr><td colspan="4" style="padding:14px;text-align:center;color:#9ca3af;font-size:12px">Sin documentos activos</td></tr>'}</tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Nota / Motivo</div>
+          <textarea id="dist-nota" rows="2" placeholder="Ej: Pago parcial septiembre, prioridad alta..."
+            style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;outline:none"
+            onfocus="this.style.borderColor='#2B7A9E';this.style.boxShadow='0 0 0 3px rgba(43,122,158,.12)'"
+            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none'"></textarea>
+        </div>
+
+        <details style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+          <summary style="padding:8px 12px;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;background:#f9fafb;user-select:none">
+            Historial de asignaciones (${historial.length})
+          </summary>
+          <div style="max-height:160px;overflow-y:auto">${histHtml}</div>
+        </details>
+      </div>`;
+
+    const result = await Swal.fire({
+      title: "Distribución de Abono",
+      width: 700,
+      html,
+      showCancelButton: true,
+      confirmButtonText: "Guardar distribución",
+      confirmButtonColor: "#2B7A9E",
+      cancelButtonText: "Cancelar",
+      cancelButtonColor: "#9ca3af",
+      focusConfirm: false,
+      didOpen: () => {
+        const popup = Swal.getPopup();
+        const updateTotal = () => {
+          const sum = [...popup.querySelectorAll(".dist-input")].reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
+          popup.querySelector("#dist-total").textContent = fmtMoney(sum);
+        };
+        popup.querySelectorAll(".dist-input").forEach(inp => inp.addEventListener("input", updateTotal));
+
+        popup.querySelector("#dist-auto-btn").addEventListener("click", () => {
+          let remaining = parseFloat(popup.querySelector("#dist-auto-monto").value) || 0;
+          popup.querySelectorAll(".dist-input").forEach(inp => {
+            const saldo = parseFloat(inp.dataset.saldo) || 0;
+            const assign = Math.round(Math.min(remaining, saldo) * 100) / 100;
+            inp.value = assign > 0 ? assign.toFixed(2) : "";
+            remaining = Math.round((remaining - assign) * 100) / 100;
+          });
+          updateTotal();
+        });
+
+        popup.querySelector("#dist-limpiar-btn").addEventListener("click", () => {
+          popup.querySelectorAll(".dist-input").forEach(inp => { inp.value = ""; });
+          popup.querySelector("#dist-auto-monto").value = "";
+          updateTotal();
+        });
+      },
+      preConfirm: () => {
+        const popup = Swal.getPopup();
+        const desglose = [...popup.querySelectorAll(".dist-input")]
+          .map((inp, i) => ({ numero_documento: docs[i].numero_documento, monto: parseFloat(inp.value) || 0 }))
+          .filter(d => d.monto > 0);
+        const monto_total = desglose.reduce((s, d) => s + d.monto, 0);
+        const nota = popup.querySelector("#dist-nota").value.trim();
+        return { monto_total: Math.round(monto_total * 100) / 100, nota, desglose };
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+    const { monto_total, nota, desglose } = result.value;
+
+    const trRes = document.querySelector(`#tbody-resumen tr[data-proveedor="${provEnc}"]`);
+    const prioridad  = trRes?.querySelector("[data-campo='prioridad']")?.value || null;
+    const referencia = trRes?.querySelector("[data-campo='referencia']")?.value.trim() || null;
+
+    const saveRes = await apiFetch(`/proveedores-pagar/resumen/${provEnc}/abono`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        monto_total, nota: nota || null, desglose,
+        prioridad: prioridad ? parseInt(prioridad) : null,
+        referencia,
+      }),
+    });
+    if (!saveRes || !saveRes.ok) { Swal.fire("Error", "No se pudo guardar.", "error"); return; }
+    Swal.fire({ icon: "success", title: "Distribución guardada", timer: 1500, showConfirmButton: false });
+    cargarResumen();
   }
 
   // ── Guardar abono de un proveedor ────────────────
@@ -1388,11 +1561,12 @@ const PROV = (() => {
     });
 
     // Click en proveedor del resumen → ver sus documentos
+    // Click en botón distribución → abrir modal
     document.getElementById("tbody-resumen")?.addEventListener("click", e => {
       const link = e.target.closest(".prov-link");
-      if (!link) return;
-      e.preventDefault();
-      verDocsProveedor(link.dataset.prov);
+      if (link) { e.preventDefault(); verDocsProveedor(link.dataset.prov); return; }
+      const dist = e.target.closest(".btn-dist");
+      if (dist) { abrirDistribucion(dist.dataset.prov); return; }
     });
 
     // Resumen
@@ -1414,6 +1588,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { actualizarBarraSeleccion, editarObsClick: editarGestionClick, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto, verDocsProveedor };
+  return { actualizarBarraSeleccion, editarObsClick: editarGestionClick, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto, verDocsProveedor, abrirDistribucion };
 
 })();
