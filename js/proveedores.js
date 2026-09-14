@@ -1178,24 +1178,24 @@ const PROV = (() => {
         { label: "DIFERENCIA",         valor: tieneAccesoCostos ? fmtMoney(diferenciaVal) : '—', color: (!tieneAccesoCostos || diferenciaVal >= 0) ? [21, 128, 61] : [185, 28, 28] },
       ];
       doc.setFillColor(241, 245, 249); doc.setDrawColor(210, 220, 230);
-      doc.roundedRect(mL, y, boxW, 12, 2, 2, "FD");
+      doc.roundedRect(mL, y, boxW, 14, 2, 2, "FD");
       const kpiW = boxW / 4;
       kpis.forEach((k, i) => {
         const cx = mL + i * kpiW + kpiW / 2;
-        if (i > 0) { doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.3); doc.line(mL + i * kpiW, y + 2, mL + i * kpiW, y + 10); }
-        doc.setFont(FONT, "normal"); doc.setFontSize(6); doc.setTextColor(...PDF_GRAY);
-        doc.text(k.label, cx, y + 4.5, { align: "center" });
-        doc.setFont(FONT, "bold"); doc.setFontSize(9); doc.setTextColor(...k.color);
-        doc.text(k.valor, cx, y + 9.5, { align: "center" });
+        if (i > 0) { doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.3); doc.line(mL + i * kpiW, y + 2, mL + i * kpiW, y + 12); }
+        doc.setFont(FONT, "normal"); doc.setFontSize(7); doc.setTextColor(...PDF_GRAY);
+        doc.text(k.label, cx, y + 5, { align: "center" });
+        doc.setFont(FONT, "bold"); doc.setFontSize(11); doc.setTextColor(...k.color);
+        doc.text(k.valor, cx, y + 11, { align: "center" });
       });
-      y += 16;
+      y += 18;
 
       // ── Separación por umbral ──
       const umbralPdf = parseFloat(document.getElementById("f-umbral-res")?.value) || 0;
       const mayoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) >= umbralPdf);
       const menoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) < umbralPdf);
 
-      const FS = 7;
+      const FS = 9;
       const HEAD = ["#", "PROVEEDOR", "DOCS", "TOTAL SALDO", "PRIORIDAD", "POR ABONAR"];
 
       const tableCommon = {
@@ -1203,14 +1203,14 @@ const PROV = (() => {
         tableLineColor: [226, 232, 240], tableLineWidth: 0,
         styles: {
           font: FONT, fontSize: FS,
-          cellPadding: { top: 1.8, bottom: 1.8, left: 2, right: 2 },
+          cellPadding: { top: 2.2, bottom: 2.2, left: 2.5, right: 2.5 },
           lineColor: [226, 232, 240], lineWidth: 0.15,
           valign: "middle", overflow: "ellipsize", textColor: PDF_DARK,
         },
         headStyles: {
           fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
-          fontStyle: "bold", fontSize: 6.5,
-          cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
+          fontStyle: "bold", fontSize: 8.5,
+          cellPadding: { top: 2.5, bottom: 2.5, left: 2.5, right: 2.5 },
         },
         footStyles: {
           fillColor: [241, 245, 249], textColor: PDF_DARK,
@@ -1218,12 +1218,12 @@ const PROV = (() => {
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 8,  halign: "center", textColor: PDF_GRAY },
+          0: { cellWidth: 10, halign: "center", textColor: PDF_GRAY },
           1: { cellWidth: "auto", overflow: "ellipsize" },
-          2: { cellWidth: 12, halign: "center" },
-          3: { cellWidth: 26, halign: "right", fontStyle: "bold" },
-          4: { cellWidth: 20, halign: "center" },
-          5: { cellWidth: 26, halign: "right", fontStyle: "bold" },
+          2: { cellWidth: 14, halign: "center" },
+          3: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+          4: { cellWidth: 22, halign: "center" },
+          5: { cellWidth: 30, halign: "right", fontStyle: "bold" },
         },
       };
 
@@ -1253,14 +1253,14 @@ const PROV = (() => {
       };
 
       const drawSection = (label, yPos, textColor, bgColor, accentColor) => {
-        if (yPos + 14 > pageH - MARGIN_BOTTOM) { doc.addPage(); yPos = 14; }
+        if (yPos + 16 > pageH - MARGIN_BOTTOM) { doc.addPage(); yPos = 14; }
         doc.setFillColor(...bgColor);
-        doc.roundedRect(mL, yPos, boxW, 8, 1.5, 1.5, "F");
-        doc.setDrawColor(...accentColor); doc.setLineWidth(0.6);
-        doc.line(mL, yPos, mL, yPos + 8);
-        doc.setFont(FONT, "bold"); doc.setFontSize(9); doc.setTextColor(...textColor);
-        doc.text(label, mL + 4, yPos + 5.3);
-        return yPos + 10;
+        doc.roundedRect(mL, yPos, boxW, 10, 2, 2, "F");
+        doc.setDrawColor(...accentColor); doc.setLineWidth(1);
+        doc.line(mL, yPos, mL, yPos + 10);
+        doc.setFont(FONT, "bold"); doc.setFontSize(11); doc.setTextColor(...textColor);
+        doc.text(label, mL + 5, yPos + 6.8);
+        return yPos + 12;
       };
 
       // ── Sección: >= umbral ──
