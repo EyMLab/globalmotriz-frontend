@@ -166,6 +166,23 @@ const PROV = (() => {
     { val: "2", label: "MEDIA"},
     { val: "3", label: "ALTA" },
   ];
+  function verDocsProveedor(provName) {
+    document.querySelectorAll(".prov-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".prov-tab-panel").forEach(p => p.classList.remove("active"));
+    const tabBtn = document.querySelector('.prov-tab[data-tab="documentos"]');
+    const panel  = document.getElementById("panel-documentos");
+    if (tabBtn) tabBtn.classList.add("active");
+    if (panel)  panel.classList.add("active");
+
+    const inpProv = document.getElementById("f-proveedor");
+    if (inpProv) inpProv.value = provName;
+    document.getElementById("f-estado").value = "ACTIVO";
+    _cardActiva = null;
+    document.getElementById("cards-estado-prov")?.classList.remove("cards-con-activa");
+    document.querySelectorAll("#cards-estado-prov .estado-card").forEach(b => b.classList.remove("card-activa"));
+    cargarDocumentos(1);
+  }
+
   function priorSelect(currentVal, provEnc) {
     const opts = PRIOR_OPTS.map(o =>
       `<option value="${o.val}"${String(currentVal||"") === o.val ? " selected" : ""}>${o.label}</option>`
@@ -447,7 +464,7 @@ const PROV = (() => {
       const refEnc   = (r.referencia || "").replace(/"/g, "&quot;");
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
         <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
-        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}">${r.proveedor}</td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}"><a href="#" class="prov-link" onclick="event.preventDefault();PROV.verDocsProveedor('${r.proveedor.replace(/'/g, "\\'")}')">${r.proveedor}</a></td>
         <td><input type="text" class="input-ref" value="${refEnc}" placeholder="" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/></td>
         <td style="text-align:center">${r.cantidad_docs}</td>
         <td class="num-right" style="font-weight:700">${fmtMoney(r.total_saldo)}</td>
@@ -1385,6 +1402,6 @@ const PROV = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública
-  return { actualizarBarraSeleccion, editarObsClick: editarGestionClick, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto };
+  return { actualizarBarraSeleccion, editarObsClick: editarGestionClick, editarGestionClick, seleccionarSugerencia, guardarAbono, guardarTodos, recalcDisponible, actualizarTotalFijo, addConcepto, delConcepto, verDocsProveedor };
 
 })();
