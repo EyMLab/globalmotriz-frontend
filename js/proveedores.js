@@ -612,6 +612,8 @@ const PROV = (() => {
       focusConfirm: false,
       didOpen: () => {
         const popup = Swal.getPopup();
+        popup.style.width = '920px';
+        popup.style.maxWidth = '95vw';
 
         const updateTotal = () => {
           const sum = [...popup.querySelectorAll(".dist-input")].reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
