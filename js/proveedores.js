@@ -1199,44 +1199,43 @@ const PROV = (() => {
       const PT_TO_MM = 0.3527;
       const LINE_H   = 1.15;
 
-      const calcSizes = (nRows, startY) => {
-        const avail = pageH - startY - MARGIN_BOTTOM - 1;
-        const totalSlots = nRows + 2;
-        const rowH = avail / totalSlots;
-        const maxFs = (rowH - 1.2) / (PT_TO_MM * LINE_H);
-        const fs = Math.floor(Math.max(6.5, Math.min(10, maxFs)) * 10) / 10;
-        const textH = fs * PT_TO_MM * LINE_H;
-        const padV = Math.max(0.8, (rowH - textH) / 2);
-        return { fs, padV, rowH };
-      };
+      // Calcular tamaño basado en la sección más larga para que ambas usen el mismo
+      const mayorStartY = y + 12; // después de la etiqueta de sección
+      const menorStartY = 14 + 12; // página nueva + etiqueta
+      const maxRows = Math.max(mayoresPdf.length, menoresPdf.length);
+      // Usar el peor caso: más filas con menos espacio
+      const worstStartY = mayoresPdf.length >= menoresPdf.length ? mayorStartY : menorStartY;
+      const avail = pageH - worstStartY - MARGIN_BOTTOM - 1;
+      const rowH = avail / (maxRows + 2);
+      const maxFs = (rowH - 1.2) / (PT_TO_MM * LINE_H);
+      const FS = Math.floor(Math.max(6.5, Math.min(10, maxFs)) * 10) / 10;
+      const textH = FS * PT_TO_MM * LINE_H;
+      const padV = Math.max(0.8, (rowH - textH) / 2);
 
-      const buildTable = (arr, startY) => {
-        const { fs, padV, rowH } = calcSizes(arr.length, startY);
-        return {
-          margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
-          styles: {
-            font: FONT, fontSize: fs, fontStyle: "bold",
-            cellPadding: { top: padV, bottom: padV, left: 2.5, right: 2.5 },
-            minCellHeight: rowH,
-            lineColor: [226, 232, 240], lineWidth: 0.15,
-            valign: "middle", overflow: "ellipsize", textColor: PDF_DARK,
-          },
-          headStyles: {
-            fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
-            fontStyle: "bold", fontSize: Math.max(6, fs - 0.5),
-            cellPadding: { top: padV + 0.3, bottom: padV + 0.3, left: 2.5, right: 2.5 },
-          },
-          footStyles: { fillColor: [241, 245, 249], textColor: PDF_DARK, fontStyle: "bold", fontSize: fs },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
-          columnStyles: {
-            0: { cellWidth: 10, halign: "center", textColor: PDF_GRAY },
-            1: { cellWidth: "auto", overflow: "ellipsize" },
-            2: { cellWidth: 14, halign: "center" },
-            3: { cellWidth: 30, halign: "right" },
-            4: { cellWidth: 22, halign: "center" },
-            5: { cellWidth: 30, halign: "right" },
-          },
-        };
+      const tableCommon = {
+        margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
+        styles: {
+          font: FONT, fontSize: FS, fontStyle: "bold",
+          cellPadding: { top: padV, bottom: padV, left: 2.5, right: 2.5 },
+          minCellHeight: rowH,
+          lineColor: [226, 232, 240], lineWidth: 0.15,
+          valign: "middle", overflow: "ellipsize", textColor: PDF_DARK,
+        },
+        headStyles: {
+          fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
+          fontStyle: "bold", fontSize: Math.max(6, FS - 0.5),
+          cellPadding: { top: padV + 0.3, bottom: padV + 0.3, left: 2.5, right: 2.5 },
+        },
+        footStyles: { fillColor: [241, 245, 249], textColor: PDF_DARK, fontStyle: "bold", fontSize: FS },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center", textColor: PDF_GRAY },
+          1: { cellWidth: "auto", overflow: "ellipsize" },
+          2: { cellWidth: 14, halign: "center" },
+          3: { cellWidth: 30, halign: "right" },
+          4: { cellWidth: 22, halign: "center" },
+          5: { cellWidth: 30, halign: "right" },
+        },
       };
 
       const colorByPriority = (data, srcArr) => {
@@ -1281,7 +1280,7 @@ const PROV = (() => {
           y, [153, 27, 27], [254, 242, 242], [220, 38, 38]
         );
         doc.autoTable({
-          ...buildTable(mayoresPdf, y), startY: y, showFoot: "lastPage",
+          ...tableCommon, startY: y, showFoot: "lastPage",
           head: [HEAD], body: buildRows(mayoresPdf), foot: buildFoot(mayoresPdf),
           didParseCell: (data) => colorByPriority(data, mayoresPdf),
         });
@@ -1296,7 +1295,7 @@ const PROV = (() => {
           y, [22, 101, 52], [240, 253, 244], [22, 163, 74]
         );
         doc.autoTable({
-          ...buildTable(menoresPdf, y), startY: y, showFoot: "lastPage",
+          ...tableCommon, startY: y, showFoot: "lastPage",
           head: [HEAD], body: buildRows(menoresPdf), foot: buildFoot(menoresPdf),
           didParseCell: (data) => colorByPriority(data, menoresPdf),
         });
