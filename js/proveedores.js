@@ -1141,7 +1141,7 @@ const PROV = (() => {
     }
   }
 
-  // ── PDF: Resumen general — siempre en una sola hoja ──
+  // ── PDF: Resumen general ──
   async function pdfResumen() {
     if (!_resumenData?.proveedores?.length) {
       return Swal.fire("Sin datos", "Carga el resumen primero.", "info");
@@ -1154,87 +1154,86 @@ const PROV = (() => {
     try {
       const { jsPDF } = window.jspdf;
       const n = _resumenData.proveedores.length;
-
       const doc   = new jsPDF("p", "mm", "a4");
       const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();  // 297mm
-      const mL = 14; const mR = 14;
+      const pageH = doc.internal.pageSize.getHeight();
+      const mL = 14, mR = 14, MARGIN_BOTTOM = 12;
       const boxW  = pageW - mL - mR;
       const hoyStr = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
       const priorMap = { "": "—", "1": "BAJA", "2": "MEDIA", "3": "ALTA" };
+      const FONT = "Roboto";
 
-      // ── 1. Dibujar header y KPI primero para conocer el y real ──────────────
+      // ── Cabecera ──
       let y = await construirCabeceraPDF(doc, "CUENTAS POR PAGAR", `Resumen · ${hoyStr}`);
 
+      // ── KPIs ──
       const tieneAccesoCostos = localStorage.getItem('rol') !== 'asistente_administrativo';
       const totalDeudaVal = parseFloat(_resumenData.total_general || 0);
       const conPlanVal    = _resumenData.proveedores.reduce((s, r) => s + parseFloat(r.por_abonar || 0), 0);
       const diferenciaVal = _disponible - conPlanVal;
       const kpis = [
         { label: "TOTAL DEUDA ACTIVA", valor: fmtMoney(totalDeudaVal), color: PDF_PRIMARY },
-        { label: "DISPONIBLE DEL MES",  valor: tieneAccesoCostos ? fmtMoney(_disponible) : '—',   color: [21, 128, 61] },
-        { label: "CON PLAN DE ABONO",  valor: fmtMoney(conPlanVal),    color: PDF_PRIMARY },
+        { label: "DISPONIBLE DEL MES", valor: tieneAccesoCostos ? fmtMoney(_disponible) : '—', color: [21, 128, 61] },
+        { label: "CON PLAN DE ABONO",  valor: fmtMoney(conPlanVal), color: PDF_PRIMARY },
         { label: "DIFERENCIA",         valor: tieneAccesoCostos ? fmtMoney(diferenciaVal) : '—', color: (!tieneAccesoCostos || diferenciaVal >= 0) ? [21, 128, 61] : [185, 28, 28] },
       ];
       doc.setFillColor(241, 245, 249); doc.setDrawColor(210, 220, 230);
-      doc.roundedRect(mL, y, boxW, 10, 2, 2, "FD");
+      doc.roundedRect(mL, y, boxW, 12, 2, 2, "FD");
       const kpiW = boxW / 4;
       kpis.forEach((k, i) => {
         const cx = mL + i * kpiW + kpiW / 2;
-        if (i > 0) {
-          doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.3);
-          doc.line(mL + i * kpiW, y + 1.5, mL + i * kpiW, y + 8.5);
-        }
-        doc.setFont("Roboto", "normal"); doc.setFontSize(5.5); doc.setTextColor(...PDF_GRAY);
-        doc.text(k.label, cx, y + 3.5, { align: "center" });
-        doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(...k.color);
-        doc.text(k.valor, cx, y + 8.5, { align: "center" });
+        if (i > 0) { doc.setDrawColor(210, 220, 230); doc.setLineWidth(0.3); doc.line(mL + i * kpiW, y + 2, mL + i * kpiW, y + 10); }
+        doc.setFont(FONT, "normal"); doc.setFontSize(6); doc.setTextColor(...PDF_GRAY);
+        doc.text(k.label, cx, y + 4.5, { align: "center" });
+        doc.setFont(FONT, "bold"); doc.setFontSize(9); doc.setTextColor(...k.color);
+        doc.text(k.valor, cx, y + 9.5, { align: "center" });
       });
-      y += 14; // 10mm strip + 4mm gap → y ahora es el startY REAL de la tabla
+      y += 16;
 
-      const MARGIN_BOTTOM = 10;
-      const fs = 7.5;
-      const padY = 1.5;
-      const targetRowH = 6;
-
-      // ── 3. Tablas separadas por umbral ───────────────────────────────────────
+      // ── Separación por umbral ──
       const umbralPdf = parseFloat(document.getElementById("f-umbral-res")?.value) || 0;
       const mayoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) >= umbralPdf);
       const menoresPdf = _resumenData.proveedores.filter(r => parseFloat(r.total_saldo || 0) < umbralPdf);
 
+      const FS = 7;
+      const HEAD = ["#", "PROVEEDOR", "DOCS", "TOTAL SALDO", "PRIORIDAD", "POR ABONAR"];
+
       const tableCommon = {
         margin: { left: mL, right: mR, bottom: MARGIN_BOTTOM },
+        tableLineColor: [226, 232, 240], tableLineWidth: 0,
         styles: {
-          fontSize: fs,
-          cellPadding: { top: padY, bottom: padY, left: 1.5, right: 1.5 },
-          minCellHeight: targetRowH,
-          valign: 'middle',
-          lineColor: [226, 232, 240], lineWidth: 0.2,
-          font: "helvetica",
-          overflow: "ellipsize",
+          font: FONT, fontSize: FS,
+          cellPadding: { top: 1.8, bottom: 1.8, left: 2, right: 2 },
+          lineColor: [226, 232, 240], lineWidth: 0.15,
+          valign: "middle", overflow: "ellipsize", textColor: PDF_DARK,
         },
-        headStyles: { fillColor: PDF_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold" },
-        bodyStyles: { fontStyle: "bold" },
-        footStyles: { fillColor: [241, 245, 249], textColor: PDF_DARK, fontStyle: "bold" },
+        headStyles: {
+          fillColor: PDF_PRIMARY, textColor: [255, 255, 255],
+          fontStyle: "bold", fontSize: 6.5,
+          cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
+        },
+        footStyles: {
+          fillColor: [241, 245, 249], textColor: PDF_DARK,
+          fontStyle: "bold", fontSize: FS,
+        },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 9, halign: "center" },
+          0: { cellWidth: 8,  halign: "center", textColor: PDF_GRAY },
           1: { cellWidth: "auto", overflow: "ellipsize" },
           2: { cellWidth: 12, halign: "center" },
-          3: { cellWidth: 28, halign: "right" },
+          3: { cellWidth: 26, halign: "right", fontStyle: "bold" },
           4: { cellWidth: 20, halign: "center" },
-          5: { cellWidth: 28, halign: "right" },
+          5: { cellWidth: 26, halign: "right", fontStyle: "bold" },
         },
       };
 
-      const buildDidParseCell = (srcArr) => (data) => {
-        if (data.section === "body") {
-          const prov = srcArr[data.row.index];
-          const prior = String(prov?.prioridad || "");
-          if (prior === "3") { data.cell.styles.fillColor = [254, 226, 226]; data.cell.styles.textColor = [127, 29, 29]; }
-          else if (prior === "2") { data.cell.styles.fillColor = [254, 249, 195]; data.cell.styles.textColor = [113, 63, 18]; }
-          else if (prior === "1") { data.cell.styles.fillColor = [220, 252, 231]; data.cell.styles.textColor = [20, 83, 45]; }
-        }
+      const colorByPriority = (data, srcArr) => {
+        if (data.section !== "body") return;
+        const prov = srcArr[data.row.index];
+        const p = String(prov?.prioridad || "");
+        if (p === "3")      { data.cell.styles.fillColor = [254, 226, 226]; data.cell.styles.textColor = [153, 27, 27]; }
+        else if (p === "2") { data.cell.styles.fillColor = [254, 249, 195]; data.cell.styles.textColor = [113, 63, 18]; }
+        else if (p === "1") { data.cell.styles.fillColor = [220, 252, 231]; data.cell.styles.textColor = [22, 101, 52]; }
       };
 
       const buildRows = (arr) => arr.map((r, i) => [
@@ -1243,54 +1242,56 @@ const PROV = (() => {
       ]);
 
       const buildFoot = (arr) => {
-        const s = arr.reduce((a, r) => a + parseFloat(r.total_saldo || 0), 0);
-        const ab = arr.reduce((a, r) => a + parseFloat(r.por_abonar || 0), 0);
+        const s  = arr.reduce((a, r) => a + parseFloat(r.total_saldo || 0), 0);
+        const ab = arr.reduce((a, r) => a + parseFloat(r.por_abonar  || 0), 0);
         return [[
-          { content: `SUBTOTAL (${arr.length})`, colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
-          { content: fmtMoney(s), styles: { fontStyle: "bold", halign: "right" } },
+          { content: `SUBTOTAL  (${arr.length})`, colSpan: 3, styles: { halign: "right" } },
+          { content: fmtMoney(s),  styles: { halign: "right" } },
           "",
-          { content: fmtMoney(ab), styles: { fontStyle: "bold", halign: "right" } },
+          { content: fmtMoney(ab), styles: { halign: "right" } },
         ]];
       };
 
-      const drawSectionLabel = (doc, label, yPos, color, bgColor) => {
+      const drawSection = (label, yPos, textColor, bgColor, accentColor) => {
+        if (yPos + 14 > pageH - MARGIN_BOTTOM) { doc.addPage(); yPos = 14; }
         doc.setFillColor(...bgColor);
-        doc.roundedRect(mL, yPos, boxW, 6, 1.5, 1.5, "F");
-        doc.setFont("Roboto", "bold"); doc.setFontSize(8); doc.setTextColor(...color);
-        doc.text(label, mL + 3, yPos + 4.2);
-        return yPos + 8;
+        doc.roundedRect(mL, yPos, boxW, 8, 1.5, 1.5, "F");
+        doc.setDrawColor(...accentColor); doc.setLineWidth(0.6);
+        doc.line(mL, yPos, mL, yPos + 8);
+        doc.setFont(FONT, "bold"); doc.setFontSize(9); doc.setTextColor(...textColor);
+        doc.text(label, mL + 4, yPos + 5.3);
+        return yPos + 10;
       };
 
-      // Sección mayores
+      // ── Sección: >= umbral ──
       if (mayoresPdf.length) {
-        y = drawSectionLabel(doc, `Mayor o igual a ${fmtMoney(umbralPdf)} (${mayoresPdf.length} proveedores)`, y, [153, 27, 27], [254, 242, 242]);
+        y = drawSection(
+          `Mayor o igual a ${fmtMoney(umbralPdf)}  —  ${mayoresPdf.length} proveedores`,
+          y, [153, 27, 27], [254, 242, 242], [220, 38, 38]
+        );
         doc.autoTable({
           ...tableCommon, startY: y, showFoot: "lastPage",
-          head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
-          body: buildRows(mayoresPdf), foot: buildFoot(mayoresPdf),
-          didParseCell: buildDidParseCell(mayoresPdf),
+          head: [HEAD], body: buildRows(mayoresPdf), foot: buildFoot(mayoresPdf),
+          didParseCell: (data) => colorByPriority(data, mayoresPdf),
         });
-        y = doc.lastAutoTable.finalY + 6;
+        y = doc.lastAutoTable.finalY + 8;
       }
 
-      // Sección menores
+      // ── Sección: < umbral ──
       if (menoresPdf.length) {
-        if (y + 20 > pageH - MARGIN_BOTTOM) { doc.addPage(); y = 14; }
-        y = drawSectionLabel(doc, `Menor a ${fmtMoney(umbralPdf)} (${menoresPdf.length} proveedores)`, y, [22, 101, 52], [240, 253, 244]);
+        y = drawSection(
+          `Menor a ${fmtMoney(umbralPdf)}  —  ${menoresPdf.length} proveedores`,
+          y, [22, 101, 52], [240, 253, 244], [22, 163, 74]
+        );
         doc.autoTable({
           ...tableCommon, startY: y, showFoot: "lastPage",
-          head: [["#", "Proveedor", "Docs", "Total Saldo", "Prioridad", "Por Abonar"]],
-          body: buildRows(menoresPdf), foot: buildFoot(menoresPdf),
-          didParseCell: buildDidParseCell(menoresPdf),
+          head: [HEAD], body: buildRows(menoresPdf), foot: buildFoot(menoresPdf),
+          didParseCell: (data) => colorByPriority(data, menoresPdf),
         });
-        y = doc.lastAutoTable.finalY + 4;
       }
 
-      // Fecha de generación al pie
-      const lastPage = doc.internal.getNumberOfPages();
-      doc.setPage(lastPage);
-      doc.setFont("Roboto", "normal"); doc.setFontSize(6.5); doc.setTextColor(...PDF_GRAY);
-      doc.text(`Generado: ${hoyStr}  ·  ${n} proveedores  ·  Umbral: ${fmtMoney(umbralPdf)}`, pageW - mR, pageH - 3, { align: "right" });
+      // ── Numeración de páginas ──
+      pdfNumerarPaginas(doc, hoyStr);
 
       doc.save(`resumen_proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
       Swal.close();
