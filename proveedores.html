@@ -454,6 +454,10 @@
           <option value="">Todos</option>
         </select>
       </div>
+      <div class="fg" style="display:flex;flex-direction:column;gap:5px">
+        <label style="font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px">Separar por $</label>
+        <input type="number" id="f-umbral-res" value="1000" min="0" step="100" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:var(--r-input);font-size:13px;height:36px;width:110px;font-family:var(--font-main)" />
+      </div>
       <button class="btn-sm" id="btn-filtrar-res" style="margin-top:18px">Buscar</button>
       <button class="btn-sm" id="btn-guardar-todos" style="margin-top:18px">Guardar todos</button>
       <button class="btn-sm btn-sm-danger" id="btn-limpiar-resumen" style="margin-top:18px">Limpiar todo</button>
@@ -481,8 +485,9 @@
       </div>
     </div>
 
-    <div class="res-table-wrap">
-      <table class="res-table">
+    <div id="resumen-section-mayor" class="res-table-wrap" style="margin-bottom:24px">
+      <div class="res-section-header" id="lbl-seccion-mayor" style="font-weight:700;font-size:14px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r-md) var(--r-md) 0 0;color:#991b1b"></div>
+      <table class="res-table" style="border-top-left-radius:0;border-top-right-radius:0">
         <thead>
           <tr>
             <th>#</th>
@@ -495,9 +500,26 @@
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbody-resumen">
-          <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
-        </tbody>
+        <tbody id="tbody-resumen-mayor"></tbody>
+      </table>
+    </div>
+
+    <div id="resumen-section-menor" class="res-table-wrap">
+      <div class="res-section-header" id="lbl-seccion-menor" style="font-weight:700;font-size:14px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--r-md) var(--r-md) 0 0;color:#166534"></div>
+      <table class="res-table" style="border-top-left-radius:0;border-top-right-radius:0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Proveedor</th>
+            <th>Referencia</th>
+            <th style="text-align:center">Docs</th>
+            <th style="text-align:right">Total Saldo</th>
+            <th style="text-align:center">Prioridad</th>
+            <th style="text-align:right">Por Abonar</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resumen-menor"></tbody>
       </table>
     </div>
 

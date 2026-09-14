@@ -452,13 +452,29 @@ const PROV = (() => {
       difCard.querySelector(".rc-num").style.color = diferencia >= 0 ? "#15803d" : "#b91c1c";
     }
 
-    // Tabla
-    const tbody = document.getElementById("tbody-resumen");
+    // Tabla separada por umbral
+    const umbral = parseFloat(document.getElementById("f-umbral-res")?.value) || 0;
+    const tbodyMayor = document.getElementById("tbody-resumen-mayor");
+    const tbodyMenor = document.getElementById("tbody-resumen-menor");
+    const lblMayor   = document.getElementById("lbl-seccion-mayor");
+    const lblMenor   = document.getElementById("lbl-seccion-menor");
+    const secMayor   = document.getElementById("resumen-section-mayor");
+    const secMenor   = document.getElementById("resumen-section-menor");
+
     if (!data.proveedores?.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-light)">Sin datos activos.</td></tr>`;
+      tbodyMayor.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-light)">Sin datos activos.</td></tr>`;
+      tbodyMenor.innerHTML = "";
+      lblMayor.textContent = "";
+      lblMenor.textContent = "";
+      secMenor.style.display = "none";
       return;
     }
-    tbody.innerHTML = data.proveedores.map((r, i) => {
+
+    const mayores = data.proveedores.filter(r => parseFloat(r.total_saldo || 0) >= umbral);
+    const menores = data.proveedores.filter(r => parseFloat(r.total_saldo || 0) < umbral);
+
+    const fmtUmbral = fmtMoney(umbral);
+    const buildRow = (r, idx) => {
       const abonar = parseFloat(r.por_abonar || 0);
       const saldo  = parseFloat(r.total_saldo || 0);
       let rowClass = "";
@@ -467,7 +483,7 @@ const PROV = (() => {
       const totalFmt = saldo.toFixed(2);
       const refEnc   = (r.referencia || "").replace(/"/g, "&quot;");
       return `<tr class="${rowClass}" data-proveedor="${provEnc}">
-        <td style="color:var(--text-light);font-size:12px">${i + 1}</td>
+        <td style="color:var(--text-light);font-size:12px">${idx + 1}</td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proveedor}"><a href="#" class="prov-link" data-prov="${r.proveedor.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}">${r.proveedor}</a></td>
         <td><input type="text" class="input-ref" value="${refEnc}" placeholder="" maxlength="50" data-campo="referencia" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/></td>
         <td style="text-align:center">${r.cantidad_docs}</td>
@@ -476,13 +492,32 @@ const PROV = (() => {
         <td>
           <div style="display:flex;align-items:center;gap:4px">
             <input type="number" class="input-abonar" value="${abonar || ""}" placeholder="0.00" step="0.01" data-campo="por_abonar" data-proveedor="${provEnc}" ${soloLectura ? "disabled" : ""}/>
-            <button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>
-            <button class="btn-dist" data-prov="${provEnc}" title="Distribuir por factura y ver historial">&#9783;</button>
+            ${soloLectura ? "" : `<button class="btn-total-abonar" onclick="this.previousElementSibling.value='${totalFmt}'" title="Poner total adeudado">Total</button>`}
+            ${soloLectura ? "" : `<button class="btn-dist" data-prov="${provEnc}" title="Distribuir por factura y ver historial">&#9783;</button>`}
           </div>
         </td>
-        <td><button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">Guardar</button></td>
+        <td>${soloLectura ? "" : `<button class="btn-guardar-abono" onclick="PROV.guardarAbono('${provEnc}')">Guardar</button>`}</td>
       </tr>`;
-    }).join("");
+    };
+
+    lblMayor.textContent = `Mayor o igual a ${fmtUmbral} (${mayores.length} proveedores)`;
+    lblMenor.textContent = `Menor a ${fmtUmbral} (${menores.length} proveedores)`;
+
+    if (mayores.length) {
+      secMayor.style.display = "";
+      tbodyMayor.innerHTML = mayores.map((r, i) => buildRow(r, i)).join("");
+    } else {
+      secMayor.style.display = "";
+      tbodyMayor.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-light)">Ningún proveedor en esta sección.</td></tr>`;
+    }
+
+    if (menores.length) {
+      secMenor.style.display = "";
+      tbodyMenor.innerHTML = menores.map((r, i) => buildRow(r, i)).join("");
+    } else {
+      secMenor.style.display = "";
+      tbodyMenor.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-light)">Ningún proveedor en esta sección.</td></tr>`;
+    }
   }
 
   // ── Modal de distribución de abono ───────────────
@@ -673,7 +708,7 @@ const PROV = (() => {
     if (!result.isConfirmed || !result.value) return;
     const { monto_total, nota, desglose } = result.value;
 
-    const trRes = document.querySelector(`#tbody-resumen tr[data-proveedor="${provEnc}"]`);
+    const trRes = document.querySelector(`#tbody-resumen-mayor tr[data-proveedor="${provEnc}"]`) || document.querySelector(`#tbody-resumen-menor tr[data-proveedor="${provEnc}"]`);
     const prioridad  = trRes?.querySelector("[data-campo='prioridad']")?.value || null;
     const referencia = trRes?.querySelector("[data-campo='referencia']")?.value.trim() || null;
 
@@ -713,7 +748,7 @@ const PROV = (() => {
 
   // ── Guardar todos los abonos ─────────────────────
   async function guardarTodos() {
-    const filas = document.querySelectorAll("#tbody-resumen tr[data-proveedor]");
+    const filas = document.querySelectorAll("#tbody-resumen-mayor tr[data-proveedor], #tbody-resumen-menor tr[data-proveedor]");
     if (!filas.length) return;
     let errores = 0;
     for (const tr of filas) {
@@ -1596,12 +1631,14 @@ const PROV = (() => {
 
     // Click en proveedor del resumen → ver sus documentos
     // Click en botón distribución → abrir modal
-    document.getElementById("tbody-resumen")?.addEventListener("click", e => {
+    const resumenClickHandler = e => {
       const link = e.target.closest(".prov-link");
       if (link) { e.preventDefault(); verDocsProveedor(link.dataset.prov); return; }
       const dist = e.target.closest(".btn-dist");
       if (dist) { abrirDistribucion(dist.dataset.prov); return; }
-    });
+    };
+    document.getElementById("tbody-resumen-mayor")?.addEventListener("click", resumenClickHandler);
+    document.getElementById("tbody-resumen-menor")?.addEventListener("click", resumenClickHandler);
 
     // Resumen
     document.getElementById("btn-filtrar-res")?.addEventListener("click",  cargarResumen);
