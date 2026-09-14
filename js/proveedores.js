@@ -612,8 +612,10 @@ const PROV = (() => {
       focusConfirm: false,
       didOpen: () => {
         const popup = Swal.getPopup();
-        popup.style.width = '920px';
-        popup.style.maxWidth = '95vw';
+        popup.style.setProperty('width', '920px', 'important');
+        popup.style.setProperty('max-width', '95vw', 'important');
+        const hc = popup.querySelector('.swal2-html-container');
+        if (hc) { hc.style.setProperty('max-width', 'none', 'important'); hc.style.setProperty('overflow', 'visible', 'important'); }
 
         const updateTotal = () => {
           const sum = [...popup.querySelectorAll(".dist-input")].reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
