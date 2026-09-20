@@ -295,11 +295,8 @@ const DASH = (() => {
 
   // ── Renderizar todo con datos del resumen ─────────
   function render(d) {
-    // "procesos" no ve valores monetarios en ningún lado del módulo
-    const esProcesos = localStorage.getItem('rol') === 'procesos';
-
     // Financiero
-    if (!esProcesos) renderFinCards(d.totales_financieros || {});
+    renderFinCards(d.totales_financieros || {});
 
     // Estado donut
     renderEstado(d.por_estado || []);
@@ -320,15 +317,13 @@ const DASH = (() => {
     });
 
     // Aseguradoras — valor total
-    if (!esProcesos) {
-      renderHBar({
-        id: "chart-aseg-valor",
-        labels: asegLabels,
-        datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
-          backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
-        unit: "$",
-      });
-    }
+    renderHBar({
+      id: "chart-aseg-valor",
+      labels: asegLabels,
+      datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
+        backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
+      unit: "$",
+    });
 
     // Por usuario (top 12)
     const usrTop = (d.por_usuario || []).slice(0, 12);
@@ -362,18 +357,16 @@ const DASH = (() => {
     });
 
     // Valor mensual (línea)
-    if (!esProcesos) {
-      renderLine({
-        id: "chart-mes-valor",
-        labels: mesLabels,
-        datasets: [{
-          label: "Valor Total",
-          data: meses.map(r => parseFloat(r.valor_total) || 0),
-          borderColor: "#2B7A9E", backgroundColor: "rgba(43,122,158,.15)",
-          fill: true, tension: .35, pointRadius: 3,
-        }],
-      });
-    }
+    renderLine({
+      id: "chart-mes-valor",
+      labels: mesLabels,
+      datasets: [{
+        label: "Valor Total",
+        data: meses.map(r => parseFloat(r.valor_total) || 0),
+        borderColor: "#2B7A9E", backgroundColor: "rgba(43,122,158,.15)",
+        fill: true, tension: .35, pointRadius: 3,
+      }],
+    });
 
     // Por proceso OT
     const procTop = (d.por_proceso || []).slice(0, 12);
@@ -442,8 +435,8 @@ const CT = (() => {
   // ── Definición de columnas ────────────────────────
   const _rolCT = localStorage.getItem('rol');
   const esBodega = _rolCT === 'bodega';
-  // "procesos" y "bodega" no ven valores monetarios en ningún lado del módulo
-  const esSinValores = _rolCT === 'procesos' || esBodega;
+  // "bodega" no ve valores monetarios en ningún lado del módulo. "procesos" ve todo.
+  const esSinValores = esBodega;
 
   const COLS = [
     { id:"orden",     label:"N° Orden",       def:true,  sticky:true },
