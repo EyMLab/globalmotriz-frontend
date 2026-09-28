@@ -378,6 +378,41 @@ const PROV = (() => {
     await cargarDocumentos(paginaDoc);
   }
 
+  // ── Asignar estado gestión en bloque ─────────────
+  async function asignarEstadoGestion() {
+    const checks = [...document.querySelectorAll(".row-check:checked")];
+    if (!checks.length) return;
+
+    const optsHTML = ["", ...ESTADOS_GESTION_PROV].map(e =>
+      `<option value="${e}">${e || "— Limpiar estado —"}</option>`
+    ).join("");
+
+    const { isConfirmed, value: estadoElegido } = await Swal.fire({
+      title: `Asignar estado a ${checks.length} documento${checks.length > 1 ? "s" : ""}`,
+      html: `<select id="swal-bulk-eg" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827">${optsHTML}</select>`,
+      showCancelButton: true,
+      confirmButtonText: "Asignar",
+      confirmButtonColor: "#2B7A9E",
+      cancelButtonText: "Cancelar",
+      preConfirm: () => document.getElementById("swal-bulk-eg").value,
+    });
+    if (!isConfirmed) return;
+
+    Swal.fire({ title: "Asignando estado...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const pares = checks.map(c => ({ numDoc: c.dataset.num, proveedor: c.dataset.prov || "" }));
+    const res = await apiFetch("/proveedores-pagar/documentos/bulk-estado-gestion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pares, estado_gestion: estadoElegido || null }),
+    });
+    if (!res || !res.ok) {
+      Swal.fire("Error", "No se pudo asignar el estado.", "error");
+    } else {
+      Swal.fire({ icon: "success", title: "Estado asignado", timer: 1400, showConfirmButton: false });
+    }
+    await cargarDocumentos(paginaDoc);
+  }
+
   // ── Wrapper seguro para onclick del botón ────────
   function editarObsClick(btn) {
     editarObservacion(btn.dataset.num, btn.dataset.obs || "");
@@ -1645,6 +1680,7 @@ const PROV = (() => {
     });
     document.getElementById("btn-desc-sel")?.addEventListener("click",  () => cambiarEstadoSeleccionados("DESCARTADO"));
     document.getElementById("btn-react-sel")?.addEventListener("click", () => cambiarEstadoSeleccionados("ACTIVO"));
+    document.getElementById("btn-asignar-eg-sel")?.addEventListener("click", asignarEstadoGestion);
     document.getElementById("btn-desel-all")?.addEventListener("click", () => {
       document.querySelectorAll(".row-check").forEach(c => { c.checked = false; });
       const ca = document.getElementById("check-all-docs");
