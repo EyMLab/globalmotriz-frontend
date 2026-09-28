@@ -307,6 +307,7 @@ const CLIE = (() => {
       tbody.innerHTML = data.documentos.map(d => {
         const descartado = d.estado === "DESCARTADO";
         const obsEnc = (d.observacion || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        const docId = d.id;
         const numEnc = d.numero_documento.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
         const respEnc = (d.responsable || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
         const rowStyle = descartado ? 'background:#f9fafb;opacity:.65;' : '';
@@ -316,7 +317,7 @@ const CLIE = (() => {
         return `<tr style="${rowStyle}">
           <td style="text-align:center">
             <input type="checkbox" class="row-check" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary)"
-              data-num="${d.numero_documento.replace(/"/g,'&quot;')}"
+              data-id="${docId}"
               data-estado="${d.estado}"
               onchange="CLIE.actualizarBarraSeleccion()"/>
           </td>
@@ -333,7 +334,7 @@ const CLIE = (() => {
           <td data-col="saldo" class="num-right" style="font-weight:700">${fmtMoney(d.saldo)}</td>
           <td data-col="responsable" style="font-size:12px;color:var(--text-light)">${d.responsable || "—"}</td>
           <td data-col="observacion" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-light)">${d.observacion || "—"}</td>
-          <td style="text-align:center"><button class="${btnClass}" data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}" data-eg="${(d.estado_gestion||"").replace(/"/g,"&quot;")}" onclick="CLIE.editarGestionClick(this)" title="Gestión">${btnIcon}</button></td>
+          <td style="text-align:center"><button class="${btnClass}" data-id="${docId}" data-num="${numEnc}" data-obs="${obsEnc}" data-resp="${respEnc}" data-eg="${(d.estado_gestion||"").replace(/"/g,"&quot;")}" onclick="CLIE.editarGestionClick(this)" title="Gestión">${btnIcon}</button></td>
         </tr>`;
       }).join("");
       actualizarBarraSeleccion();
@@ -386,11 +387,11 @@ const CLIE = (() => {
     if (!isConfirmed) return;
 
     Swal.fire({ title: "Actualizando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    const numeros = checks.map(c => c.dataset.num);
+    const ids = checks.map(c => parseInt(c.dataset.id, 10));
     const res = await apiFetch("/clientes-cobrar/documentos/bulk-estado", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ numeros, estado: nuevoEstado }),
+      body: JSON.stringify({ ids, estado: nuevoEstado }),
     });
     if (!res || !res.ok) {
       Swal.fire("Error", "No se pudieron actualizar los documentos.", "error");
@@ -420,11 +421,11 @@ const CLIE = (() => {
     if (!isConfirmed) return;
 
     Swal.fire({ title: "Asignando estado...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    const numeros = checks.map(c => c.dataset.num);
+    const ids = checks.map(c => parseInt(c.dataset.id, 10));
     const res = await apiFetch("/clientes-cobrar/documentos/bulk-estado-gestion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ numeros, estado_gestion: estadoElegido || null }),
+      body: JSON.stringify({ ids, estado_gestion: estadoElegido || null }),
     });
     if (!res || !res.ok) {
       Swal.fire("Error", "No se pudo asignar el estado.", "error");
@@ -435,10 +436,10 @@ const CLIE = (() => {
   }
 
   function editarGestionClick(btn) {
-    editarGestion(btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "", btn.dataset.eg || "");
+    editarGestion(btn.dataset.id, btn.dataset.num, btn.dataset.obs || "", btn.dataset.resp || "", btn.dataset.eg || "");
   }
 
-  async function editarGestion(numDoc, obsActual, respActual, egActual) {
+  async function editarGestion(docId, numDoc, obsActual, respActual, egActual) {
     const optsEG = ["", ...ESTADOS_GESTION].map(e =>
       `<option value="${e}"${e === egActual ? " selected" : ""}>${e || "— Sin estado —"}</option>`
     ).join("");
@@ -480,7 +481,7 @@ const CLIE = (() => {
     });
     if (!isConfirmed || !vals) return;
 
-    const res = await apiFetch(`/clientes-cobrar/documentos/${encodeURIComponent(numDoc)}`, {
+    const res = await apiFetch(`/clientes-cobrar/documentos/${docId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
