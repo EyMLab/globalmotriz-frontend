@@ -132,8 +132,18 @@ const CLIE = (() => {
   }
 
   async function actualizarCards() {
-    const estadoDoc = document.getElementById("f-estado")?.value || "";
-    const qs = estadoDoc ? `?estado=${encodeURIComponent(estadoDoc)}` : "";
+    const f = leerFiltros();
+    const p = new URLSearchParams();
+    if (f.estado)        p.set("estado", f.estado);
+    if (f.cliente)       p.set("cliente", f.cliente);
+    if (f.tipo_doc)      p.set("tipo_doc", f.tipo_doc);
+    if (f.centro_costos) p.set("centro_costos", f.centro_costos);
+    if (f.fecha_desde)   p.set("fecha_desde", f.fecha_desde);
+    if (f.fecha_hasta)   p.set("fecha_hasta", f.fecha_hasta);
+    if (f.responsable)   p.set("responsable", f.responsable);
+    if (f.dias_desde)    p.set("dias_desde", f.dias_desde);
+    if (f.dias_hasta)    p.set("dias_hasta", f.dias_hasta);
+    const qs = p.toString() ? `?${p}` : "";
     const res = await apiFetch(`/clientes-cobrar/cards${qs}`);
     if (!res || !res.ok) return;
     const data = await safeJson(res);
