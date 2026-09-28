@@ -27,8 +27,9 @@
     .card-activa { box-shadow:0 0 0 3px currentColor !important; }
     .cards-con-activa .estado-card:not(.card-activa) { opacity:.45; }
     .ec-cajachica  { border-color:#86efac; color:#15803d; }
-    .ec-bancos     { border-color:#93c5fd; color:#1d4ed8; }
+    .ec-andres     { border-color:#93c5fd; color:#1d4ed8; }
     .ec-santiago   { border-color:#fde68a; color:#a16207; }
+    .ec-tc         { border-color:#c4b5fd; color:#7c3aed; }
     .ec-sinestado  { border-color:#e5e7eb; color:#6b7280; }
 
     /* ── Gestión icon button ──────────────────────── */
@@ -327,8 +328,9 @@
   <!-- ── Tarjetas de estado (botones filtro) ─────── -->
   <div class="cards-estado" id="cards-estado-prov">
     <button class="estado-card ec-cajachica" data-card="CAJA CHICA"><div class="ec-num" id="ec-n-cajachica">0</div><div class="ec-lbl">Caja Chica</div></button>
-    <button class="estado-card ec-bancos"    data-card="BANCOS"><div class="ec-num" id="ec-n-bancos">0</div><div class="ec-lbl">Bancos</div></button>
+    <button class="estado-card ec-andres"    data-card="ANDRES"><div class="ec-num" id="ec-n-andres">0</div><div class="ec-lbl">Andrés</div></button>
     <button class="estado-card ec-santiago"  data-card="SANTIAGO"><div class="ec-num" id="ec-n-santiago">0</div><div class="ec-lbl">Santiago</div></button>
+    <button class="estado-card ec-tc"        data-card="TC"><div class="ec-num" id="ec-n-tc">0</div><div class="ec-lbl">TC</div></button>
     <button class="estado-card ec-sinestado" data-card="SIN ESTADO"><div class="ec-num" id="ec-n-sinestado-prov">0</div><div class="ec-lbl">Sin estado</div></button>
   </div>
 
@@ -393,8 +395,9 @@
           <select id="f-estado-gestion-prov">
             <option value="">Todos</option>
             <option value="CAJA CHICA">Caja Chica</option>
-            <option value="BANCOS">Bancos</option>
+            <option value="ANDRES">Andrés</option>
             <option value="SANTIAGO">Santiago</option>
+            <option value="TC">TC</option>
             <option value="SIN ESTADO">Sin estado</option>
           </select>
         </div>

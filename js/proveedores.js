@@ -15,7 +15,7 @@ const PROV = (() => {
   // control y asistente_administrativo: solo lectura en todo el módulo
   const soloLectura = ['control', 'asistente_administrativo'].includes(localStorage.getItem('rol'));
 
-  const ESTADOS_GESTION_PROV = ["CAJA CHICA", "BANCOS", "SANTIAGO"];
+  const ESTADOS_GESTION_PROV = ["CAJA CHICA", "ANDRES", "SANTIAGO", "TC"];
 
   // ── Helpers ─────────────────────────────────────
   function fmtMoney(v) {
@@ -75,8 +75,9 @@ const PROV = (() => {
     (data.cards || []).forEach(r => { map[r.estado_gestion] = r.cantidad; });
     const el = id => document.getElementById(id);
     if (el("ec-n-cajachica"))      el("ec-n-cajachica").textContent      = map["CAJA CHICA"] || 0;
-    if (el("ec-n-bancos"))         el("ec-n-bancos").textContent         = map["BANCOS"]     || 0;
+    if (el("ec-n-andres"))         el("ec-n-andres").textContent         = map["ANDRES"]     || 0;
     if (el("ec-n-santiago"))       el("ec-n-santiago").textContent       = map["SANTIAGO"]   || 0;
+    if (el("ec-n-tc"))             el("ec-n-tc").textContent             = map["TC"]         || 0;
     if (el("ec-n-sinestado-prov")) el("ec-n-sinestado-prov").textContent = map["SIN ESTADO"] || 0;
   }
 
