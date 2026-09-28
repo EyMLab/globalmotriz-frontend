@@ -66,7 +66,18 @@ const PROV = (() => {
   }
 
   async function actualizarCards() {
+    const container = document.getElementById("cards-estado-prov");
     const f = leerFiltros();
+    const fgEG = document.getElementById("fg-estado-gestion-prov");
+    // Ocultar tarjetas y filtro de gestión en estado Activo (gestión aplica solo a descartados)
+    if (f.estado === "ACTIVO" || f.estado === "") {
+      if (container) container.style.display = "none";
+      if (fgEG) fgEG.style.display = "none";
+      if (_cardActiva) { _cardActiva = null; container?.classList.remove("cards-con-activa"); }
+      return;
+    }
+    if (container) container.style.display = "";
+    if (fgEG) fgEG.style.display = "";
     const p = new URLSearchParams();
     if (f.estado)            p.set("estado", f.estado);
     if (f.proveedor)         p.set("proveedor", f.proveedor);
