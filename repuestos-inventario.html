@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <title>Inventario de Repuestos</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- jsPDF + autoTable para el Acta de Custodia -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* Modales anchos: min-width gana al ancho forzado de styles.css para los Swal */
+    .swal2-popup.rep-pop-lg { min-width: min(1000px, 95vw) !important; max-width: 95vw !important; }
+    .swal2-popup.rep-pop-md { min-width: min(680px, 95vw) !important; max-width: 95vw !important; }
+    .rep-modal { text-align: left; font-size: 14px; color: #334155; }
+    .rep-modal-sub { margin: -4px 0 14px; color: #64748b; font-size: 13px; text-align: center; }
+    .req { color: #dc2626; }
+
+    /* KPIs clicables */
+    .rep-kpi-click { cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+    .rep-kpi-click:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,.08); }
+
+    /* Filtros */
+    .rep-filtros { display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-end; padding: 16px 18px; }
+    .rep-filtros .filtro-grupo { flex: 1 1 150px; min-width: 130px; }
+    .rep-filtros .filtro-grupo.ancho { flex: 2 1 260px; }
+    .rep-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #334155; height: 42px; white-space: nowrap; cursor: pointer; }
+    .rep-contador { font-size: 14px; color: #374151; font-weight: 600; margin: 4px 0 8px; }
+
+    /* Tabla */
+    .rep-fila { cursor: pointer; }
+    .rep-codigo { font-family: Consolas, 'Courier New', monospace; font-weight: 700; color: #1E5570; }
+    .rep-sub { display: block; font-size: 11.5px; color: #64748b; margin-top: 1px; }
+    .rep-detalle-cel { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+    tr.rep-anulada td { opacity: .55; }
+
+    /* Insignias */
+    .rep-badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+    .sit-DISPONIBLE { background: #dcfce7; color: #166534; }
+    .sit-RESERVADO  { background: #fef3c7; color: #92400e; }
+    .sit-SALIDA     { background: #e2e8f0; color: #334155; }
+    .sit-ANULADO    { background: #fee2e2; color: #991b1b; }
+    .prop-TAL { background: #dbeafe; color: #1e40af; }
+    .prop-SEG { background: #ede9fe; color: #5b21b6; }
+    .prop-CLI { background: #fce7f3; color: #9d174d; }
+    .est-N   { background: #dcfce7; color: #166534; }
+    .est-UO  { background: #e0f2fe; color: #075985; }
+    .est-UR  { background: #ffedd5; color: #9a3412; }
+    .est-REP { background: #f1f5f9; color: #475569; }
+    .rep-alto { background: #dc2626; color: #fff; }
+
+    /* Código grande para copiar en la pieza */
+    .rep-codigo-xl { font-family: Consolas, 'Courier New', monospace; font-size: 42px; font-weight: 800; letter-spacing: 2px; color: #1E5570; text-align: center; padding: 14px 10px; border: 3px dashed #5BC0BE; border-radius: 12px; background: #f0fdfa; user-select: all; word-break: break-all; }
+    .rep-codigo-partes { display: flex; justify-content: center; gap: 8px 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: #64748b; }
+    .rep-codigo-partes b { color: #1E5570; font-family: Consolas, monospace; font-size: 14px; margin-right: 3px; }
+    .rep-ubicar { text-align: center; font-size: 15px; margin: 14px 0 6px; }
+    .rep-cambio { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .rep-cambio .viejo { font-family: Consolas, monospace; font-size: 20px; color: #94a3b8; text-decoration: line-through; }
+
+    /* Avisos */
+    .rep-banner-alto { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin: 10px 0; }
+    .rep-banner-aviso { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin: 10px 0; }
+    .rep-reserva { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: #92400e; }
+    .rep-ayuda { font-size: 12px; color: #64748b; margin-top: 4px; min-height: 0; }
+    .rep-ayuda.ok { color: #15803d; }
+    .rep-ayuda.warn { color: #b45309; }
+    .rep-ayuda.err { color: #dc2626; font-weight: 600; }
+
+    /* Formulario de registro */
+    .rep-form-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .rep-form-cabecera h2 { margin: 0; font-size: 20px; color: #1E5570; }
+    .rep-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .rep-seccion { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; background: #fff; box-shadow: var(--shadow-card); }
+    .rep-seccion h3 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #fff; background: #1E5570; padding: 8px 12px; border-radius: 8px; }
+    .rep-campo { display: flex; flex-direction: column; margin-bottom: 12px; }
+    .rep-campo > label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+    .rep-seccion .rep-campo input:not([type=radio]):not([type=checkbox]),
+    .rep-seccion .rep-campo select,
+    .rep-seccion .rep-campo textarea { width: 100%; height: 40px; padding: 6px 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; background: #fff; color: #334155; box-sizing: border-box; }
+    .rep-seccion .rep-campo input[type=file] { height: auto; padding: 8px; }
+    .rep-seccion .rep-campo textarea { height: auto; min-height: 64px; resize: vertical; padding: 8px 12px; }
+    .rep-seccion .rep-campo input:focus,
+    .rep-seccion .rep-campo select:focus,
+    .rep-seccion .rep-campo textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,122,158,.15); outline: none; }
+    .rep-fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .rep-link { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 12px; font-weight: 600; padding: 0; margin-top: 4px; align-self: flex-start; }
+    .rep-link:hover { text-decoration: underline; }
+
+    /* Selector segmentado (propiedad / estado) */
+    .rep-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+    .rep-seg label { position: relative; margin: 0; font-size: 13px; font-weight: 600; color: #334155; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 8px 11px; cursor: pointer; background: #fff; text-transform: none; letter-spacing: 0; }
+    .rep-seg input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .rep-seg label b { font-family: Consolas, monospace; color: #1E5570; margin-right: 4px; }
+    .rep-seg label:has(input:checked) { border-color: var(--primary); background: #e0f2fe; color: #1E5570; box-shadow: 0 0 0 2px rgba(43,122,158,.15); }
+    .rep-seg label:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    /* Nueva marca (en el mismo formulario: un segundo Swal cerraría el primero) */
+    .rep-nueva-marca { display: none; margin-top: 8px; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; }
+    .rep-nueva-marca.abierta { display: block; }
+    .rep-nueva-marca .rep-fila2 { grid-template-columns: 2fr 1fr; }
+
+    /* Vista previa del código y acciones */
+    .rep-preview { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: #f0fdfa; border: 1px dashed #5BC0BE; border-radius: 12px; padding: 12px 16px; margin: 16px 0; }
+    .rep-preview-codigo { font-family: Consolas, 'Courier New', monospace; font-size: 26px; font-weight: 800; color: #1E5570; letter-spacing: 1px; }
+    .rep-preview small { display: block; color: #64748b; font-size: 12px; }
+    .rep-acciones-form { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .rep-btn-primario { background: var(--primary); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .rep-btn-primario:hover { background: var(--primary-dark); }
+    .rep-btn-primario:disabled { opacity: .6; cursor: wait; }
+
+    /* Fotos */
+    .rep-fotos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .rep-foto { position: relative; width: 92px; height: 92px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc; }
+    .rep-foto img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+    .rep-foto button { position: absolute; top: 3px; right: 3px; background: rgba(220,38,38,.92); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 14px; line-height: 20px; padding: 0; }
+
+    /* Detalle */
+    .rep-det-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding-right: 44px; /* espacio para la × del modal */ }
+    .rep-det-codigo { font-family: Consolas, 'Courier New', monospace; font-size: 30px; font-weight: 800; color: #1E5570; letter-spacing: 1px; }
+    .rep-det-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .rep-det-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+    .rep-det-caja { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; }
+    .rep-det-caja h4 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #1E5570; }
+    .rep-dato { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px; }
+    .rep-dato > span:first-child { color: #64748b; font-weight: 600; font-size: 11.5px; text-transform: uppercase; white-space: nowrap; }
+    .rep-dato > span:last-child { text-align: right; color: #0f172a; word-break: break-word; }
+    .rep-det-titulo { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #1E5570; font-weight: 700; }
+    .rep-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: flex-end; border-top: 1px solid #e2e8f0; padding-top: 14px; }
+    .rep-mini-tabla { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .rep-mini-tabla th { background: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; padding: 6px 8px; text-align: left; position: sticky; top: 0; z-index: 1; }
+    .rep-mini-tabla td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; text-align: left; }
+    .rep-mini-tabla tr.con-error td { background: #fef2f2; }
+    .rep-scroll { max-height: 50vh; overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .rep-msg-err { color: #dc2626; font-size: 11.5px; display: block; }
+    .rep-msg-adv { color: #b45309; font-size: 11.5px; display: block; }
+    .rep-resumen-import { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+    /* Configuración */
+    .rep-config-grid { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 18px; align-items: start; }
+
+    @media (max-width: 900px) {
+      .rep-config-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .rep-codigo-xl { font-size: 26px; }
+      .rep-det-codigo { font-size: 22px; }
+      .rep-fila2, .rep-nueva-marca .rep-fila2 { grid-template-columns: 1fr; }
+      .subtabs-nav { overflow-x: auto; }
+      .subtabs-nav .subtab-btn { padding: 10px 12px; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="dashboard-container">
+
+    <div class="subtabs-nav">
+      <button type="button" class="subtab-btn active" data-tab="inventario">Inventario</button>
+      <button type="button" class="subtab-btn" data-tab="registrar" id="tab-btn-registrar" style="display:none;">Registrar ingreso</button>
+      <button type="button" class="subtab-btn" data-tab="salidas">Salidas</button>
+      <button type="button" class="subtab-btn" data-tab="configuracion" id="tab-btn-configuracion" style="display:none;">Configuración</button>
+    </div>
+
+    <!-- ============================================================
+         INVENTARIO
+    ============================================================ -->
+    <div id="panel-inventario" class="subtab-panel active">
+
+      <div class="rrhh-kpi-grid">
+        <div class="rrhh-kpi-card rep-kpi-click" style="border-top-color:#16a34a;" data-kpi="DISPONIBLE" title="Ver disponibles">
+          <div class="rrhh-kpi-label">Disponibles</div>
+          <div class="rrhh-kpi-value" id="kpi-disponibles">--</div>
+        </div>
+        <div class="rrhh-kpi-card rep-kpi-click" style="border-top-color:#f59e0b;" data-kpi="RESERVADO" title="Ver reservados">
+          <div class="rrhh-kpi-label">Reservados</div>
+          <div class="rrhh-kpi-value" id="kpi-reservados">--</div>
+        </div>
+        <div class="rrhh-kpi-card" style="border-top-color:#2563eb;">
+          <div class="rrhh-kpi-label">Valor propio (Taller)</div>
+          <div class="rrhh-kpi-value" id="kpi-valor-propio">--</div>
+        </div>
+        <div class="rrhh-kpi-card" style="border-top-color:#7c3aed;">
+          <div class="rrhh-kpi-label">Valor en custodia (Seguro/Cliente)</div>
+          <div class="rrhh-kpi-value" id="kpi-valor-custodia">--</div>
+        </div>
+        <div class="rrhh-kpi-card rep-kpi-click" style="border-top-color:#dc2626;" data-kpi="ALTO" title="Ver repuestos de alto valor">
+          <div class="rrhh-kpi-label" id="kpi-alto-label">Alto valor</div>
+          <div class="rrhh-kpi-value" id="kpi-alto">--</div>
+        </div>
+        <div class="rrhh-kpi-card rep-kpi-click" style="border-top-color:#64748b;" data-kpi="SALIDAS" title="Ver salidas">
+          <div class="rrhh-kpi-label">Salidas del mes</div>
+          <div class="rrhh-kpi-value" id="kpi-salidas">--</div>
+        </div>
+      </div>
+
+      <div class="filtros rep-filtros">
+        <div class="filtro-grupo ancho">
+          <label for="f-q">Buscar</label>
+          <input type="text" id="f-q" placeholder="Código, número, detalle, placa, OT o cliente">
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-marca">Marca</label>
+          <select id="f-marca"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-modelo">Modelo</label>
+          <input type="text" id="f-modelo" placeholder="Ej: Sportage">
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-placa">Placa</label>
+          <input type="text" id="f-placa" placeholder="Ej: ABC1234">
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-propiedad">Propiedad</label>
+          <select id="f-propiedad"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-estado">Estado</label>
+          <select id="f-estado"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-categoria">Categoría</label>
+          <select id="f-categoria"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-localidad">Localidad</label>
+          <select id="f-localidad"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-situacion">Disponibilidad</label>
+          <select id="f-situacion">
+            <option value="EN_BODEGA">En bodega</option>
+            <option value="DISPONIBLE">Disponibles</option>
+            <option value="RESERVADO">Reservados</option>
+            <option value="SALIDA">Con salida</option>
+            <option value="ANULADO">Anulados</option>
+            <option value="TODAS">Todos</option>
+          </select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-desde">Ingreso desde</label>
+          <input type="date" id="f-desde">
+        </div>
+        <div class="filtro-grupo">
+          <label for="f-hasta">Ingreso hasta</label>
+          <input type="date" id="f-hasta">
+        </div>
+        <label class="rep-check"><input type="checkbox" id="f-alto"> Solo alto valor</label>
+        <label class="rep-check" id="grupo-mis-reservas" style="display:none;"><input type="checkbox" id="f-mis"> Mis reservas</label>
+      </div>
+
+      <div class="filter-row">
+        <button type="button" id="btn-registrar" class="btn-obs" style="display:none;">+ Registrar ingreso</button>
+        <button type="button" id="btn-importar" class="btn-obs" style="display:none;">Importar Excel</button>
+        <button type="button" id="btn-plantilla" class="btn-obs" style="display:none;">Descargar plantilla</button>
+        <button type="button" id="btn-exportar" class="btn-obs">Exportar Excel</button>
+        <button type="button" id="btn-limpiar-filtros" class="btn-obs">Limpiar filtros</button>
+      </div>
+
+      <div class="rep-contador" id="contador-inventario"></div>
+
+      <div class="tabla-estandar-wrap">
+        <table class="tabla-estandar">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Detalle / Categoría</th>
+              <th>Marca / Modelo</th>
+              <th>Placa / OT</th>
+              <th>Propiedad</th>
+              <th>Estado</th>
+              <th>Localidad / Ubicación</th>
+              <th class="num-right">Costo</th>
+              <th>Disponibilidad</th>
+              <th class="num-right" title="Días en bodega">Días</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-inventario"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination-controls">
+        <button type="button" id="inv-prev">Anterior</button>
+        <span id="inv-pagina">Página 1</span>
+        <button type="button" id="inv-next">Siguiente</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         REGISTRAR / EDITAR
+    ============================================================ -->
+    <div id="panel-registrar" class="subtab-panel">
+      <div class="rep-form-cabecera">
+        <h2 id="form-titulo">Registrar ingreso de repuesto</h2>
+        <span class="rep-ayuda">Los campos con <span class="req">*</span> son obligatorios</span>
+      </div>
+
+      <form id="form-pieza" autocomplete="off" novalidate>
+        <datalist id="dl-clientes"></datalist>
+        <datalist id="dl-proveedores"></datalist>
+
+        <div class="rep-form-grid">
+          <!-- Datos de origen -->
+          <section class="rep-seccion">
+            <h3>Datos de origen</h3>
+            <div class="rep-fila2">
+              <div class="rep-campo">
+                <label for="r-ot">Orden de trabajo</label>
+                <input type="text" id="r-ot" maxlength="20" placeholder="Ej: 4754" inputmode="numeric">
+              </div>
+              <div class="rep-campo">
+                <label for="r-localidad">Localidad <span class="req">*</span></label>
+                <select id="r-localidad"></select>
+              </div>
+            </div>
+            <div class="rep-ayuda" id="r-ot-estado" style="margin:-6px 0 10px;"></div>
+            <div class="rep-fila2">
+              <div class="rep-campo">
+                <label for="r-placa">Placa</label>
+                <input type="text" id="r-placa" maxlength="15" placeholder="ABC1234">
+              </div>
+              <div class="rep-campo">
+                <label for="r-marca">Marca <span class="req">*</span></label>
+                <select id="r-marca"></select>
+                <button type="button" class="rep-link" id="btn-nueva-marca">+ Nueva marca</button>
+              </div>
+            </div>
+            <div class="rep-nueva-marca" id="nueva-marca">
+              <div class="rep-fila2">
+                <div class="rep-campo">
+                  <label for="nm-nombre">Nombre de la marca</label>
+                  <input type="text" id="nm-nombre" maxlength="60" placeholder="Ej: GEELY">
+                </div>
+                <div class="rep-campo">
+                  <label for="nm-codigo">Código (3 letras)</label>
+                  <input type="text" id="nm-codigo" maxlength="3" placeholder="GEE">
+                </div>
+              </div>
+              <div class="rep-acciones-form">
+                <span class="rep-ayuda err" id="nm-msg"></span>
+                <button type="button" class="btn-obs" id="nm-cancelar">Cancelar</button>
+                <button type="button" class="btn-obs" id="nm-guardar">Agregar marca</button>
+              </div>
+            </div>
+            <div class="rep-campo">
+              <label for="r-modelo">Modelo</label>
+              <input type="text" id="r-modelo" maxlength="120" placeholder="Ej: GRAND VITARA SZ">
+            </div>
+            <div class="rep-campo">
+              <label for="r-cliente">Aseguradora / Cliente</label>
+              <input type="text" id="r-cliente" maxlength="200" list="dl-clientes" placeholder="Nombre de la aseguradora o cliente de la orden">
+            </div>
+            <div class="rep-campo">
+              <label for="r-proveedor">Proveedor</label>
+              <input type="text" id="r-proveedor" maxlength="200" list="dl-proveedores" placeholder="Proveedor si se compró, o la aseguradora">
+            </div>
+          </section>
+
+          <!-- Información del repuesto -->
+          <section class="rep-seccion">
+            <h3>Información del repuesto</h3>
+            <div class="rep-campo">
+              <label for="r-detalle">Detalle del repuesto <span class="req">*</span></label>
+              <input type="text" id="r-detalle" maxlength="500" placeholder="Nombre y descripción. Ej: GUARDACHOQUE DELANTERO">
+            </div>
+            <div class="rep-campo">
+              <label for="r-categoria">Categoría <span class="req">*</span></label>
+              <select id="r-categoria"></select>
+            </div>
+            <div class="rep-campo">
+              <label>Propiedad <span class="req">*</span></label>
+              <div class="rep-seg" id="r-propiedad"></div>
+            </div>
+            <div class="rep-campo">
+              <label>Estado del repuesto <span class="req">*</span></label>
+              <div class="rep-seg" id="r-estado"></div>
+            </div>
+            <div class="rep-campo">
+              <label for="r-detalle-estado">Detalle de estado <span class="req" id="r-detalle-estado-req" style="display:none;">*</span></label>
+              <textarea id="r-detalle-estado" maxlength="1000" placeholder="Descripción del estado (qué reparación necesita, por qué está aquí...)"></textarea>
+            </div>
+          </section>
+
+          <!-- Control -->
+          <section class="rep-seccion">
+            <h3>Control y almacén</h3>
+            <div class="rep-fila2">
+              <div class="rep-campo">
+                <label for="r-ubicacion">Ubicación <span class="req">*</span></label>
+                <input type="text" id="r-ubicacion" maxlength="60" placeholder="Ej: ESTANTE B3">
+              </div>
+              <div class="rep-campo">
+                <label for="r-costo">Costo (USD) <span class="req">*</span></label>
+                <input type="number" id="r-costo" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+              </div>
+            </div>
+            <div class="rep-ayuda" id="r-costo-ayuda" style="margin:-6px 0 10px;"></div>
+            <div class="rep-campo">
+              <label for="r-revisado">Revisado por <span class="req">*</span></label>
+              <select id="r-revisado"><option value="">Cargando empleados...</option></select>
+              <span class="rep-ayuda">Persona que revisó el estado de la pieza</span>
+            </div>
+            <div class="rep-campo" id="grupo-fotos">
+              <label for="r-fotos">Fotos (opcional, máximo 4)</label>
+              <input type="file" id="r-fotos" accept="image/*" multiple>
+              <div class="rep-fotos" id="r-fotos-preview"></div>
+            </div>
+            <div class="rep-campo" id="grupo-motivo" style="display:none;">
+              <label for="r-motivo">Motivo de la edición <span class="req">*</span></label>
+              <textarea id="r-motivo" maxlength="500" placeholder="Ej: se reparó la pieza / corrección de marca"></textarea>
+            </div>
+          </section>
+        </div>
+
+        <div class="rep-preview">
+          <div>
+            <small id="r-codigo-titulo">Código que se generará</small>
+            <div class="rep-preview-codigo" id="r-codigo-preview">___-__-___-####</div>
+            <small id="r-codigo-nota">El número global se asigna al guardar</small>
+          </div>
+          <div class="rep-acciones-form">
+            <button type="button" class="btn-obs" id="btn-limpiar-form">Limpiar</button>
+            <button type="button" class="btn-obs" id="btn-guardar-otra" title="Guarda y deja cargados los datos de origen para registrar otra pieza de la misma OT">Guardar y registrar otra</button>
+            <button type="button" class="rep-btn-primario" id="btn-guardar">Guardar repuesto</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- ============================================================
+         SALIDAS
+    ============================================================ -->
+    <div id="panel-salidas" class="subtab-panel">
+      <div class="filtros rep-filtros">
+        <div class="filtro-grupo ancho">
+          <label for="s-q">Buscar</label>
+          <input type="text" id="s-q" placeholder="Código, detalle, OT o a quién se entregó">
+        </div>
+        <div class="filtro-grupo">
+          <label for="s-motivo">Motivo</label>
+          <select id="s-motivo"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="s-localidad">Localidad</label>
+          <select id="s-localidad"></select>
+        </div>
+        <div class="filtro-grupo">
+          <label for="s-desde">Desde</label>
+          <input type="date" id="s-desde">
+        </div>
+        <div class="filtro-grupo">
+          <label for="s-hasta">Hasta</label>
+          <input type="date" id="s-hasta">
+        </div>
+        <label class="rep-check"><input type="checkbox" id="s-anuladas"> Incluir anuladas</label>
+      </div>
+
+      <div class="rep-contador" id="contador-salidas"></div>
+
+      <div class="tabla-estandar-wrap">
+        <table class="tabla-estandar">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Código</th>
+              <th>Detalle</th>
+              <th>Motivo</th>
+              <th>OT destino</th>
+              <th>Entregado a</th>
+              <th class="num-right">Precio venta</th>
+              <th>Acta</th>
+              <th>Registró</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-salidas"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination-controls">
+        <button type="button" id="sal-prev">Anterior</button>
+        <span id="sal-pagina">Página 1</span>
+        <button type="button" id="sal-next">Siguiente</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         CONFIGURACIÓN (admin; bodega agrega marcas)
+    ============================================================ -->
+    <div id="panel-configuracion" class="subtab-panel">
+      <div class="rep-config-grid">
+        <section class="rep-seccion">
+          <h3>Alto valor</h3>
+          <div class="rep-campo">
+            <label for="cfg-umbral">Umbral (USD)</label>
+            <input type="number" id="cfg-umbral" min="0" step="0.01">
+          </div>
+          <p class="rep-ayuda" id="cfg-umbral-nota">Toda salida de un repuesto cuyo costo supere este valor exige el Acta de Custodia firmada.</p>
+          <div class="rep-acciones-form">
+            <button type="button" class="rep-btn-primario" id="btn-guardar-umbral">Guardar umbral</button>
+          </div>
+        </section>
+
+        <section class="rep-seccion">
+          <h3>Marcas</h3>
+          <p class="rep-ayuda" style="margin:0 0 10px;">El código de 3 letras forma parte del código de cada pieza (ej. CHV en TAL-N-CHV-0001). No se puede cambiar una vez que hay repuestos con esa marca.</p>
+          <div class="rep-fila2" style="grid-template-columns: 2fr 1fr auto; align-items:end;">
+            <div class="rep-campo">
+              <label for="cfg-marca-nombre">Nombre</label>
+              <input type="text" id="cfg-marca-nombre" maxlength="60" placeholder="Ej: GEELY">
+            </div>
+            <div class="rep-campo">
+              <label for="cfg-marca-codigo">Código</label>
+              <input type="text" id="cfg-marca-codigo" maxlength="3" placeholder="GEE">
+            </div>
+            <div class="rep-campo">
+              <button type="button" class="btn-obs" id="btn-agregar-marca" style="height:40px;">Agregar</button>
+            </div>
+          </div>
+          <div class="tabla-estandar-wrap" style="max-height:420px; overflow:auto;">
+            <table class="tabla-estandar">
+              <thead>
+                <tr>
+                  <th>Marca</th>
+                  <th>Código</th>
+                  <th class="num-right">Repuestos</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tabla-marcas"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/repuestos-inventario.js"></script>
+</body>
+</html>

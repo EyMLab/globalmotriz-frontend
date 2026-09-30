@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'inventario':     'Inventario',
       'compras':        'Compras',
       'cotizaciones':   'Cotizaciones',
+      'repuestos-inventario': 'Inventario de Repuestos',
       'control-taller': 'ControlTaller',
       'proveedores':    'Proveedores',
       'clientes':       'Clientes',
@@ -98,6 +99,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="cotizaciones.html" class="${pagina === 'Cotizaciones' ? 'active' : ''}">Cotizaciones</a>`
       : "";
 
+    const enlaceInventarioRepuestos = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
+      ? `<a href="repuestos-inventario.html" class="${pagina === 'Inventario de Repuestos' ? 'active' : ''}">Inventario</a>`
+      : "";
+
     const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Monitoreo LPR</a>`
       : "";
@@ -148,12 +153,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         <nav class="nav-center nav-links">
           ${enlaceInventario}
-          ${(enlaceCompras || enlaceCotizaciones) ? `
+          ${(enlaceCompras || enlaceCotizaciones || enlaceInventarioRepuestos) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Compras','Cotizaciones'].includes(pagina) ? 'active' : ''}">Repuestos <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Compras','Cotizaciones','Inventario de Repuestos'].includes(pagina) ? 'active' : ''}">Repuestos <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceCotizaciones}
               ${enlaceCompras}
+              ${enlaceInventarioRepuestos}
             </div>
           </div>` : ''}
           ${(enlaceLPR || enlaceControlTaller) ? `
@@ -311,6 +317,9 @@ function initNotificaciones() {
       if (ROLES_COMPRAS_NOTIF.includes(_navRol)) {
         promises.push(apiFetch('/compras/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {}));
       }
+      if (ROLES_REPUESTOS_NOTIF.includes(_navRol)) {
+        promises.push(apiFetch('/repuestos/notificaciones/leer-todas', { method: 'PATCH' }).catch(() => {}));
+      }
       await Promise.all(promises);
       cargarNotificaciones();
       actualizarContadorNotif();
@@ -324,16 +333,25 @@ function initNotificaciones() {
 
 const ROLES_RRHH_NOTIF = ['admin', 'asistente_contable', 'asistente_administrativo'];
 const ROLES_COMPRAS_NOTIF = ['admin', 'bodega'];
+const ROLES_REPUESTOS_NOTIF = ['bodega'];
+
+// Los mensajes de repuestos llevan texto escrito por usuarios (OT, observaciones)
+function escNotif(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 async function actualizarContadorNotif() {
   try {
-    const [resCot, resRrhh, resCompras] = await Promise.all([
+    const [resCot, resRrhh, resCompras, resRepuestos] = await Promise.all([
       apiFetch('/cotizaciones/notificaciones/count'),
       ROLES_RRHH_NOTIF.includes(_navRol)
         ? apiFetch('/rrhh/notificaciones/count').catch(() => null)
         : Promise.resolve(null),
       ROLES_COMPRAS_NOTIF.includes(_navRol)
         ? apiFetch('/compras/notificaciones/count').catch(() => null)
+        : Promise.resolve(null),
+      ROLES_REPUESTOS_NOTIF.includes(_navRol)
+        ? apiFetch('/repuestos/notificaciones/count').catch(() => null)
         : Promise.resolve(null)
     ]);
     const countEl = document.getElementById('notif-count');
@@ -351,6 +369,10 @@ async function actualizarContadorNotif() {
       const d3 = await safeJson(resCompras);
       total += d3.no_leidas || 0;
     }
+    if (resRepuestos && resRepuestos.ok) {
+      const d4 = await safeJson(resRepuestos);
+      total += d4.no_leidas || 0;
+    }
     countEl.textContent = total;
     countEl.style.display = total > 0 ? 'flex' : 'none';
   } catch (e) { /* ignore */ }
@@ -360,13 +382,16 @@ async function cargarNotificaciones() {
   const list = document.getElementById('notif-list');
   if (!list) return;
   try {
-    const [resCot, resRrhh, resCompras] = await Promise.all([
+    const [resCot, resRrhh, resCompras, resRepuestos] = await Promise.all([
       apiFetch('/cotizaciones/notificaciones?limit=15'),
       ROLES_RRHH_NOTIF.includes(_navRol)
         ? apiFetch('/rrhh/notificaciones?limit=15').catch(() => null)
         : Promise.resolve(null),
       ROLES_COMPRAS_NOTIF.includes(_navRol)
         ? apiFetch('/compras/notificaciones?limit=15').catch(() => null)
+        : Promise.resolve(null),
+      ROLES_REPUESTOS_NOTIF.includes(_navRol)
+        ? apiFetch('/repuestos/notificaciones?limit=15').catch(() => null)
         : Promise.resolve(null)
     ]);
 
@@ -393,6 +418,13 @@ async function cargarNotificaciones() {
       }
     }
 
+    if (resRepuestos && resRepuestos.ok) {
+      const dataRepuestos = await safeJson(resRepuestos);
+      if (dataRepuestos.items) {
+        todas = todas.concat(dataRepuestos.items.map(n => ({ ...n, modulo: 'repuestos', mensaje: escNotif(n.mensaje) })));
+      }
+    }
+
     if (!todas.length) {
       list.innerHTML = '<div class="notif-empty">Sin notificaciones</div>';
       return;
@@ -404,6 +436,7 @@ async function cargarNotificaciones() {
       let moduloTag = '';
       if (n.modulo === 'rrhh') moduloTag = '<span class="notif-tag notif-tag-rrhh">RRHH</span> ';
       else if (n.modulo === 'compras') moduloTag = '<span class="notif-tag notif-tag-compras">OC</span> ';
+      else if (n.modulo === 'repuestos') moduloTag = '<span class="notif-tag notif-tag-repuestos">REP</span> ';
       return `<div class="notif-item ${n.leida ? '' : 'no-leida'}" onclick="clickNotificacion(${n.id}, ${n.solicitud_id || 'null'}, ${n.leida}, '${n.modulo}')">
         <div>${moduloTag}${n.mensaje}</div>
         <div class="notif-fecha">${n.fecha}</div>
@@ -420,6 +453,7 @@ async function clickNotificacion(id, solicitudId, leida, modulo) {
       let endpoint;
       if (modulo === 'rrhh') endpoint = `/rrhh/notificaciones/${id}/leer`;
       else if (modulo === 'compras') endpoint = `/compras/notificaciones/${id}/leer`;
+      else if (modulo === 'repuestos') endpoint = `/repuestos/notificaciones/${id}/leer`;
       else endpoint = `/cotizaciones/notificaciones/${id}/leer`;
       await apiFetch(endpoint, { method: 'PATCH' });
       actualizarContadorNotif();
@@ -442,6 +476,16 @@ async function clickNotificacion(id, solicitudId, leida, modulo) {
       if (solicitudId && typeof verOrden === 'function') {
         verOrden(solicitudId);
       }
+      document.getElementById('notif-dropdown')?.classList.remove('open');
+    }
+    return;
+  }
+
+  if (modulo === 'repuestos') {
+    if (!window.location.pathname.includes('repuestos-inventario')) {
+      window.location.href = solicitudId ? `repuestos-inventario.html?id=${solicitudId}` : 'repuestos-inventario.html';
+    } else {
+      if (solicitudId && window.REP) REP.verDetalle(solicitudId);
       document.getElementById('notif-dropdown')?.classList.remove('open');
     }
     return;

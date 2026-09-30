@@ -2399,6 +2399,11 @@ div.swal2-backdrop-show {
   color: #92400e;
 }
 
+.notif-tag-repuestos {
+  background: #dcfce7;
+  color: #166534;
+}
+
 /* ======================================================================
    UTILIDADES DE LAYOUT — extraídas de estilos inline en HTML
    Estas clases reemplazan patrones repetidos sin afectar funcionalidad.
