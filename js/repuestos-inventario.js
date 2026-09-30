@@ -236,10 +236,8 @@
     $('r-propiedad').innerHTML = radios('r-propiedad', state.cat.propiedades);
     $('r-estado').innerHTML = radios('r-estado', state.cat.estados);
 
-    const lista = (arr) => arr.map(x => `<option value="${escapeHtml(x)}">`).join('');
-    const { clientes, proveedores } = state.cat.sugerencias;
-    $('dl-clientes').innerHTML = lista(clientes);
-    $('dl-proveedores').innerHTML = lista([...new Set([...proveedores, ...clientes])].sort());
+    $('dl-clientes').innerHTML = state.cat.sugerencias.clientes
+      .map(c => `<option value="${escapeHtml(c)}">`).join('');
   }
 
   // Vuelve a pedir las marcas activas (tras crear / editar una) sin perder lo elegido
@@ -1209,9 +1207,12 @@
   function initFormulario() {
     if (!state.puedeRegistrar) return;
 
-    $('r-ot').addEventListener('change', buscarOT);
+    // La OT se busca con la lupa (o Enter) en la localidad elegida
+    $('btn-buscar-ot').onclick = buscarOT;
     $('r-ot').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); buscarOT(); } });
-    $('r-localidad').addEventListener('change', () => { if ($('r-ot').value.trim()) buscarOT(); });
+    $('r-localidad').addEventListener('change', () => {
+      if ($('r-ot').value.trim()) mostrarAyudaOT(`Presione la lupa para buscar la OT en ${$('r-localidad').value}`);
+    });
     $('r-placa').addEventListener('input', () => { $('r-placa').value = $('r-placa').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 
     $('r-marca').addEventListener('change', actualizarPreview);
@@ -1276,39 +1277,53 @@
     }));
   }
 
-  async function buscarOT() {
+  function mostrarAyudaOT(texto, tipo) {
     const ayuda = $('r-ot-estado');
+    ayuda.textContent = texto;
+    ayuda.className = tipo ? `rep-ayuda ${tipo}` : 'rep-ayuda';
+  }
+
+  // Lupa de la OT: busca solo en la localidad elegida y reemplaza los datos de origen
+  // con los de la OT encontrada, para que no queden datos de una búsqueda anterior
+  async function buscarOT() {
     const ot = $('r-ot').value.trim().toUpperCase();
+    const loc = $('r-localidad').value;
     $('r-ot').value = ot;
-    if (!ot) { ayuda.textContent = ''; ayuda.className = 'rep-ayuda'; return; }
-    if (!/^[A-Z0-9-]{1,20}$/.test(ot)) { ayuda.textContent = 'Número de OT inválido'; ayuda.className = 'rep-ayuda err'; return; }
+    if (!ot) { mostrarAyudaOT('Escriba el número de OT y presione la lupa', 'warn'); $('r-ot').focus(); return; }
+    if (!/^[A-Z0-9-]{1,20}$/.test(ot)) { mostrarAyudaOT('Número de OT inválido', 'err'); return; }
 
-    ayuda.textContent = 'Buscando OT...';
-    ayuda.className = 'rep-ayuda';
+    mostrarAyudaOT(`Buscando la OT ${ot} en ${loc}...`);
+    $('btn-buscar-ot').disabled = true;
     let r;
-    try { r = await api(`/repuestos/ot/${encodeURIComponent(ot)}`); } catch { return; }
-    if ($('r-ot').value.trim().toUpperCase() !== ot) return; // cambió mientras buscaba
+    try {
+      r = await api(`/repuestos/ot/${encodeURIComponent(ot)}?localidad=${encodeURIComponent(loc)}`);
+    } catch {
+      return;
+    } finally {
+      $('btn-buscar-ot').disabled = false;
+    }
+    // Si cambiaron la OT o la localidad mientras buscaba, esta respuesta ya no aplica
+    if ($('r-ot').value.trim().toUpperCase() !== ot || $('r-localidad').value !== loc) return;
 
-    if (!r.ok) { ayuda.textContent = r.data.error || 'No se pudo consultar la OT'; ayuda.className = 'rep-ayuda err'; return; }
+    if (!r.ok) { mostrarAyudaOT(r.data.error || 'No se pudo consultar la OT', 'err'); return; }
     if (!r.data.encontrada) {
-      ayuda.textContent = 'OT no encontrada en el sistema (se importa desde Getsoft): complete los datos a mano.';
-      ayuda.className = 'rep-ayuda warn';
+      mostrarAyudaOT(`No hay una OT ${ot} en ${loc}. Revise el número o la localidad; si la OT aún no se importa de Getsoft, complete los datos a mano.`, 'err');
       return;
     }
 
-    const loc = $('r-localidad').value;
-    const o = r.data.ordenes.find(x => x.localidad === loc) || r.data.ordenes[0];
-    // Solo llena lo que está vacío: nunca pisa lo que bodega ya escribió
-    const llenar = (id, v) => { if (v && !$(id).value.trim()) $(id).value = v; };
-    llenar('r-placa', o.placa);
-    llenar('r-modelo', o.modelo);
-    llenar('r-cliente', o.aseguradora || o.cliente);
-    if (!$('r-marca').value && o.marca_id) $('r-marca').value = String(o.marca_id);
+    const o = r.data.ordenes[0];
+    $('r-placa').value = o.placa || '';
+    $('r-modelo').value = o.modelo || '';
+    $('r-cliente').value = o.aseguradora || o.cliente || '';
+    $('r-marca').value = o.marca_id ? String(o.marca_id) : '';
 
     const vehiculo = [o.placa, o.marca, o.modelo].filter(Boolean).join(' ');
-    ayuda.textContent = `OT ${o.numero_orden} · ${o.estado} · ${o.localidad}${o.localidad !== loc ? ' (otra localidad)' : ''}` +
-      `${vehiculo ? ' — ' + vehiculo : ''}${o.marca && !o.marca_id ? ` · la marca "${o.marca}" no está en el catálogo` : ''}`;
-    ayuda.className = ['ANULADO', 'FACTURADO'].includes(o.estado) ? 'rep-ayuda warn' : 'rep-ayuda ok';
+    const marcaFuera = o.marca && !o.marca_id;
+    mostrarAyudaOT(
+      `OT ${o.numero_orden} · ${o.estado} · ${o.localidad}${vehiculo ? ' — ' + vehiculo : ''}` +
+      `${marcaFuera ? ` · la marca "${o.marca}" no está en el catálogo: agréguela con "+ Nueva marca"` : ''}`,
+      marcaFuera || ['ANULADO', 'FACTURADO'].includes(o.estado) ? 'warn' : 'ok'
+    );
     actualizarPreview();
   }
 
