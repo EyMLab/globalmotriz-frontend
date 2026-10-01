@@ -231,8 +231,9 @@
     $('r-localidad').innerHTML = localidades;
     $('r-localidad').value = state.localidad || state.cat.localidades[0];
 
+    // "Taller (TAL)": primero la palabra y entre paréntesis la sigla que va en el código
     const radios = (nombre, mapa) => Object.entries(mapa).map(([k, v]) =>
-      `<label><input type="radio" name="${nombre}" value="${k}"><b>${k}</b>${escapeHtml(v)}</label>`).join('');
+      `<label><input type="radio" name="${nombre}" value="${k}">${escapeHtml(v)}<b>(${k})</b></label>`).join('');
     $('r-propiedad').innerHTML = radios('r-propiedad', state.cat.propiedades);
     $('r-estado').innerHTML = radios('r-estado', state.cat.estados);
 
@@ -1477,7 +1478,7 @@
   function validarFormulario(d) {
     const faltan = [];
     if (!d.marca_id) faltan.push('marca');
-    if (!d.detalle) faltan.push('detalle del repuesto');
+    if (!d.detalle) faltan.push('nombre del repuesto');
     if (!d.categoria) faltan.push('categoría');
     if (!d.propiedad) faltan.push('propiedad');
     if (!d.estado) faltan.push('estado');
