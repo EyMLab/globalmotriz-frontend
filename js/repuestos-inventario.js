@@ -8,7 +8,6 @@
   'use strict';
 
   const ROLES_PAGINA = ['admin', 'control', 'bodega', 'asesor'];
-  const MAX_FOTOS = 4;
 
   const state = {
     usuario: '',
@@ -26,8 +25,7 @@
     inv: { page: 1, pageSize: 20, total: 0 },
     sal: { page: 1, pageSize: 20, total: 0 },
     edicion: null,         // pieza en edición en el panel Registrar
-    formEdicionId: null,
-    fotosNuevas: []        // File[] elegidos al registrar
+    formEdicionId: null
   };
 
   // =====================================================
@@ -386,13 +384,13 @@
         : (p.situacion === 'DISPONIBLE' ? p.dias_en_bodega : '—');
       return `
         <tr class="rep-fila${p.situacion === 'ANULADO' ? ' rep-anulada' : ''}" data-id="${p.id}">
-          <td><span class="rep-codigo">${escapeHtml(p.codigo)}</span>${p.fotos_count ? ' <span title="Tiene fotos">📷</span>' : ''}</td>
+          <td><span class="rep-codigo">${escapeHtml(p.codigo)}</span></td>
           <td class="rep-detalle-cel" title="${escapeHtml(p.detalle)}">${escapeHtml(p.detalle)}<span class="rep-sub">${escapeHtml(etiqueta('categorias', p.categoria))}</span></td>
           <td>${escapeHtml(p.marca)}<span class="rep-sub">${val(p.modelo)}</span></td>
           <td>${val(p.placa)}<span class="rep-sub">${p.orden_trabajo ? 'OT ' + escapeHtml(p.orden_trabajo) : '—'}</span></td>
           <td>${badgePropiedad(p.propiedad)}</td>
           <td>${badgeEstado(p.estado)}</td>
-          <td><span class="badge-localidad badge-${p.localidad.toLowerCase()}">${p.localidad}</span><span class="rep-sub">${val(p.ubicacion)}</span></td>
+          <td><span class="badge-localidad badge-${p.localidad.toLowerCase()}">${p.localidad}</span></td>
           <td class="num-right">${fmtMoney(p.costo)}${p.alto_valor ? `<span class="rep-sub">${badge('rep-alto', 'Alto valor')}</span>` : ''}</td>
           <td>${badgeSituacion(p.situacion)}${reserva}</td>
           <td class="num-right">${dias}</td>
@@ -438,22 +436,18 @@
       Swal.fire('Error', r.data.error || 'No se pudo cargar el repuesto', 'error');
       return;
     }
-    const { pieza: p, fotos, movimientos, actas, umbral } = r.data;
+    const { pieza: p, movimientos, actas, umbral } = r.data;
 
     Swal.fire({
       customClass: { popup: 'rep-pop-lg' },
       showConfirmButton: false,
       showCloseButton: true,
-      html: htmlDetalle(p, fotos, movimientos, actas, umbral),
+      html: htmlDetalle(p, movimientos, actas, umbral),
       didOpen: (popup) => {
         popup.querySelectorAll('[data-accion]').forEach(b =>
           b.addEventListener('click', () => ejecutarAccion(b.dataset.accion, p)));
         popup.querySelectorAll('[data-acta]').forEach(b =>
           b.addEventListener('click', () => reimprimirActa(Number(b.dataset.acta))));
-        popup.querySelectorAll('[data-borrar-foto]').forEach(b =>
-          b.addEventListener('click', (e) => { e.stopPropagation(); borrarFoto(Number(b.dataset.borrarFoto), p.id); }));
-        popup.querySelectorAll('[data-foto-url]').forEach(img =>
-          img.addEventListener('click', () => window.open(img.dataset.fotoUrl, '_blank', 'noopener')));
         popup.querySelector('#det-copiar')?.addEventListener('click', () => copiar(p.codigo));
       }
     });
@@ -463,7 +457,7 @@
     return `<div class="rep-dato"><span>${label}</span><span>${valor}</span></div>`;
   }
 
-  function htmlDetalle(p, fotos, movimientos, actas, umbral) {
+  function htmlDetalle(p, movimientos, actas, umbral) {
     const anteriores = [...(p.codigos_anteriores || [])];
     if (p.codigo_legacy) anteriores.push(`${p.codigo_legacy} (antes del sistema)`);
 
@@ -472,15 +466,6 @@
         <b>Reservado para la OT ${escapeHtml(p.reservado_ot)}</b> por ${escapeHtml(p.reservado_por)} el ${escapeHtml(p.reservado_en)}
         (${p.dias_reservado ?? 0} día${p.dias_reservado === 1 ? '' : 's'})${p.reserva_obs ? ` — ${escapeHtml(p.reserva_obs)}` : ''}
       </div>` : '';
-
-    const puedeBorrarFotos = state.puedeRegistrar && p.situacion !== 'ANULADO';
-    const htmlFotos = fotos.length
-      ? `<div class="rep-fotos">${fotos.map(f => `
-          <div class="rep-foto">
-            <img src="${escapeHtml(f.url)}" data-foto-url="${escapeHtml(f.url)}" alt="Foto del repuesto" loading="lazy">
-            ${puedeBorrarFotos ? `<button type="button" data-borrar-foto="${f.id}" title="Eliminar foto">×</button>` : ''}
-          </div>`).join('')}</div>`
-      : '<p class="rep-ayuda">Sin fotos</p>';
 
     const htmlMovs = `
       <div class="rep-scroll" style="max-height:230px;">
@@ -549,15 +534,12 @@
           <div class="rep-det-caja">
             <h4>Control e histórico</h4>
             ${dato('Localidad', escapeHtml(p.localidad))}
-            ${dato('Ubicación', val(p.ubicacion))}
             ${dato('Costo', fmtMoney(p.costo))}
             ${dato('Ingreso', `${escapeHtml(p.fecha_ingreso)} ${escapeHtml(p.hora_ingreso)}`)}
             ${dato('Revisado por', val(p.revisado_por))}
             ${dato('Registrado por', `${escapeHtml(p.registrado_por)}${p.origen_registro === 'IMPORTACION' ? ' (importación)' : ''}`)}
           </div>
         </div>
-        <div class="rep-det-titulo">Fotos</div>
-        ${htmlFotos}
         <div class="rep-det-titulo">Historial</div>
         ${htmlMovs}
         ${htmlActas}
@@ -568,7 +550,7 @@
   const CAMPOS_LABEL = {
     cliente: 'Cliente', marca: 'Marca', modelo: 'Modelo', placa: 'Placa', orden_trabajo: 'OT',
     proveedor: 'Proveedor', detalle: 'Detalle', categoria: 'Categoría', propiedad: 'Propiedad',
-    estado: 'Estado', detalle_estado: 'Detalle de estado', localidad: 'Localidad', ubicacion: 'Ubicación',
+    estado: 'Estado', detalle_estado: 'Detalle de estado', localidad: 'Localidad',
     costo: 'Costo', revisado_por: 'Revisado por'
   };
 
@@ -619,7 +601,6 @@
     const a = [];
     const enBodega = p.situacion === 'DISPONIBLE' || p.situacion === 'RESERVADO';
     if (state.puedeRegistrar && enBodega) a.push(['editar', 'Editar', 'btn-obs']);
-    if (state.puedeRegistrar && p.situacion !== 'ANULADO' && p.fotos_count < MAX_FOTOS) a.push(['fotos', 'Agregar fotos', 'btn-obs']);
     if (state.puedeReservar && p.situacion === 'DISPONIBLE') a.push(['reservar', 'Reservar para OT', 'btn-obs']);
     if (p.situacion === 'RESERVADO' && (state.puedeRegistrar || (state.esAsesor && p.reservado_por === state.usuario))) {
       a.push(['liberar', 'Liberar reserva', 'btn-obs']);
@@ -633,7 +614,6 @@
   function ejecutarAccion(accion, p) {
     const acciones = {
       editar: () => editarPieza(p),
-      fotos: () => agregarFotos(p),
       reservar: () => reservar(p),
       liberar: () => liberar(p),
       salida: () => registrarSalida(p),
@@ -1055,7 +1035,7 @@
       ['Marca / Modelo', txtPdf([s.marca, s.modelo].filter(Boolean).join(' ')), 'Categoría', txtPdf(s.categoria)],
       ['Placa de origen', txtPdf(s.placa), 'OT de origen', txtPdf(s.ot_origen)],
       ['Propiedad', txtPdf(s.propiedad), 'Estado', txtPdf(s.estado)],
-      ['Ubicación', txtPdf(s.ubicacion), 'Umbral Alto Valor', fmtMoney(acta.umbral_aplicado)],
+      ['Localidad', txtPdf(s.localidad), 'Umbral Alto Valor', fmtMoney(acta.umbral_aplicado)],
       ...(s.detalle_estado ? [['Detalle de estado', ancho(s.detalle_estado)]] : [])
     ], 45);
 
@@ -1121,60 +1101,6 @@
       try { doc.setGState(new doc.GState({ opacity: 1 })); } catch { /* sin transparencia */ }
     }
     return doc;
-  }
-
-  // =====================================================
-  // FOTOS
-  // =====================================================
-  function subirFotos(id, files) {
-    const fd = new FormData();
-    files.forEach(f => fd.append('fotos', f));
-    return api(`/repuestos/piezas/${id}/fotos`, { method: 'POST', body: fd });
-  }
-
-  async function agregarFotos(p) {
-    const restantes = MAX_FOTOS - (p.fotos_count || 0);
-    const { value: ok } = await Swal.fire({
-      title: `Fotos de ${p.codigo}`,
-      customClass: { popup: 'rep-pop-md' },
-      html: `
-        <div class="rep-modal">
-          <p class="rep-modal-sub">Puede agregar ${restantes} foto${restantes === 1 ? '' : 's'} más (máximo ${MAX_FOTOS}).</p>
-          <input type="file" id="fotos-input" accept="image/*" multiple class="swal2-file" style="width:100%;">
-        </div>`,
-      showCancelButton: true,
-      confirmButtonText: 'Subir fotos',
-      cancelButtonText: 'Volver',
-      allowOutsideClick: () => !Swal.isLoading(),
-      preConfirm: async () => {
-        const files = [...$('fotos-input').files];
-        if (!files.length) return falta('Seleccione al menos una foto');
-        if (files.length > restantes) return falta(`Solo puede agregar ${restantes} foto${restantes === 1 ? '' : 's'}`);
-        const r = await subirFotos(p.id, files);
-        if (!r.ok) return falta(r.data.error || 'No se pudieron subir las fotos');
-        return true;
-      }
-    });
-    if (ok) { refrescarListas(); toast('Fotos agregadas'); }
-    verDetalle(p.id);
-  }
-
-  async function borrarFoto(fotoId, piezaId) {
-    const { isConfirmed } = await Swal.fire({
-      icon: 'warning',
-      title: 'Eliminar foto',
-      text: '¿Seguro que desea eliminar esta foto?',
-      showCancelButton: true,
-      confirmButtonText: 'Eliminar',
-      confirmButtonColor: '#d33',
-      cancelButtonText: 'Cancelar'
-    });
-    if (isConfirmed) {
-      const r = await api(`/repuestos/fotos/${fotoId}`, { method: 'DELETE' });
-      if (!r.ok) await Swal.fire('Error', r.data.error || 'No se pudo eliminar la foto', 'error');
-      else refrescarListas();
-    }
-    verDetalle(piezaId);
   }
 
   // =====================================================
@@ -1249,33 +1175,12 @@
       toast(`Marca ${r.data.nombre} (${r.data.codigo}) agregada`);
     };
 
-    // Fotos al registrar
-    $('r-fotos').addEventListener('change', () => {
-      const todas = [...state.fotosNuevas, ...$('r-fotos').files];
-      if (todas.length > MAX_FOTOS) toast(`Máximo ${MAX_FOTOS} fotos por repuesto`, 'error');
-      state.fotosNuevas = todas.slice(0, MAX_FOTOS);
-      $('r-fotos').value = '';
-      renderFotosNuevas();
-    });
-
     $('btn-guardar').onclick = () => guardarPieza(false);
     $('btn-guardar-otra').onclick = () => guardarPieza(true);
     $('btn-limpiar-form').onclick = () => {
       if (state.edicion) { const id = state.edicion.id; cancelarEdicion(); irATab('inventario'); verDetalle(id); }
       else limpiarFormulario(false);
     };
-  }
-
-  function renderFotosNuevas() {
-    $('r-fotos-preview').innerHTML = state.fotosNuevas.map((f, i) => `
-      <div class="rep-foto">
-        <img src="${URL.createObjectURL(f)}" alt="${escapeHtml(f.name)}">
-        <button type="button" data-quitar="${i}" title="Quitar">×</button>
-      </div>`).join('');
-    $('r-fotos-preview').querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', () => {
-      state.fotosNuevas.splice(Number(b.dataset.quitar), 1);
-      renderFotosNuevas();
-    }));
   }
 
   function mostrarAyudaOT(texto, tipo) {
@@ -1377,7 +1282,6 @@
     $('tab-btn-registrar').textContent = p ? 'Editar repuesto' : 'Registrar ingreso';
     $('form-titulo').textContent = p ? `Editar ${p.codigo}` : 'Registrar ingreso de repuesto';
     $('grupo-motivo').style.display = p ? '' : 'none';
-    $('grupo-fotos').style.display = p ? 'none' : '';
     $('btn-guardar-otra').style.display = p ? 'none' : '';
     $('btn-limpiar-form').textContent = p ? 'Cancelar edición' : 'Limpiar';
     $('btn-guardar').textContent = p ? 'Guardar cambios' : 'Guardar repuesto';
@@ -1405,7 +1309,6 @@
     marcarRadio('r-propiedad', p.propiedad);
     marcarRadio('r-estado', p.estado);
     set('r-detalle-estado', p.detalle_estado);
-    set('r-ubicacion', p.ubicacion);
     set('r-costo', p.costo);
     set('r-motivo', '');
     $('r-ot-estado').textContent = '';
@@ -1441,7 +1344,7 @@
 
   function limpiarFormulario(mantenerOrigen) {
     const origen = ['r-ot', 'r-placa', 'r-marca', 'r-modelo', 'r-cliente', 'r-proveedor'];
-    const resto = ['r-detalle', 'r-categoria', 'r-detalle-estado', 'r-ubicacion', 'r-costo', 'r-revisado', 'r-motivo'];
+    const resto = ['r-detalle', 'r-categoria', 'r-detalle-estado', 'r-costo', 'r-revisado', 'r-motivo'];
     (mantenerOrigen ? resto : [...origen, ...resto]).forEach(id => { $(id).value = ''; });
     if (!mantenerOrigen) {
       $('r-localidad').value = state.localidad || state.cat.localidades[0];
@@ -1449,8 +1352,6 @@
     }
     marcarRadio('r-propiedad', '');
     marcarRadio('r-estado', '');
-    state.fotosNuevas = [];
-    renderFotosNuevas();
     actualizarPreview();
     $(mantenerOrigen ? 'r-detalle' : 'r-ot').focus();
   }
@@ -1469,7 +1370,6 @@
       propiedad: radioValor('r-propiedad'),
       estado: radioValor('r-estado'),
       detalle_estado: $('r-detalle-estado').value.trim(),
-      ubicacion: $('r-ubicacion').value.trim(),
       costo: $('r-costo').value,
       revisado_por_id: $('r-revisado').value || null
     };
@@ -1483,7 +1383,6 @@
     if (!d.propiedad) faltan.push('propiedad');
     if (!d.estado) faltan.push('estado');
     if (['UR', 'REP'].includes(d.estado) && !d.detalle_estado) faltan.push('detalle de estado');
-    if (!d.ubicacion) faltan.push('ubicación');
     if (d.costo === '' || !(Number(d.costo) >= 0)) faltan.push('costo');
     if (!d.revisado_por_id && !state.edicion?.revisado_por) faltan.push('revisado por');
     if (state.edicion && !$('r-motivo').value.trim()) faltan.push('motivo de la edición');
@@ -1511,19 +1410,13 @@
     const { ok, data } = await post('/repuestos/piezas', datos);
     if (!ok) { Swal.fire('No se pudo registrar', data.error || 'Error', 'error'); return; }
 
-    let aviso = '';
-    if (state.fotosNuevas.length) {
-      const r = await subirFotos(data.id, state.fotosNuevas);
-      if (!r.ok) aviso = `El repuesto se registró, pero las fotos no se subieron (${r.data.error || 'error'}). Puede agregarlas desde el detalle.`;
-    }
-
     limpiarFormulario(registrarOtra);
     refrescarListas();
-    await mostrarCodigo(data, aviso);
+    await mostrarCodigo(data);
     $(registrarOtra ? 'r-detalle' : 'r-ot').focus();
   }
 
-  function mostrarCodigo(pieza, aviso) {
+  function mostrarCodigo(pieza) {
     const [prop, est, marca, num] = pieza.codigo.split('-');
     return Swal.fire({
       icon: 'success',
@@ -1539,9 +1432,7 @@
             <span><b>${escapeHtml(marca)}</b>marca</span>
             <span><b>${escapeHtml(num)}</b>número global</span>
           </div>
-          <p class="rep-ubicar">Ubíquela en: <b>${val(pieza.ubicacion)}</b></p>
           ${pieza.alto_valor ? '<div class="rep-banner-alto">Repuesto de ALTO VALOR: toda salida exigirá Acta de Custodia firmada.</div>' : ''}
-          ${aviso ? `<div class="rep-banner-aviso">${escapeHtml(aviso)}</div>` : ''}
           <div style="text-align:center;margin-top:10px;">
             <button type="button" class="btn-obs" id="btn-copiar-codigo">Copiar código</button>
           </div>
@@ -1580,7 +1471,6 @@
               <span>▼</span>
               <div class="rep-codigo-xl">${escapeHtml(data.codigo_cambio.nuevo)}</div>
             </div>
-            <p class="rep-ubicar">Ubicación: <b>${val(data.ubicacion)}</b></p>
           </div>`,
         confirmButtonText: 'Entendido'
       });
@@ -1638,7 +1528,7 @@
           <td>${val(d.detalle)}<span class="rep-sub">${escapeHtml(etiqueta('categorias', d.categoria))}</span></td>
           <td>${val(d.marca_nombre)}<span class="rep-sub">${val(d.modelo)}</span></td>
           <td>${val(d.propiedad)} / ${val(d.estado)}</td>
-          <td>${val(d.localidad)}<span class="rep-sub">${val(d.ubicacion)}</span></td>
+          <td>${val(d.localidad)}</td>
           <td style="text-align:right;">${d.costo !== null && d.costo !== undefined ? fmtMoney(d.costo) : '—'}</td>
           <td>${f.errores.map(e => `<span class="rep-msg-err">✘ ${escapeHtml(e)}</span>`).join('')}${f.advertencias.map(a => `<span class="rep-msg-adv">⚠ ${escapeHtml(a)}</span>`).join('')}</td>
         </tr>`;
@@ -1664,7 +1554,7 @@
               <thead><tr>
                 <th><input type="checkbox" id="imp-todas" ${res.validas ? 'checked' : 'disabled'} title="Seleccionar todas"></th>
                 <th>Fila</th><th>Código</th><th>Detalle</th><th>Marca / Modelo</th><th>Prop. / Estado</th>
-                <th>Localidad / Ubicación</th><th>Costo</th><th>Observaciones</th>
+                <th>Localidad</th><th>Costo</th><th>Observaciones</th>
               </tr></thead>
               <tbody>${htmlFilas}</tbody>
             </table>
@@ -1711,10 +1601,10 @@
           <p style="text-align:center;">Escriba en cada pieza su código:</p>
           <div class="rep-scroll">
             <table class="rep-mini-tabla">
-              <thead><tr><th>Fila</th><th>Código</th><th>Detalle</th><th>Ubicación</th></tr></thead>
+              <thead><tr><th>Fila</th><th>Código</th><th>Detalle</th><th>Localidad</th></tr></thead>
               <tbody>${resultado.creados.map(c => `
                 <tr><td>${c.fila_excel ?? ''}</td><td><b class="rep-codigo">${escapeHtml(c.codigo)}</b></td>
-                    <td>${escapeHtml(c.detalle)}</td><td>${val(c.ubicacion)}</td></tr>`).join('')}
+                    <td>${escapeHtml(c.detalle)}</td><td>${val(c.localidad)}</td></tr>`).join('')}
               </tbody>
             </table>
           </div>

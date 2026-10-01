@@ -55,7 +55,6 @@
     .rep-codigo-xl { font-family: Consolas, 'Courier New', monospace; font-size: 42px; font-weight: 800; letter-spacing: 2px; color: #1E5570; text-align: center; padding: 14px 10px; border: 3px dashed #5BC0BE; border-radius: 12px; background: #f0fdfa; user-select: all; word-break: break-all; }
     .rep-codigo-partes { display: flex; justify-content: center; gap: 8px 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: #64748b; }
     .rep-codigo-partes b { color: #1E5570; font-family: Consolas, monospace; font-size: 14px; margin-right: 3px; }
-    .rep-ubicar { text-align: center; font-size: 15px; margin: 14px 0 6px; }
     .rep-cambio { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .rep-cambio .viejo { font-family: Consolas, monospace; font-size: 20px; color: #94a3b8; text-decoration: line-through; }
 
@@ -115,12 +114,6 @@
     .rep-btn-primario { background: var(--primary); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
     .rep-btn-primario:hover { background: var(--primary-dark); }
     .rep-btn-primario:disabled { opacity: .6; cursor: wait; }
-
-    /* Fotos */
-    .rep-fotos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
-    .rep-foto { position: relative; width: 92px; height: 92px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc; }
-    .rep-foto img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
-    .rep-foto button { position: absolute; top: 3px; right: 3px; background: rgba(220,38,38,.92); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 14px; line-height: 20px; padding: 0; }
 
     /* Detalle */
     .rep-det-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding-right: 44px; /* espacio para la × del modal */ }
@@ -278,7 +271,7 @@
               <th>Placa / OT</th>
               <th>Propiedad</th>
               <th>Estado</th>
-              <th>Localidad / Ubicación</th>
+              <th>Localidad</th>
               <th class="num-right">Costo</th>
               <th>Disponibilidad</th>
               <th class="num-right" title="Días en bodega">Días</th>
@@ -397,27 +390,16 @@
 
           <!-- Control -->
           <section class="rep-seccion">
-            <h3>Control y almacén</h3>
-            <div class="rep-fila2">
-              <div class="rep-campo">
-                <label for="r-ubicacion">Ubicación <span class="req">*</span></label>
-                <input type="text" id="r-ubicacion" maxlength="60" placeholder="Ej: ESTANTE B3">
-              </div>
-              <div class="rep-campo">
-                <label for="r-costo">Costo (USD) <span class="req">*</span></label>
-                <input type="number" id="r-costo" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
-              </div>
+            <h3>Control</h3>
+            <div class="rep-campo">
+              <label for="r-costo">Costo (USD) <span class="req">*</span></label>
+              <input type="number" id="r-costo" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
             </div>
             <div class="rep-ayuda" id="r-costo-ayuda" style="margin:-6px 0 10px;"></div>
             <div class="rep-campo">
               <label for="r-revisado">Revisado por <span class="req">*</span></label>
               <select id="r-revisado"><option value="">Cargando empleados...</option></select>
               <span class="rep-ayuda">Persona que revisó el estado de la pieza</span>
-            </div>
-            <div class="rep-campo" id="grupo-fotos">
-              <label for="r-fotos">Fotos (opcional, máximo 4)</label>
-              <input type="file" id="r-fotos" accept="image/*" multiple>
-              <div class="rep-fotos" id="r-fotos-preview"></div>
             </div>
             <div class="rep-campo" id="grupo-motivo" style="display:none;">
               <label for="r-motivo">Motivo de la edición <span class="req">*</span></label>
