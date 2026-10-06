@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  const ROLES_PAGINA = ['admin', 'control', 'bodega', 'asesor'];
+  const ROLES_PAGINA = ['admin', 'control', 'bodega', 'asesor', 'procesos'];
 
   const state = {
     usuario: '',

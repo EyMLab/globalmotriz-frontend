@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Procesos solo puede ver Órdenes de Trabajo (sin valores monetarios, eso lo maneja el backend)
-    if (rol === 'procesos' && pagina !== 'ControlTaller') {
+    // Procesos solo puede ver Órdenes de Trabajo e Inventario de Repuestos (solo consulta)
+    if (rol === 'procesos' && pagina !== 'ControlTaller' && pagina !== 'Inventario de Repuestos') {
       window.location.href = 'control-taller.html';
       return;
     }
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="cotizaciones.html" class="${pagina === 'Cotizaciones' ? 'active' : ''}">Cotizaciones</a>`
       : "";
 
-    const enlaceInventarioRepuestos = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
+    const enlaceInventarioRepuestos = ['admin', 'control', 'bodega', 'asesor', 'procesos'].includes(rol)
       ? `<a href="repuestos-inventario.html" class="${pagina === 'Inventario de Repuestos' ? 'active' : ''}">Inventario</a>`
       : "";
 
