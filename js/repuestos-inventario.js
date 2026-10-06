@@ -219,12 +219,11 @@
     $('f-propiedad').innerHTML = opciones(state.cat.propiedades, 'Todas');
     $('f-estado').innerHTML = opciones(state.cat.estados, 'Todos');
     $('f-categoria').innerHTML = opciones(state.cat.categorias, 'Todas');
+    // Los filtros de localidad inician en "Todas": se ven las piezas de ambas sedes
     $('f-localidad').innerHTML = '<option value="">Todas</option>' + localidades;
-    $('f-localidad').value = state.localidad;
 
     $('s-motivo').innerHTML = opciones(state.cat.motivos, 'Todos');
     $('s-localidad').innerHTML = '<option value="">Todas</option>' + localidades;
-    $('s-localidad').value = state.localidad;
 
     $('r-marca').innerHTML = opcionesMarcas('Seleccione...');
     $('r-categoria').innerHTML = opciones(state.cat.categorias, 'Seleccione...');
@@ -315,7 +314,7 @@
     ['f-q', 'f-marca', 'f-modelo', 'f-placa', 'f-propiedad', 'f-estado', 'f-categoria', 'f-desde', 'f-hasta']
       .forEach(id => { $(id).value = ''; });
     $('f-situacion').value = 'EN_BODEGA';
-    $('f-localidad').value = state.localidad;
+    $('f-localidad').value = '';
     $('f-alto').checked = false;
     if ($('f-mis')) $('f-mis').checked = false;
     state.inv.page = 1;
