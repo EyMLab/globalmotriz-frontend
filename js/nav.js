@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Procesos solo puede ver Órdenes de Trabajo e Inventario de Repuestos (solo consulta)
+    // Procesos solo puede ver Órdenes de Trabajo e Inventario de Repuestos (consultar, reservar y registrar)
     if (rol === 'procesos' && pagina !== 'ControlTaller' && pagina !== 'Inventario de Repuestos') {
       window.location.href = 'control-taller.html';
       return;

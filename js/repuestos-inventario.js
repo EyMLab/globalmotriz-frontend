@@ -17,8 +17,9 @@
     esBodega: false,
     esAsesor: false,
     esControl: false,
-    puedeRegistrar: false, // admin, bodega
-    puedeReservar: false,  // admin, bodega, asesor
+    esProcesos: false,
+    puedeRegistrar: false, // admin, bodega, procesos
+    puedeReservar: false,  // admin, bodega, procesos, asesor
     puedeVerActas: false,  // admin, bodega, control
     cat: null,             // GET /repuestos/catalogos
     empleados: [],         // GET /repuestos/empleados (solo bodega/admin)
@@ -165,7 +166,8 @@
     state.esBodega = me.rol === 'bodega';
     state.esAsesor = me.rol === 'asesor';
     state.esControl = me.rol === 'control';
-    state.puedeRegistrar = state.esAdmin || state.esBodega;
+    state.esProcesos = me.rol === 'procesos';
+    state.puedeRegistrar = state.esAdmin || state.esBodega || state.esProcesos;
     state.puedeReservar = state.puedeRegistrar || state.esAsesor;
     state.puedeVerActas = state.esAdmin || state.esBodega || state.esControl;
 
