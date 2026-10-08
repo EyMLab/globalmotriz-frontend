@@ -113,24 +113,41 @@
     .rep-nueva-marca.abierta { display: block; }
     .rep-nueva-marca .rep-fila2 { grid-template-columns: 2fr 1fr; }
 
-    /* Repuestos del registro (uno o varios de la misma OT) */
-    .rep-seccion-items { margin-top: 18px; }
-    .rep-items { display: flex; flex-direction: column; gap: 12px; }
-    .rep-item { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px 2px; background: #f8fafc; }
-    .rep-item.con-error { border-color: #fca5a5; background: #fef2f2; }
+    /* Registro: formulario de un repuesto (izquierda) + lista de la OT (derecha) */
+    .rep-registro-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 18px; }
+    .rep-item > [data-error]:not(:empty) { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 6px 10px; margin: 0 0 10px; }
     .rep-item-cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .rep-item-num { font-weight: 700; color: #1E5570; font-size: 13px; text-transform: uppercase; letter-spacing: .4px; }
-    .rep-item-codigo { font-family: Consolas, 'Courier New', monospace; font-weight: 800; font-size: 16px; color: #1E5570; background: #f0fdfa; border: 1px dashed #5BC0BE; border-radius: 6px; padding: 2px 8px; }
-    .rep-item-quitar { margin-left: auto; background: #fff; border: 1px solid #fecaca; color: #dc2626; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .rep-item-quitar:hover { background: #fef2f2; }
-    .rep-item-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 14px; }
-    .rep-item-grid .rep-col-2 { grid-column: span 2; }
-    .rep-seccion .rep-item .rep-campo textarea { min-height: 40px; }
+    .rep-item-codigo { font-family: Consolas, 'Courier New', monospace; font-weight: 800; font-size: 16px; color: #1E5570; background: #f0fdfa; border: 1px dashed #5BC0BE; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+    .rep-item-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+    .rep-item-grid .rep-col-2 { grid-column: 1 / -1; }
+    .rep-seccion .rep-item .rep-campo textarea { min-height: 44px; }
     .rep-item > .rep-ayuda { margin: -4px 0 8px; }
     .rep-item > .rep-ayuda:empty { display: none; }
     .rep-opcional { font-weight: 400; text-transform: none; letter-spacing: 0; color: #94a3b8; }
-    .rep-btn-agregar { width: 100%; margin-top: 12px; padding: 10px; border: 2px dashed #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 14px; border-radius: 10px; cursor: pointer; }
+    .rep-acciones-item { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 4px; }
+    .rep-btn-agregar { flex: 1; padding: 10px; border: 2px dashed #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 14px; border-radius: 10px; cursor: pointer; }
     .rep-btn-agregar:hover { background: #dbeafe; }
+    /* Lista de repuestos de la OT */
+    .rep-lista { display: flex; flex-direction: column; }
+    .rep-lista-vacia { color: #64748b; font-size: 13px; text-align: center; padding: 28px 12px; border: 1.5px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; line-height: 1.6; }
+    .rep-lista-fila { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; gap: 4px 10px; align-items: center; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
+    .rep-lista-fila:last-child { border-bottom: none; }
+    .rep-lista-fila.editando { background: #eff6ff; border-radius: 8px; box-shadow: inset 3px 0 0 var(--primary); }
+    .rep-lista-fila.con-error { background: #fef2f2; border-radius: 8px; box-shadow: inset 3px 0 0 #dc2626; }
+    .rep-lista-fila.nueva { animation: rep-destello 1.2s ease; }
+    @keyframes rep-destello { from { background: #dcfce7; } to { background: transparent; } }
+    .rep-lista-num { width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; color: #334155; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .rep-lista-info { min-width: 0; }
+    .rep-lista-info .rep-item-codigo { font-size: 13px; padding: 1px 6px; }
+    .rep-lista-nombre { display: block; font-weight: 600; color: #0f172a; font-size: 14px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rep-lista-costo { font-weight: 700; color: #0f172a; font-size: 14px; white-space: nowrap; text-align: right; }
+    .rep-lista-btns { display: flex; gap: 4px; }
+    .rep-lista-btns button { width: 30px; height: 30px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; }
+    .rep-lista-btns button:hover { border-color: var(--primary); color: var(--primary); }
+    .rep-lista-btns button[data-quitar]:hover { border-color: #dc2626; color: #dc2626; }
+    .rep-lista-total { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 10px 6px 0; border-top: 2px solid #e2e8f0; font-size: 14px; color: #334155; }
+    .rep-lista-total b { font-size: 16px; color: #1E5570; }
     .rep-codigo-md { font-family: Consolas, 'Courier New', monospace; font-size: 19px; font-weight: 800; color: #1E5570; letter-spacing: 1px; white-space: nowrap; user-select: all; }
 
     /* Vista previa del código y acciones */
@@ -170,7 +187,9 @@
     @media (max-width: 900px) {
       .rep-config-grid { grid-template-columns: 1fr; }
       .rep-origen-grid .c3, .rep-origen-grid .c4 { grid-column: span 6; }
-      .rep-item-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1050px) {
+      .rep-registro-grid { grid-template-columns: minmax(0, 1fr); }
     }
     @media (max-width: 640px) {
       .rep-codigo-xl { font-size: 26px; }
@@ -178,7 +197,8 @@
       .rep-fila2, .rep-nueva-marca .rep-fila2 { grid-template-columns: 1fr; }
       .rep-origen-grid .c3, .rep-origen-grid .c4 { grid-column: 1 / -1; }
       .rep-item-grid { grid-template-columns: minmax(0, 1fr); }
-      .rep-item-grid .rep-col-2 { grid-column: auto; }
+      .rep-lista-fila { grid-template-columns: 26px minmax(0, 1fr) auto; }
+      .rep-lista-btns { grid-column: 2 / -1; justify-content: flex-end; }
       .subtabs-nav { overflow-x: auto; }
       .subtabs-nav .subtab-btn { padding: 10px 12px; white-space: nowrap; }
     }
@@ -393,17 +413,32 @@
           </div>
         </section>
 
-        <!-- Repuestos: uno o varios de la misma OT (tarjetas creadas desde el JS).
-             Cada tarjeta lleva también su control: costo y revisado por -->
-        <section class="rep-seccion rep-seccion-items">
-          <h3 id="r-items-titulo">Repuestos de esta orden</h3>
-          <div class="rep-items" id="r-items"></div>
-          <div class="rep-campo" id="grupo-motivo" style="display:none; margin-top:12px;">
-            <label for="r-motivo">Motivo de la edición <span class="req">*</span></label>
-            <textarea id="r-motivo" maxlength="500" placeholder="Ej: se reparó la pieza / corrección de marca"></textarea>
-          </div>
-          <button type="button" class="rep-btn-agregar" id="btn-agregar-item">+ Agregar otro repuesto</button>
-        </section>
+        <!-- Formulario de un repuesto (izquierda) + lista de los repuestos de la OT (derecha) -->
+        <div class="rep-registro-grid">
+          <section class="rep-seccion">
+            <h3 id="r-form-titulo">Repuesto a agregar</h3>
+            <div id="r-form-item"></div>
+            <div class="rep-acciones-item" id="r-acciones-item">
+              <button type="button" class="btn-obs" id="btn-cancelar-item" style="display:none;">Cancelar corrección</button>
+              <button type="button" class="rep-btn-agregar" id="btn-agregar-item">+ Agregar a la lista</button>
+            </div>
+          </section>
+
+          <section class="rep-seccion" id="r-lista-seccion">
+            <h3 id="r-lista-titulo">En esta orden (0)</h3>
+            <div class="rep-lista" id="r-lista"></div>
+          </section>
+
+          <!-- Solo al editar un repuesto ya registrado -->
+          <section class="rep-seccion" id="r-edicion-seccion" style="display:none;">
+            <h3>Edición</h3>
+            <div class="rep-campo">
+              <label for="r-motivo">Motivo de la edición <span class="req">*</span></label>
+              <textarea id="r-motivo" maxlength="500" placeholder="Ej: se reparó la pieza / corrección de marca"></textarea>
+            </div>
+            <p class="rep-ayuda">Si cambia la propiedad, el estado o la marca, el código cambia (el número global se mantiene) y deberá reescribirlo en la pieza.</p>
+          </section>
+        </div>
 
         <div class="rep-preview">
           <div>

@@ -26,7 +26,9 @@
     inv: { page: 1, pageSize: 20, total: 0 },
     sal: { page: 1, pageSize: 20, total: 0 },
     edicion: null,         // pieza en edición en el panel Registrar
-    formEdicionId: null
+    formEdicionId: null,
+    lista: [],             // repuestos agregados a la lista del registro (aún sin guardar)
+    listaEditando: null    // índice de la fila de la lista que se corrige en el formulario
   };
 
   // =====================================================
@@ -1128,7 +1130,7 @@
 
   // "Revisado por" de las tarjetas ya creadas, cuando termina de cargar la lista de empleados
   function llenarSelectsRevisado() {
-    $('r-items').querySelectorAll('select[data-campo="revisado_por_id"]').forEach(sel => {
+    $('r-form-item').querySelectorAll('select[data-campo="revisado_por_id"]').forEach(sel => {
       const actual = sel.value;
       sel.querySelectorAll('option:not([data-extra])').forEach(o => o.remove());
       sel.insertAdjacentHTML('afterbegin', opcionesRevisado());
@@ -1137,14 +1139,15 @@
   }
 
   // -----------------------------------------------------
-  // Tarjetas de repuesto: en un registro nuevo se pueden agregar varias (misma OT);
-  // en una edición hay una sola. Los datos de origen son comunes; cada tarjeta
-  // lleva su información y su control (costo y revisado por).
+  // Registro: un formulario (un repuesto a la vez) + la lista de repuestos de la OT.
+  // "Agregar a la lista" pasa el formulario a la lista y al guardar se registran todos
+  // juntos. Los datos de origen son comunes; cada repuesto lleva su información y su
+  // control (costo y revisado por). Al editar un repuesto registrado solo hay formulario.
   // -----------------------------------------------------
   const MAX_ITEMS = 50; // igual que MAX_PIEZAS_REGISTRO en el backend
   let uidItem = 0;
 
-  const itemsFormulario = () => [...$('r-items').querySelectorAll('.rep-item')];
+  const formItem = () => $('r-form-item').firstElementChild;
   const campoItem = (el, campo) => el.querySelector(`[data-campo="${campo}"]`);
 
   function crearItem(datos = {}) {
@@ -1161,7 +1164,6 @@
         <span class="rep-item-num"></span>
         <span class="rep-item-codigo" data-preview>___-__-___-####</span>
         <span data-alto></span>
-        <button type="button" class="rep-item-quitar" data-quitar title="Quitar este repuesto del registro">✕ Quitar</button>
       </div>
       <div class="rep-item-grid">
         <div class="rep-campo rep-col-2">
@@ -1226,43 +1228,15 @@
     }
   }
 
-  // Deja una sola tarjeta (vacía o con los datos dados)
-  function reiniciarItems(datos) {
-    $('r-items').innerHTML = '';
-    $('r-items').appendChild(crearItem(datos));
+  // Formulario vacío (o con los datos dados)
+  function reiniciarForm(datos) {
+    $('r-form-item').innerHTML = '';
+    $('r-form-item').appendChild(crearItem(datos));
   }
 
-  function agregarItem() {
-    const items = itemsFormulario();
-    if (items.length >= MAX_ITEMS) {
-      Swal.fire('Límite alcanzado', `Se pueden registrar hasta ${MAX_ITEMS} repuestos a la vez. Guarde estos y continúe en otro registro.`, 'info');
-      return;
-    }
-    // Se repiten la propiedad y quién revisó: en una misma OT suelen ser los mismos
-    const anterior = items[items.length - 1] ? leerItem(items[items.length - 1]) : null;
-    const el = crearItem(anterior ? { propiedad: anterior.propiedad, revisado_por_id: anterior.revisado_por_id } : {});
-    $('r-items').appendChild(el);
-    actualizarPreview();
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    campoItem(el, 'detalle').focus({ preventScroll: true });
-  }
-
-  async function quitarItem(el) {
-    if (itemsFormulario().length <= 1) return;
-    const d = leerItem(el);
-    if (d.detalle || d.codigo_auxiliar || d.categoria || d.estado || d.detalle_estado || d.costo) {
-      const { isConfirmed } = await Swal.fire({
-        icon: 'question',
-        title: '¿Quitar este repuesto?',
-        text: d.detalle || el.querySelector('.rep-item-num').textContent,
-        showCancelButton: true,
-        confirmButtonText: 'Quitar',
-        cancelButtonText: 'Cancelar'
-      });
-      if (!isConfirmed) return;
-    }
-    el.remove();
-    actualizarPreview();
+  // ¿El formulario tiene un repuesto escrito? (propiedad y revisado por se copian solos)
+  function formTieneDatos(d = leerItem(formItem())) {
+    return !!(d.detalle || d.codigo_auxiliar || d.categoria || d.estado || d.detalle_estado || d.costo);
   }
 
   function faltantesItem(p) {
@@ -1283,6 +1257,125 @@
     el.querySelector('[data-error]').textContent = mensaje || '';
   }
 
+  const marcaActual = () => state.cat.marcas.find(m => String(m.id) === $('r-marca').value) ||
+    (state.edicion && String(state.edicion.marca_id) === $('r-marca').value ? { codigo: state.edicion.marca_codigo } : null);
+
+  const codigoPatron = (d, numero = '####') =>
+    `${d.propiedad || '___'}-${d.estado || '__'}-${marcaActual()?.codigo || '___'}-${numero}`;
+
+  // Pasa el formulario a la lista (o actualiza la fila que se está corrigiendo)
+  function agregarALista() {
+    const el = formItem();
+    const d = leerItem(el);
+    const faltan = faltantesItem(d);
+    if (faltan.length) {
+      marcarErrorItem(el, `Falta: ${faltan.join(', ')}`);
+      return false;
+    }
+    const corrigiendo = state.listaEditando !== null;
+    if (!corrigiendo && state.lista.length >= MAX_ITEMS) {
+      Swal.fire('Límite alcanzado', `Se pueden registrar hasta ${MAX_ITEMS} repuestos a la vez. Guarde estos y continúe en otro registro.`, 'info');
+      return false;
+    }
+    const indice = corrigiendo ? state.listaEditando : state.lista.length;
+    state.lista[indice] = d;
+    state.listaEditando = null;
+    // Se repiten la propiedad y quién revisó: en una misma OT suelen ser los mismos
+    reiniciarForm({ propiedad: d.propiedad, revisado_por_id: d.revisado_por_id });
+    renderLista(indice);
+    actualizarPreview();
+    campoItem(formItem(), 'detalle').focus();
+    return true;
+  }
+
+  async function corregirDeLista(i) {
+    if (state.listaEditando === i) return;
+    if (state.listaEditando === null && formTieneDatos()) {
+      const { isConfirmed } = await Swal.fire({
+        icon: 'question',
+        title: 'Hay un repuesto sin agregar',
+        text: 'El formulario tiene un repuesto que aún no está en la lista. ¿Descartarlo para corregir el de la lista?',
+        showCancelButton: true,
+        confirmButtonText: 'Descartar y corregir',
+        cancelButtonText: 'Volver'
+      });
+      if (!isConfirmed) return;
+    }
+    state.listaEditando = i;
+    const d = state.lista[i];
+    reiniciarForm(d);
+    if (d.error) marcarErrorItem(formItem(), d.error);
+    renderLista();
+    actualizarPreview();
+    formItem().scrollIntoView({ behavior: 'smooth', block: 'center' });
+    campoItem(formItem(), 'detalle').focus({ preventScroll: true });
+  }
+
+  function cancelarCorreccion() {
+    const ultimo = state.lista[state.lista.length - 1] || {};
+    state.listaEditando = null;
+    reiniciarForm({ propiedad: ultimo.propiedad, revisado_por_id: ultimo.revisado_por_id });
+    renderLista();
+    actualizarPreview();
+  }
+
+  async function quitarDeLista(i) {
+    const { isConfirmed } = await Swal.fire({
+      icon: 'question',
+      title: '¿Quitar de la lista?',
+      text: state.lista[i].detalle,
+      showCancelButton: true,
+      confirmButtonText: 'Quitar',
+      cancelButtonText: 'Cancelar'
+    });
+    if (!isConfirmed) return;
+    state.lista.splice(i, 1);
+    if (state.listaEditando === i) { cancelarCorreccion(); return; }
+    if (state.listaEditando !== null && state.listaEditando > i) state.listaEditando--;
+    renderLista();
+    actualizarPreview();
+  }
+
+  // Lista de repuestos de la OT (columna derecha); `nueva` = índice recién agregado
+  function renderLista(nueva) {
+    const n = state.lista.length;
+    $('r-lista-titulo').textContent = `En esta orden (${n})`;
+    if (!n) {
+      $('r-lista').innerHTML = `
+        <div class="rep-lista-vacia">
+          Aún no hay repuestos en la lista.<br>
+          Complete el formulario y presione <b>+ Agregar a la lista</b>.<br>
+          Si es un solo repuesto, puede guardarlo directamente.
+        </div>`;
+      return;
+    }
+    const total = state.lista.reduce((s, p) => s + (parseFloat(p.costo) || 0), 0);
+    $('r-lista').innerHTML = state.lista.map((p, i) => {
+      const alto = parseFloat(p.costo) > state.cat.umbral;
+      const sub = [etiqueta('categorias', p.categoria), etiqueta('estados', p.estado),
+        p.codigo_auxiliar ? `Aux: ${p.codigo_auxiliar}` : ''].filter(Boolean).join(' · ');
+      const clases = ['rep-lista-fila', i === state.listaEditando ? 'editando' : '', p.error ? 'con-error' : '',
+        i === nueva ? 'nueva' : ''].filter(Boolean).join(' ');
+      return `
+        <div class="${clases}" data-i="${i}">
+          <span class="rep-lista-num">${i + 1}</span>
+          <div class="rep-lista-info">
+            <span class="rep-item-codigo">${escapeHtml(codigoPatron(p))}</span>${alto ? ' ' + badge('rep-alto', 'Alto valor') : ''}
+            <span class="rep-lista-nombre" title="${escapeHtml(p.detalle)}">${escapeHtml(p.detalle)}</span>
+            <span class="rep-sub">${escapeHtml(sub)}</span>
+            ${i === state.listaEditando ? '<span class="rep-sub" style="color:var(--primary);font-weight:600;">Corrigiendo en el formulario</span>' : ''}
+            ${p.error ? `<span class="rep-msg-err">${escapeHtml(p.error)}</span>` : ''}
+          </div>
+          <span class="rep-lista-costo">${fmtMoney(p.costo)}</span>
+          <div class="rep-lista-btns">
+            <button type="button" data-editar title="Corregir" aria-label="Corregir">✎</button>
+            <button type="button" data-quitar title="Quitar de la lista" aria-label="Quitar de la lista">✕</button>
+          </div>
+        </div>`;
+    }).join('') + `
+      <div class="rep-lista-total"><span>Total de la orden</span><b>${fmtMoney(total)}</b></div>`;
+  }
+
   function initFormulario() {
     if (!state.puedeRegistrar) return;
 
@@ -1293,17 +1386,27 @@
       if ($('r-ot').value.trim()) mostrarAyudaOT(`Presione la lupa para buscar la OT en ${$('r-localidad').value}`);
     });
     $('r-placa').addEventListener('input', () => { $('r-placa').value = $('r-placa').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
-    $('r-marca').addEventListener('change', actualizarPreview);
+    // La marca forma parte del código: se actualizan el formulario y la lista
+    $('r-marca').addEventListener('change', () => { renderLista(); actualizarPreview(); });
 
-    // Tarjetas de repuesto
-    reiniciarItems();
-    $('r-items').addEventListener('input', actualizarPreview);
-    $('r-items').addEventListener('change', actualizarPreview);
-    $('r-items').addEventListener('click', (e) => {
-      const quitar = e.target.closest('[data-quitar]');
-      if (quitar) quitarItem(quitar.closest('.rep-item'));
+    // Formulario del repuesto + lista de la OT
+    reiniciarForm();
+    renderLista();
+    $('r-form-item').addEventListener('input', actualizarPreview);
+    $('r-form-item').addEventListener('change', actualizarPreview);
+    // Enter en un campo del formulario = agregar a la lista
+    $('r-form-item').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !state.edicion) { e.preventDefault(); agregarALista(); }
     });
-    $('btn-agregar-item').onclick = agregarItem;
+    $('btn-agregar-item').onclick = agregarALista;
+    $('btn-cancelar-item').onclick = cancelarCorreccion;
+    $('r-lista').addEventListener('click', (e) => {
+      const fila = e.target.closest('.rep-lista-fila');
+      if (!fila) return;
+      const i = Number(fila.dataset.i);
+      if (e.target.closest('[data-quitar]')) quitarDeLista(i);
+      else corregirDeLista(i);
+    });
 
     // Nueva marca (mini formulario dentro del panel)
     let codigoEditado = false;
@@ -1329,6 +1432,7 @@
       await refrescarMarcas();
       $('r-marca').value = String(r.data.id);
       $('nm-cancelar').click();
+      renderLista();
       actualizarPreview();
       toast(`Marca ${r.data.nombre} (${r.data.codigo}) agregada`);
     };
@@ -1336,12 +1440,14 @@
     $('btn-guardar').onclick = guardarPieza;
     $('btn-limpiar-form').onclick = async () => {
       if (state.edicion) { const id = state.edicion.id; cancelarEdicion(); irATab('inventario'); verDetalle(id); return; }
-      const n = itemsFormulario().length;
-      if (n > 1) {
+      const n = state.lista.length;
+      if (n || formTieneDatos()) {
         const { isConfirmed } = await Swal.fire({
           icon: 'question',
           title: '¿Limpiar el formulario?',
-          text: `Se borrarán los datos de origen y los ${n} repuestos ingresados.`,
+          text: n
+            ? `Se borrarán los datos de origen y los ${n} repuesto${n === 1 ? '' : 's'} de la lista.`
+            : 'Se borrarán los datos de origen y el repuesto del formulario.',
           showCancelButton: true,
           confirmButtonText: 'Limpiar',
           cancelButtonText: 'Cancelar'
@@ -1399,69 +1505,68 @@
       `${marcaFuera ? ` · la marca "${o.marca}" no está en el catálogo: agréguela con "+ Nueva marca"` : ''}`,
       marcaFuera || ['ANULADO', 'FACTURADO'].includes(o.estado) ? 'warn' : 'ok'
     );
+    renderLista();
     actualizarPreview();
   }
 
-  // Código de cada tarjeta, alto valor, campos obligatorios y resumen del pie
+  // Código y avisos del formulario, columnas visibles según el modo y resumen del pie
   function actualizarPreview() {
     const editando = !!state.edicion;
-    const marca = state.cat.marcas.find(m => String(m.id) === $('r-marca').value) ||
-      (editando && String(state.edicion.marca_id) === $('r-marca').value ? { codigo: state.edicion.marca_codigo } : null);
-    const numero = editando ? pad(state.edicion.correlativo) : '####';
-    const items = itemsFormulario();
-    let total = 0;
-    let altos = 0;
-    let codigoEdicion = '';
-    let completoEdicion = false;
+    const corrigiendo = state.listaEditando !== null;
+    const el = formItem();
+    const d = leerItem(el);
+    const codigo = codigoPatron(d, editando ? pad(state.edicion.correlativo) : '####');
 
-    items.forEach((el, i) => {
-      const d = leerItem(el);
-      const codigo = `${d.propiedad || '___'}-${d.estado || '__'}-${marca?.codigo || '___'}-${numero}`;
-      el.querySelector('.rep-item-num').textContent = editando || items.length === 1 ? 'Repuesto' : `Repuesto ${i + 1}`;
-      el.querySelector('[data-preview]').textContent = codigo;
-      el.querySelector('[data-req-estado]').style.display = ['UR', 'REP'].includes(d.estado) ? '' : 'none';
-      el.querySelector('[data-quitar]').style.display = editando || items.length === 1 ? 'none' : '';
+    el.querySelector('.rep-item-num').textContent = editando ? 'Repuesto'
+      : `Repuesto ${corrigiendo ? state.listaEditando + 1 : state.lista.length + 1}`;
+    el.querySelector('[data-preview]').textContent = codigo;
+    el.querySelector('[data-req-estado]').style.display = ['UR', 'REP'].includes(d.estado) ? '' : 'none';
+    const alto = parseFloat(d.costo) > state.cat.umbral;
+    el.querySelector('[data-alto]').innerHTML = alto ? badge('rep-alto', 'Alto valor') : '';
+    el.querySelector('[data-ayuda]').textContent = alto
+      ? `ALTO VALOR (más de ${fmtMoney(state.cat.umbral)}): toda salida exigirá Acta de Custodia firmada` : '';
 
-      const costo = parseFloat(d.costo);
-      if (costo > 0) total += costo;
-      const alto = costo > state.cat.umbral;
-      if (alto) altos++;
-      el.querySelector('[data-alto]').innerHTML = alto ? badge('rep-alto', 'Alto valor') : '';
-      el.querySelector('[data-ayuda]').textContent = alto
-        ? `ALTO VALOR (más de ${fmtMoney(state.cat.umbral)}): toda salida exigirá Acta de Custodia firmada` : '';
+    // Un formulario marcado con error se vuelve a revisar mientras lo corrigen
+    if (el.classList.contains('con-error')) {
+      const faltan = faltantesItem(d);
+      marcarErrorItem(el, faltan.length ? `Falta: ${faltan.join(', ')}` : '');
+    }
 
-      // Una tarjeta marcada con error se vuelve a revisar mientras la corrigen
-      if (el.classList.contains('con-error')) {
-        const faltan = faltantesItem(d);
-        if (faltan.length) marcarErrorItem(el, `Falta: ${faltan.join(', ')}`);
-        else marcarErrorItem(el, '');
-      }
-
-      if (i === 0) { codigoEdicion = codigo; completoEdicion = !!(d.propiedad && d.estado && marca); }
-    });
-
-    $('r-items-titulo').textContent = editando ? 'Repuesto' : `Repuestos de esta orden (${items.length})`;
-    $('btn-agregar-item').style.display = editando ? 'none' : '';
+    $('r-form-titulo').textContent = editando ? 'Repuesto'
+      : corrigiendo ? `Corregir repuesto ${state.listaEditando + 1}` : 'Repuesto a agregar';
+    $('r-acciones-item').style.display = editando ? 'none' : '';
+    $('btn-agregar-item').textContent = corrigiendo ? '✔ Actualizar en la lista' : '+ Agregar a la lista';
+    $('btn-cancelar-item').style.display = corrigiendo ? '' : 'none';
+    $('r-lista-seccion').style.display = editando ? 'none' : '';
+    $('r-edicion-seccion').style.display = editando ? '' : 'none';
 
     const preview = $('r-codigo-preview');
     const nota = $('r-codigo-nota');
     if (editando) {
-      const cambia = completoEdicion && codigoEdicion !== state.edicion.codigo;
+      const cambia = !!(d.propiedad && d.estado && marcaActual()) && codigo !== state.edicion.codigo;
       preview.classList.remove('texto');
-      preview.textContent = codigoEdicion;
+      preview.textContent = codigo;
       $('r-codigo-titulo').textContent = cambia ? 'Nuevo código' : 'Código';
       nota.innerHTML = cambia
         ? `<span style="color:#dc2626;font-weight:700">Cambia de ${escapeHtml(state.edicion.codigo)}: deberá reescribirlo en la pieza</span>`
         : 'El número global no cambia';
       $('btn-guardar').textContent = 'Guardar cambios';
     } else {
-      const n = items.length;
+      // Se guardará la lista + el repuesto del formulario si está escrito y no se agregó
+      const pendiente = !corrigiendo && formTieneDatos(d);
+      const piezas = pendiente ? [...state.lista, d] : state.lista;
+      const n = piezas.length;
+      const total = piezas.reduce((s, p) => s + (parseFloat(p.costo) || 0), 0);
+      const altos = piezas.filter(p => parseFloat(p.costo) > state.cat.umbral).length;
       preview.classList.add('texto');
       preview.textContent = `${n} repuesto${n === 1 ? '' : 's'} · ${fmtMoney(total)}`;
       $('r-codigo-titulo').textContent = 'Por registrar';
-      nota.textContent = (altos ? `${altos} de alto valor · ` : '') +
-        (n === 1 ? 'El número global se asigna al guardar' : 'Los números se asignan al guardar, en el orden de la lista');
-      $('btn-guardar').textContent = n === 1 ? 'Guardar repuesto' : `Guardar ${n} repuestos`;
+      nota.textContent = [
+        altos ? `${altos} de alto valor` : '',
+        pendiente && state.lista.length ? 'incluye el repuesto del formulario' : '',
+        n > 1 ? 'Los números se asignan al guardar, en el orden de la lista' : 'El número global se asigna al guardar'
+      ].filter(Boolean).join(' · ');
+      $('btn-guardar').textContent = n > 1 ? `Guardar ${n} repuestos` : 'Guardar repuesto';
     }
   }
 
@@ -1479,7 +1584,6 @@
     const p = state.edicion;
     $('tab-btn-registrar').textContent = p ? 'Editar repuesto' : 'Registrar ingreso';
     $('form-titulo').textContent = p ? `Editar ${p.codigo}` : 'Registrar ingreso de repuestos';
-    $('grupo-motivo').style.display = p ? '' : 'none';
     $('btn-limpiar-form').textContent = p ? 'Cancelar edición' : 'Limpiar';
 
     await cargarEmpleados();
@@ -1501,14 +1605,14 @@
     set('r-cliente', p.cliente);
     set('r-proveedor', p.proveedor);
     set('r-motivo', '');
-    reiniciarItems({
+    reiniciarForm({
       detalle: p.detalle, codigo_auxiliar: p.codigo_auxiliar, categoria: p.categoria, propiedad: p.propiedad,
       estado: p.estado, detalle_estado: p.detalle_estado, costo: p.costo
     });
     $('r-ot-estado').textContent = '';
 
     // Revisado por: empleado de la lista, empleado ya inactivo o texto importado sin vincular
-    const sel = campoItem(itemsFormulario()[0], 'revisado_por_id');
+    const sel = campoItem(formItem(), 'revisado_por_id');
     if (p.revisado_por_id && !state.empleados.some(e => e.id === p.revisado_por_id)) {
       sel.insertAdjacentHTML('beforeend', `<option data-extra value="${p.revisado_por_id}">${escapeHtml(p.revisado_por)} (inactivo)</option>`);
     }
@@ -1518,8 +1622,25 @@
     sel.value = p.revisado_por_id ? String(p.revisado_por_id) : '';
   }
 
-  function editarPieza(p) {
+  async function editarPieza(p) {
+    // Editar usa el mismo panel: si hay un registro a medias, se avisa antes de descartarlo
+    const pendientes = state.edicion ? 0
+      : state.lista.length + (state.listaEditando === null && formTieneDatos() ? 1 : 0);
+    if (pendientes) {
+      const { isConfirmed } = await Swal.fire({
+        icon: 'warning',
+        title: 'Hay repuestos sin guardar',
+        text: `En "Registrar ingreso" hay ${pendientes} repuesto${pendientes === 1 ? '' : 's'} sin guardar. Si edita este repuesto, se descartará${pendientes === 1 ? '' : 'n'}.`,
+        showCancelButton: true,
+        confirmButtonText: 'Descartar y editar',
+        cancelButtonText: 'Volver'
+      });
+      if (!isConfirmed) { verDetalle(p.id); return; }
+    }
     Swal.close();
+    state.lista = [];
+    state.listaEditando = null;
+    renderLista();
     state.edicion = p;
     state.formEdicionId = null;
     irATab('registrar');
@@ -1539,12 +1660,15 @@
       .forEach(id => { $(id).value = ''; });
     $('r-localidad').value = state.localidad || state.cat.localidades[0];
     $('r-ot-estado').textContent = '';
-    reiniciarItems();
+    state.lista = [];
+    state.listaEditando = null;
+    reiniciarForm();
+    renderLista();
     actualizarPreview();
     $('r-ot').focus();
   }
 
-  // Datos de origen (comunes) + un objeto por tarjeta de repuesto
+  // Datos de origen (comunes) + los repuestos: la lista, o el formulario si es una edición
   function leerFormulario() {
     return {
       orden_trabajo: $('r-ot').value.trim(),
@@ -1554,11 +1678,12 @@
       modelo: $('r-modelo').value.trim(),
       cliente: $('r-cliente').value.trim(),
       proveedor: $('r-proveedor').value.trim(),
-      piezas: itemsFormulario().map(leerItem)
+      piezas: state.edicion ? [leerItem(formItem())] : state.lista.map(({ error, ...p }) => p)
     };
   }
 
-  // Devuelve las líneas de lo que falta (vacío si está completo) y marca las tarjetas incompletas
+  // Devuelve las líneas de lo que falta (vacío si está completo). Los repuestos de la
+  // lista ya se revisaron al agregarlos; en una edición se revisa el formulario.
   function validarFormulario(d) {
     const lineas = [];
     const generales = [];
@@ -1566,20 +1691,34 @@
     if (state.edicion && !$('r-motivo').value.trim()) generales.push('motivo de la edición');
     if (generales.length) lineas.push(`Complete: ${generales.join(', ')}.`);
 
-    const els = itemsFormulario();
-    d.piezas.forEach((p, i) => {
-      const faltan = faltantesItem(p);
-      marcarErrorItem(els[i], faltan.length ? `Falta: ${faltan.join(', ')}` : '');
-      if (faltan.length) lineas.push(`${els.length === 1 ? 'Repuesto' : `Repuesto ${i + 1}`}: ${faltan.join(', ')}.`);
-    });
+    if (state.edicion) {
+      const faltan = faltantesItem(d.piezas[0]);
+      marcarErrorItem(formItem(), faltan.length ? `Falta: ${faltan.join(', ')}` : '');
+      if (faltan.length) lineas.push(`Repuesto: ${faltan.join(', ')}.`);
+    }
     return lineas;
   }
 
   async function guardarPieza() {
+    if (!state.edicion) {
+      // El repuesto del formulario (nuevo o en corrección) entra a la lista si está completo:
+      // así un solo repuesto se guarda directo, sin pasar por "Agregar a la lista"
+      if (state.listaEditando !== null || formTieneDatos()) {
+        if (!agregarALista()) {
+          formItem().scrollIntoView({ behavior: 'smooth', block: 'center' });
+          Swal.fire('Faltan datos', 'Complete el repuesto del formulario, o límpielo, antes de guardar.', 'warning');
+          return;
+        }
+      }
+      if (!state.lista.length) {
+        Swal.fire('Sin repuestos', 'Llene los datos del repuesto antes de guardar.', 'warning');
+        return;
+      }
+    }
+
     const datos = leerFormulario();
     const faltantes = validarFormulario(datos);
     if (faltantes.length) {
-      $('r-items').querySelector('.rep-item.con-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       Swal.fire({ icon: 'warning', title: 'Faltan datos', html: faltantes.map(escapeHtml).join('<br>') });
       return;
     }
@@ -1599,12 +1738,12 @@
   async function guardarNueva(datos) {
     const { ok, data } = await post('/repuestos/piezas', datos);
     if (!ok) {
-      // Errores por repuesto: cada uno se muestra en su tarjeta
+      // Errores por repuesto: se marcan en su fila de la lista (al corregirla se limpian)
       if (Array.isArray(data.errores)) {
-        const els = itemsFormulario();
         data.errores.forEach(e => {
-          if (e && els[e.indice]) marcarErrorItem(els[e.indice], (e.errores || []).join(' · '));
+          if (e && state.lista[e.indice]) state.lista[e.indice].error = (e.errores || []).join(' · ');
         });
+        renderLista();
       }
       Swal.fire('No se pudo registrar', data.error || 'Error', 'error');
       return;
