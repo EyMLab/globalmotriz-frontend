@@ -70,7 +70,14 @@
     /* Formulario de registro */
     .rep-form-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
     .rep-form-cabecera h2 { margin: 0; font-size: 20px; color: #1E5570; }
-    .rep-form-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr); gap: 18px; align-items: start; }
+    /* Datos de origen a todo el ancho: 4 campos en la primera fila y 3 en la segunda */
+    .rep-origen-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 14px; }
+    .rep-origen-grid .c3 { grid-column: span 3; }
+    .rep-origen-grid .c4 { grid-column: span 4; }
+    .rep-origen-grid .c12, #r-ot-estado { grid-column: 1 / -1; }
+    #r-ot-estado { margin: -6px 0 10px; }
+    #r-ot-estado:empty { display: none; }
+    .rep-origen-grid .rep-nueva-marca.abierta { margin: 0 0 12px; }
     .rep-seccion { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; background: #fff; box-shadow: var(--shadow-card); }
     .rep-seccion h3 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #fff; background: #1E5570; padding: 8px 12px; border-radius: 8px; }
     .rep-campo { display: flex; flex-direction: column; margin-bottom: 12px; }
@@ -118,7 +125,6 @@
     .rep-item-quitar:hover { background: #fef2f2; }
     .rep-item-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 14px; }
     .rep-item-grid .rep-col-2 { grid-column: span 2; }
-    .rep-item-grid .rep-col-3 { grid-column: span 3; }
     .rep-seccion .rep-item .rep-campo textarea { min-height: 40px; }
     .rep-item > .rep-ayuda { margin: -4px 0 8px; }
     .rep-item > .rep-ayuda:empty { display: none; }
@@ -162,16 +168,17 @@
     .rep-config-grid { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 18px; align-items: start; }
 
     @media (max-width: 900px) {
-      .rep-config-grid, .rep-form-grid { grid-template-columns: 1fr; }
+      .rep-config-grid { grid-template-columns: 1fr; }
+      .rep-origen-grid .c3, .rep-origen-grid .c4 { grid-column: span 6; }
       .rep-item-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .rep-item-grid .rep-col-3 { grid-column: 1 / -1; }
     }
     @media (max-width: 640px) {
       .rep-codigo-xl { font-size: 26px; }
       .rep-det-codigo { font-size: 22px; }
       .rep-fila2, .rep-nueva-marca .rep-fila2 { grid-template-columns: 1fr; }
+      .rep-origen-grid .c3, .rep-origen-grid .c4 { grid-column: 1 / -1; }
       .rep-item-grid { grid-template-columns: minmax(0, 1fr); }
-      .rep-item-grid .rep-col-2, .rep-item-grid .rep-col-3 { grid-column: auto; }
+      .rep-item-grid .rep-col-2 { grid-column: auto; }
       .subtabs-nav { overflow-x: auto; }
       .subtabs-nav .subtab-btn { padding: 10px 12px; white-space: nowrap; }
     }
@@ -327,38 +334,34 @@
       <form id="form-pieza" autocomplete="off" novalidate>
         <datalist id="dl-clientes"></datalist>
 
-        <div class="rep-form-grid">
-          <!-- Datos de origen -->
-          <section class="rep-seccion">
-            <h3>Datos de origen</h3>
-            <div class="rep-fila2">
-              <div class="rep-campo">
-                <label for="r-ot">Orden de trabajo</label>
-                <div class="rep-input-boton">
-                  <input type="text" id="r-ot" maxlength="20" placeholder="Ej: 4754" inputmode="numeric">
-                  <button type="button" class="rep-btn-lupa" id="btn-buscar-ot" title="Buscar la OT en la localidad seleccionada" aria-label="Buscar OT">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
-                  </button>
-                </div>
-              </div>
-              <div class="rep-campo">
-                <label for="r-localidad">Localidad <span class="req">*</span></label>
-                <select id="r-localidad"></select>
+        <!-- Datos de origen (comunes a todos los repuestos del registro) -->
+        <section class="rep-seccion">
+          <h3>Datos de origen</h3>
+          <div class="rep-origen-grid">
+            <div class="rep-campo c3">
+              <label for="r-ot">Orden de trabajo</label>
+              <div class="rep-input-boton">
+                <input type="text" id="r-ot" maxlength="20" placeholder="Ej: 4754" inputmode="numeric">
+                <button type="button" class="rep-btn-lupa" id="btn-buscar-ot" title="Buscar la OT en la localidad seleccionada" aria-label="Buscar OT">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+                </button>
               </div>
             </div>
-            <div class="rep-ayuda" id="r-ot-estado" style="margin:-6px 0 10px;"></div>
-            <div class="rep-fila2">
-              <div class="rep-campo">
-                <label for="r-placa">Placa</label>
-                <input type="text" id="r-placa" maxlength="15" placeholder="ABC1234">
-              </div>
-              <div class="rep-campo">
-                <label for="r-marca">Marca <span class="req">*</span></label>
-                <select id="r-marca"></select>
-                <button type="button" class="rep-link" id="btn-nueva-marca">+ Nueva marca</button>
-              </div>
+            <div class="rep-campo c3">
+              <label for="r-localidad">Localidad <span class="req">*</span></label>
+              <select id="r-localidad"></select>
             </div>
-            <div class="rep-nueva-marca" id="nueva-marca">
+            <div class="rep-campo c3">
+              <label for="r-placa">Placa</label>
+              <input type="text" id="r-placa" maxlength="15" placeholder="ABC1234">
+            </div>
+            <div class="rep-campo c3">
+              <label for="r-marca">Marca <span class="req">*</span></label>
+              <select id="r-marca"></select>
+              <button type="button" class="rep-link" id="btn-nueva-marca">+ Nueva marca</button>
+            </div>
+            <div class="rep-ayuda" id="r-ot-estado"></div>
+            <div class="rep-nueva-marca c12" id="nueva-marca">
               <div class="rep-fila2">
                 <div class="rep-campo">
                   <label for="nm-nombre">Nombre de la marca</label>
@@ -375,39 +378,30 @@
                 <button type="button" class="btn-obs" id="nm-guardar">Agregar marca</button>
               </div>
             </div>
-            <div class="rep-campo">
+            <div class="rep-campo c4">
               <label for="r-modelo">Modelo</label>
               <input type="text" id="r-modelo" maxlength="120" placeholder="Ej: GRAND VITARA SZ">
             </div>
-            <div class="rep-campo">
+            <div class="rep-campo c4">
               <label for="r-cliente">Aseguradora / Cliente</label>
               <input type="text" id="r-cliente" maxlength="200" list="dl-clientes" placeholder="Nombre de la aseguradora o cliente de la orden">
             </div>
-            <div class="rep-campo">
+            <div class="rep-campo c4">
               <label for="r-proveedor">Proveedor</label>
               <input type="text" id="r-proveedor" maxlength="200" placeholder="Proveedor si se compró, o la aseguradora">
             </div>
-          </section>
+          </div>
+        </section>
 
-          <!-- Control (común a todos los repuestos del registro) -->
-          <section class="rep-seccion">
-            <h3>Control</h3>
-            <div class="rep-campo">
-              <label for="r-revisado">Revisado por <span class="req">*</span></label>
-              <select id="r-revisado"><option value="">Cargando empleados...</option></select>
-              <span class="rep-ayuda" id="r-revisado-ayuda">Persona que revisó el estado de las piezas</span>
-            </div>
-            <div class="rep-campo" id="grupo-motivo" style="display:none;">
-              <label for="r-motivo">Motivo de la edición <span class="req">*</span></label>
-              <textarea id="r-motivo" maxlength="500" placeholder="Ej: se reparó la pieza / corrección de marca"></textarea>
-            </div>
-          </section>
-        </div>
-
-        <!-- Repuestos: uno o varios de la misma OT (tarjetas creadas desde el JS) -->
+        <!-- Repuestos: uno o varios de la misma OT (tarjetas creadas desde el JS).
+             Cada tarjeta lleva también su control: costo y revisado por -->
         <section class="rep-seccion rep-seccion-items">
           <h3 id="r-items-titulo">Repuestos de esta orden</h3>
           <div class="rep-items" id="r-items"></div>
+          <div class="rep-campo" id="grupo-motivo" style="display:none; margin-top:12px;">
+            <label for="r-motivo">Motivo de la edición <span class="req">*</span></label>
+            <textarea id="r-motivo" maxlength="500" placeholder="Ej: se reparó la pieza / corrección de marca"></textarea>
+          </div>
           <button type="button" class="rep-btn-agregar" id="btn-agregar-item">+ Agregar otro repuesto</button>
         </section>
 

@@ -1103,28 +1103,43 @@
   // REGISTRAR / EDITAR
   // =====================================================
   let empleadosPromesa = null;
+  let empleadosListos = false;
 
   function cargarEmpleados() {
     if (!state.puedeRegistrar) return Promise.resolve([]);
     if (!empleadosPromesa) {
       empleadosPromesa = api('/repuestos/empleados')
-        .then(r => { state.empleados = r.ok && Array.isArray(r.data) ? r.data : []; llenarSelectRevisado(); return state.empleados; })
+        .then(r => {
+          state.empleados = r.ok && Array.isArray(r.data) ? r.data : [];
+          empleadosListos = true;
+          llenarSelectsRevisado();
+          return state.empleados;
+        })
         .catch(() => { empleadosPromesa = null; return []; });
     }
     return empleadosPromesa;
   }
 
-  function llenarSelectRevisado() {
-    const sel = $('r-revisado');
-    const actual = sel.value;
-    sel.innerHTML = '<option value="">Seleccione...</option>' + state.empleados.map(e =>
+  function opcionesRevisado() {
+    if (!empleadosListos) return '<option value="">Cargando empleados...</option>';
+    return '<option value="">Seleccione...</option>' + state.empleados.map(e =>
       `<option value="${e.id}">${escapeHtml(e.nombre_completo)}${e.cargo ? ' — ' + escapeHtml(e.cargo) : ''}</option>`).join('');
-    sel.value = actual;
+  }
+
+  // "Revisado por" de las tarjetas ya creadas, cuando termina de cargar la lista de empleados
+  function llenarSelectsRevisado() {
+    $('r-items').querySelectorAll('select[data-campo="revisado_por_id"]').forEach(sel => {
+      const actual = sel.value;
+      sel.querySelectorAll('option:not([data-extra])').forEach(o => o.remove());
+      sel.insertAdjacentHTML('afterbegin', opcionesRevisado());
+      sel.value = actual;
+    });
   }
 
   // -----------------------------------------------------
   // Tarjetas de repuesto: en un registro nuevo se pueden agregar varias (misma OT);
-  // en una edición hay una sola. Los datos de origen y "Revisado por" son comunes.
+  // en una edición hay una sola. Los datos de origen son comunes; cada tarjeta
+  // lleva su información y su control (costo y revisado por).
   // -----------------------------------------------------
   const MAX_ITEMS = 50; // igual que MAX_PIEZAS_REGISTRO en el backend
   let uidItem = 0;
@@ -1173,7 +1188,11 @@
           <label for="${id('costo')}">Costo (USD) <span class="req">*</span></label>
           <input type="number" id="${id('costo')}" data-campo="costo" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
-        <div class="rep-campo rep-col-3">
+        <div class="rep-campo">
+          <label for="${id('revisado_por_id')}" title="Persona que revisó el estado de la pieza">Revisado por <span class="req">*</span></label>
+          <select id="${id('revisado_por_id')}" data-campo="revisado_por_id">${opcionesRevisado()}</select>
+        </div>
+        <div class="rep-campo rep-col-2">
           <label for="${id('detalle_estado')}">Detalle de estado <span class="req" data-req-estado style="display:none;">*</span></label>
           <textarea id="${id('detalle_estado')}" data-campo="detalle_estado" maxlength="1000" placeholder="Descripción del estado (qué reparación necesita, por qué está aquí...)"></textarea>
         </div>
@@ -1193,12 +1212,13 @@
       propiedad: radio('propiedad'),
       estado: radio('estado'),
       detalle_estado: campoItem(el, 'detalle_estado').value.trim(),
-      costo: campoItem(el, 'costo').value
+      costo: campoItem(el, 'costo').value,
+      revisado_por_id: campoItem(el, 'revisado_por_id').value || null
     };
   }
 
   function llenarItem(el, d) {
-    for (const c of ['detalle', 'codigo_auxiliar', 'categoria', 'detalle_estado', 'costo']) {
+    for (const c of ['detalle', 'codigo_auxiliar', 'categoria', 'detalle_estado', 'costo', 'revisado_por_id']) {
       if (d[c] !== undefined) campoItem(el, c).value = d[c] ?? '';
     }
     for (const c of ['propiedad', 'estado']) {
@@ -1218,9 +1238,9 @@
       Swal.fire('Límite alcanzado', `Se pueden registrar hasta ${MAX_ITEMS} repuestos a la vez. Guarde estos y continúe en otro registro.`, 'info');
       return;
     }
-    // Se repite la propiedad del anterior: los repuestos de una misma OT suelen ser del mismo dueño
-    const anterior = items[items.length - 1];
-    const el = crearItem(anterior ? { propiedad: leerItem(anterior).propiedad } : {});
+    // Se repiten la propiedad y quién revisó: en una misma OT suelen ser los mismos
+    const anterior = items[items.length - 1] ? leerItem(items[items.length - 1]) : null;
+    const el = crearItem(anterior ? { propiedad: anterior.propiedad, revisado_por_id: anterior.revisado_por_id } : {});
     $('r-items').appendChild(el);
     actualizarPreview();
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1253,6 +1273,8 @@
     if (!p.estado) f.push('estado');
     if (['UR', 'REP'].includes(p.estado) && !p.detalle_estado) f.push('detalle de estado');
     if (p.costo === '' || !(Number(p.costo) >= 0)) f.push('costo');
+    // En edición puede quedar el nombre importado sin vincular a un empleado
+    if (!p.revisado_por_id && !state.edicion?.revisado_por) f.push('revisado por');
     return f;
   }
 
@@ -1458,7 +1480,6 @@
     $('tab-btn-registrar').textContent = p ? 'Editar repuesto' : 'Registrar ingreso';
     $('form-titulo').textContent = p ? `Editar ${p.codigo}` : 'Registrar ingreso de repuestos';
     $('grupo-motivo').style.display = p ? '' : 'none';
-    $('r-revisado-ayuda').textContent = p ? 'Persona que revisó el estado de la pieza' : 'Persona que revisó el estado de las piezas (aplica a todos los repuestos del registro)';
     $('btn-limpiar-form').textContent = p ? 'Cancelar edición' : 'Limpiar';
 
     await cargarEmpleados();
@@ -1487,8 +1508,7 @@
     $('r-ot-estado').textContent = '';
 
     // Revisado por: empleado de la lista, empleado ya inactivo o texto importado sin vincular
-    const sel = $('r-revisado');
-    sel.querySelectorAll('option[data-extra]').forEach(o => o.remove());
+    const sel = campoItem(itemsFormulario()[0], 'revisado_por_id');
     if (p.revisado_por_id && !state.empleados.some(e => e.id === p.revisado_por_id)) {
       sel.insertAdjacentHTML('beforeend', `<option data-extra value="${p.revisado_por_id}">${escapeHtml(p.revisado_por)} (inactivo)</option>`);
     }
@@ -1510,13 +1530,12 @@
     if (!state.edicion) return;
     state.edicion = null;
     state.formEdicionId = null;
-    $('r-revisado').querySelectorAll('option[data-extra]').forEach(o => o.remove());
     limpiarFormulario();
     prepararFormulario();
   }
 
   function limpiarFormulario() {
-    ['r-ot', 'r-placa', 'r-marca', 'r-modelo', 'r-cliente', 'r-proveedor', 'r-revisado', 'r-motivo']
+    ['r-ot', 'r-placa', 'r-marca', 'r-modelo', 'r-cliente', 'r-proveedor', 'r-motivo']
       .forEach(id => { $(id).value = ''; });
     $('r-localidad').value = state.localidad || state.cat.localidades[0];
     $('r-ot-estado').textContent = '';
@@ -1525,7 +1544,7 @@
     $('r-ot').focus();
   }
 
-  // Datos comunes (origen y control) + un objeto por tarjeta de repuesto
+  // Datos de origen (comunes) + un objeto por tarjeta de repuesto
   function leerFormulario() {
     return {
       orden_trabajo: $('r-ot').value.trim(),
@@ -1535,7 +1554,6 @@
       modelo: $('r-modelo').value.trim(),
       cliente: $('r-cliente').value.trim(),
       proveedor: $('r-proveedor').value.trim(),
-      revisado_por_id: $('r-revisado').value || null,
       piezas: itemsFormulario().map(leerItem)
     };
   }
@@ -1545,7 +1563,6 @@
     const lineas = [];
     const generales = [];
     if (!d.marca_id) generales.push('marca');
-    if (!d.revisado_por_id && !state.edicion?.revisado_por) generales.push('revisado por');
     if (state.edicion && !$('r-motivo').value.trim()) generales.push('motivo de la edición');
     if (generales.length) lineas.push(`Complete: ${generales.join(', ')}.`);
 
