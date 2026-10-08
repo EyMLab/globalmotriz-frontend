@@ -87,10 +87,10 @@
     }
   }
 
-  function copiar(texto) {
+  function copiar(texto, aviso) {
     if (!navigator.clipboard) { toast('No se pudo copiar', 'error'); return; }
     navigator.clipboard.writeText(texto).then(
-      () => toast(`Copiado: ${texto}`),
+      () => toast(aviso || `Copiado: ${texto}`),
       () => toast('No se pudo copiar', 'error')
     );
   }
@@ -226,15 +226,8 @@
     $('s-localidad').innerHTML = '<option value="">Todas</option>' + localidades;
 
     $('r-marca').innerHTML = opcionesMarcas('Seleccione...');
-    $('r-categoria').innerHTML = opciones(state.cat.categorias, 'Seleccione...');
     $('r-localidad').innerHTML = localidades;
     $('r-localidad').value = state.localidad || state.cat.localidades[0];
-
-    // "Taller (TAL)": primero la palabra y entre paréntesis la sigla que va en el código
-    const radios = (nombre, mapa) => Object.entries(mapa).map(([k, v]) =>
-      `<label><input type="radio" name="${nombre}" value="${k}">${escapeHtml(v)}<b>(${k})</b></label>`).join('');
-    $('r-propiedad').innerHTML = radios('r-propiedad', state.cat.propiedades);
-    $('r-estado').innerHTML = radios('r-estado', state.cat.estados);
 
     $('dl-clientes').innerHTML = state.cat.sugerencias.clientes
       .map(c => `<option value="${escapeHtml(c)}">`).join('');
@@ -385,7 +378,7 @@
         : (p.situacion === 'DISPONIBLE' ? p.dias_en_bodega : '—');
       return `
         <tr class="rep-fila${p.situacion === 'ANULADO' ? ' rep-anulada' : ''}" data-id="${p.id}">
-          <td><span class="rep-codigo">${escapeHtml(p.codigo)}</span></td>
+          <td><span class="rep-codigo">${escapeHtml(p.codigo)}</span>${p.codigo_auxiliar ? `<span class="rep-sub">Aux: ${escapeHtml(p.codigo_auxiliar)}</span>` : ''}</td>
           <td class="rep-detalle-cel" title="${escapeHtml(p.detalle)}">${escapeHtml(p.detalle)}<span class="rep-sub">${escapeHtml(etiqueta('categorias', p.categoria))}</span></td>
           <td>${escapeHtml(p.marca)}<span class="rep-sub">${val(p.modelo)}</span></td>
           <td>${val(p.placa)}<span class="rep-sub">${p.orden_trabajo ? 'OT ' + escapeHtml(p.orden_trabajo) : '—'}</span></td>
@@ -527,6 +520,7 @@
           <div class="rep-det-caja">
             <h4>Información del repuesto</h4>
             ${dato('Detalle', escapeHtml(p.detalle))}
+            ${dato('Código auxiliar', val(p.codigo_auxiliar))}
             ${dato('Categoría', escapeHtml(etiqueta('categorias', p.categoria)))}
             ${dato('Propiedad', escapeHtml(etiqueta('propiedades', p.propiedad)))}
             ${dato('Estado', escapeHtml(etiqueta('estados', p.estado)))}
@@ -550,7 +544,7 @@
 
   const CAMPOS_LABEL = {
     cliente: 'Cliente', marca: 'Marca', modelo: 'Modelo', placa: 'Placa', orden_trabajo: 'OT',
-    proveedor: 'Proveedor', detalle: 'Detalle', categoria: 'Categoría', propiedad: 'Propiedad',
+    proveedor: 'Proveedor', detalle: 'Detalle', codigo_auxiliar: 'Código auxiliar', categoria: 'Categoría', propiedad: 'Propiedad',
     estado: 'Estado', detalle_estado: 'Detalle de estado', localidad: 'Localidad',
     costo: 'Costo', revisado_por: 'Revisado por'
   };
@@ -1033,6 +1027,7 @@
     let y = tabla('DATOS DEL REPUESTO', [
       ['Código', { content: txtPdf(s.codigo), styles: { fontStyle: 'bold', fontSize: 11 } }, 'Valor', { content: fmtMoney(acta.valor), styles: { fontStyle: 'bold' } }],
       ['Detalle', ancho(s.detalle)],
+      ...(s.codigo_auxiliar ? [['Código auxiliar', ancho(s.codigo_auxiliar)]] : []),
       ['Marca / Modelo', txtPdf([s.marca, s.modelo].filter(Boolean).join(' ')), 'Categoría', txtPdf(s.categoria)],
       ['Placa de origen', txtPdf(s.placa), 'OT de origen', txtPdf(s.ot_origen)],
       ['Propiedad', txtPdf(s.propiedad), 'Estado', txtPdf(s.estado)],
@@ -1127,10 +1122,144 @@
     sel.value = actual;
   }
 
-  const radioValor = (nombre) => document.querySelector(`input[name="${nombre}"]:checked`)?.value || '';
-  const marcarRadio = (nombre, valor) => {
-    document.querySelectorAll(`input[name="${nombre}"]`).forEach(r => { r.checked = r.value === valor; });
-  };
+  // -----------------------------------------------------
+  // Tarjetas de repuesto: en un registro nuevo se pueden agregar varias (misma OT);
+  // en una edición hay una sola. Los datos de origen y "Revisado por" son comunes.
+  // -----------------------------------------------------
+  const MAX_ITEMS = 50; // igual que MAX_PIEZAS_REGISTRO en el backend
+  let uidItem = 0;
+
+  const itemsFormulario = () => [...$('r-items').querySelectorAll('.rep-item')];
+  const campoItem = (el, campo) => el.querySelector(`[data-campo="${campo}"]`);
+
+  function crearItem(datos = {}) {
+    const uid = ++uidItem;
+    const id = (campo) => `ri-${uid}-${campo}`;
+    // "Taller (TAL)": primero la palabra y entre paréntesis la sigla que va en el código
+    const radios = (campo, mapa) => Object.entries(mapa).map(([k, v]) =>
+      `<label><input type="radio" name="${id(campo)}" value="${k}" data-campo="${campo}">${escapeHtml(v)}<b>(${k})</b></label>`).join('');
+
+    const el = document.createElement('div');
+    el.className = 'rep-item';
+    el.innerHTML = `
+      <div class="rep-item-cab">
+        <span class="rep-item-num"></span>
+        <span class="rep-item-codigo" data-preview>___-__-___-####</span>
+        <span data-alto></span>
+        <button type="button" class="rep-item-quitar" data-quitar title="Quitar este repuesto del registro">✕ Quitar</button>
+      </div>
+      <div class="rep-item-grid">
+        <div class="rep-campo rep-col-2">
+          <label for="${id('detalle')}">Nombre del repuesto <span class="req">*</span></label>
+          <input type="text" id="${id('detalle')}" data-campo="detalle" maxlength="500">
+        </div>
+        <div class="rep-campo">
+          <label for="${id('codigo_auxiliar')}">Código auxiliar <span class="rep-opcional">(opcional)</span></label>
+          <input type="text" id="${id('codigo_auxiliar')}" data-campo="codigo_auxiliar" maxlength="60">
+        </div>
+        <div class="rep-campo">
+          <label for="${id('categoria')}">Categoría <span class="req">*</span></label>
+          <select id="${id('categoria')}" data-campo="categoria">${opciones(state.cat.categorias, 'Seleccione...')}</select>
+        </div>
+        <div class="rep-campo rep-col-2">
+          <label>Propiedad <span class="req">*</span></label>
+          <div class="rep-seg">${radios('propiedad', state.cat.propiedades)}</div>
+        </div>
+        <div class="rep-campo rep-col-2">
+          <label>Estado del repuesto <span class="req">*</span></label>
+          <div class="rep-seg">${radios('estado', state.cat.estados)}</div>
+        </div>
+        <div class="rep-campo">
+          <label for="${id('costo')}">Costo (USD) <span class="req">*</span></label>
+          <input type="number" id="${id('costo')}" data-campo="costo" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+        </div>
+        <div class="rep-campo rep-col-3">
+          <label for="${id('detalle_estado')}">Detalle de estado <span class="req" data-req-estado style="display:none;">*</span></label>
+          <textarea id="${id('detalle_estado')}" data-campo="detalle_estado" maxlength="1000" placeholder="Descripción del estado (qué reparación necesita, por qué está aquí...)"></textarea>
+        </div>
+      </div>
+      <div class="rep-ayuda err" data-ayuda></div>
+      <div class="rep-ayuda err" data-error></div>`;
+    llenarItem(el, datos);
+    return el;
+  }
+
+  function leerItem(el) {
+    const radio = (campo) => el.querySelector(`input[data-campo="${campo}"]:checked`)?.value || '';
+    return {
+      detalle: campoItem(el, 'detalle').value.trim(),
+      codigo_auxiliar: campoItem(el, 'codigo_auxiliar').value.trim(),
+      categoria: campoItem(el, 'categoria').value,
+      propiedad: radio('propiedad'),
+      estado: radio('estado'),
+      detalle_estado: campoItem(el, 'detalle_estado').value.trim(),
+      costo: campoItem(el, 'costo').value
+    };
+  }
+
+  function llenarItem(el, d) {
+    for (const c of ['detalle', 'codigo_auxiliar', 'categoria', 'detalle_estado', 'costo']) {
+      if (d[c] !== undefined) campoItem(el, c).value = d[c] ?? '';
+    }
+    for (const c of ['propiedad', 'estado']) {
+      el.querySelectorAll(`input[data-campo="${c}"]`).forEach(r => { r.checked = r.value === d[c]; });
+    }
+  }
+
+  // Deja una sola tarjeta (vacía o con los datos dados)
+  function reiniciarItems(datos) {
+    $('r-items').innerHTML = '';
+    $('r-items').appendChild(crearItem(datos));
+  }
+
+  function agregarItem() {
+    const items = itemsFormulario();
+    if (items.length >= MAX_ITEMS) {
+      Swal.fire('Límite alcanzado', `Se pueden registrar hasta ${MAX_ITEMS} repuestos a la vez. Guarde estos y continúe en otro registro.`, 'info');
+      return;
+    }
+    // Se repite la propiedad del anterior: los repuestos de una misma OT suelen ser del mismo dueño
+    const anterior = items[items.length - 1];
+    const el = crearItem(anterior ? { propiedad: leerItem(anterior).propiedad } : {});
+    $('r-items').appendChild(el);
+    actualizarPreview();
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    campoItem(el, 'detalle').focus({ preventScroll: true });
+  }
+
+  async function quitarItem(el) {
+    if (itemsFormulario().length <= 1) return;
+    const d = leerItem(el);
+    if (d.detalle || d.codigo_auxiliar || d.categoria || d.estado || d.detalle_estado || d.costo) {
+      const { isConfirmed } = await Swal.fire({
+        icon: 'question',
+        title: '¿Quitar este repuesto?',
+        text: d.detalle || el.querySelector('.rep-item-num').textContent,
+        showCancelButton: true,
+        confirmButtonText: 'Quitar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!isConfirmed) return;
+    }
+    el.remove();
+    actualizarPreview();
+  }
+
+  function faltantesItem(p) {
+    const f = [];
+    if (!p.detalle) f.push('nombre del repuesto');
+    if (!p.categoria) f.push('categoría');
+    if (!p.propiedad) f.push('propiedad');
+    if (!p.estado) f.push('estado');
+    if (['UR', 'REP'].includes(p.estado) && !p.detalle_estado) f.push('detalle de estado');
+    if (p.costo === '' || !(Number(p.costo) >= 0)) f.push('costo');
+    return f;
+  }
+
+  function marcarErrorItem(el, mensaje) {
+    el.classList.toggle('con-error', !!mensaje);
+    el.querySelector('[data-error]').textContent = mensaje || '';
+  }
 
   function initFormulario() {
     if (!state.puedeRegistrar) return;
@@ -1142,11 +1271,17 @@
       if ($('r-ot').value.trim()) mostrarAyudaOT(`Presione la lupa para buscar la OT en ${$('r-localidad').value}`);
     });
     $('r-placa').addEventListener('input', () => { $('r-placa').value = $('r-placa').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
-
     $('r-marca').addEventListener('change', actualizarPreview);
-    $('r-propiedad').addEventListener('change', actualizarPreview);
-    $('r-estado').addEventListener('change', actualizarPreview);
-    $('r-costo').addEventListener('input', actualizarPreview);
+
+    // Tarjetas de repuesto
+    reiniciarItems();
+    $('r-items').addEventListener('input', actualizarPreview);
+    $('r-items').addEventListener('change', actualizarPreview);
+    $('r-items').addEventListener('click', (e) => {
+      const quitar = e.target.closest('[data-quitar]');
+      if (quitar) quitarItem(quitar.closest('.rep-item'));
+    });
+    $('btn-agregar-item').onclick = agregarItem;
 
     // Nueva marca (mini formulario dentro del panel)
     let codigoEditado = false;
@@ -1176,11 +1311,22 @@
       toast(`Marca ${r.data.nombre} (${r.data.codigo}) agregada`);
     };
 
-    $('btn-guardar').onclick = () => guardarPieza(false);
-    $('btn-guardar-otra').onclick = () => guardarPieza(true);
-    $('btn-limpiar-form').onclick = () => {
-      if (state.edicion) { const id = state.edicion.id; cancelarEdicion(); irATab('inventario'); verDetalle(id); }
-      else limpiarFormulario(false);
+    $('btn-guardar').onclick = guardarPieza;
+    $('btn-limpiar-form').onclick = async () => {
+      if (state.edicion) { const id = state.edicion.id; cancelarEdicion(); irATab('inventario'); verDetalle(id); return; }
+      const n = itemsFormulario().length;
+      if (n > 1) {
+        const { isConfirmed } = await Swal.fire({
+          icon: 'question',
+          title: '¿Limpiar el formulario?',
+          text: `Se borrarán los datos de origen y los ${n} repuestos ingresados.`,
+          showCancelButton: true,
+          confirmButtonText: 'Limpiar',
+          cancelButtonText: 'Cancelar'
+        });
+        if (!isConfirmed) return;
+      }
+      limpiarFormulario();
     };
   }
 
@@ -1234,37 +1380,66 @@
     actualizarPreview();
   }
 
+  // Código de cada tarjeta, alto valor, campos obligatorios y resumen del pie
   function actualizarPreview() {
-    const prop = radioValor('r-propiedad');
-    const est = radioValor('r-estado');
+    const editando = !!state.edicion;
     const marca = state.cat.marcas.find(m => String(m.id) === $('r-marca').value) ||
-      (state.edicion && String(state.edicion.marca_id) === $('r-marca').value ? { codigo: state.edicion.marca_codigo } : null);
-    const numero = state.edicion ? pad(state.edicion.correlativo) : '####';
-    const codigo = `${prop || '___'}-${est || '__'}-${marca?.codigo || '___'}-${numero}`;
-    $('r-codigo-preview').textContent = codigo;
+      (editando && String(state.edicion.marca_id) === $('r-marca').value ? { codigo: state.edicion.marca_codigo } : null);
+    const numero = editando ? pad(state.edicion.correlativo) : '####';
+    const items = itemsFormulario();
+    let total = 0;
+    let altos = 0;
+    let codigoEdicion = '';
+    let completoEdicion = false;
 
+    items.forEach((el, i) => {
+      const d = leerItem(el);
+      const codigo = `${d.propiedad || '___'}-${d.estado || '__'}-${marca?.codigo || '___'}-${numero}`;
+      el.querySelector('.rep-item-num').textContent = editando || items.length === 1 ? 'Repuesto' : `Repuesto ${i + 1}`;
+      el.querySelector('[data-preview]').textContent = codigo;
+      el.querySelector('[data-req-estado]').style.display = ['UR', 'REP'].includes(d.estado) ? '' : 'none';
+      el.querySelector('[data-quitar]').style.display = editando || items.length === 1 ? 'none' : '';
+
+      const costo = parseFloat(d.costo);
+      if (costo > 0) total += costo;
+      const alto = costo > state.cat.umbral;
+      if (alto) altos++;
+      el.querySelector('[data-alto]').innerHTML = alto ? badge('rep-alto', 'Alto valor') : '';
+      el.querySelector('[data-ayuda]').textContent = alto
+        ? `ALTO VALOR (más de ${fmtMoney(state.cat.umbral)}): toda salida exigirá Acta de Custodia firmada` : '';
+
+      // Una tarjeta marcada con error se vuelve a revisar mientras la corrigen
+      if (el.classList.contains('con-error')) {
+        const faltan = faltantesItem(d);
+        if (faltan.length) marcarErrorItem(el, `Falta: ${faltan.join(', ')}`);
+        else marcarErrorItem(el, '');
+      }
+
+      if (i === 0) { codigoEdicion = codigo; completoEdicion = !!(d.propiedad && d.estado && marca); }
+    });
+
+    $('r-items-titulo').textContent = editando ? 'Repuesto' : `Repuestos de esta orden (${items.length})`;
+    $('btn-agregar-item').style.display = editando ? 'none' : '';
+
+    const preview = $('r-codigo-preview');
     const nota = $('r-codigo-nota');
-    if (state.edicion) {
-      const cambia = prop && est && marca && codigo !== state.edicion.codigo;
+    if (editando) {
+      const cambia = completoEdicion && codigoEdicion !== state.edicion.codigo;
+      preview.classList.remove('texto');
+      preview.textContent = codigoEdicion;
       $('r-codigo-titulo').textContent = cambia ? 'Nuevo código' : 'Código';
       nota.innerHTML = cambia
         ? `<span style="color:#dc2626;font-weight:700">Cambia de ${escapeHtml(state.edicion.codigo)}: deberá reescribirlo en la pieza</span>`
         : 'El número global no cambia';
+      $('btn-guardar').textContent = 'Guardar cambios';
     } else {
-      $('r-codigo-titulo').textContent = 'Código que se generará';
-      nota.textContent = 'El número global se asigna al guardar';
-    }
-
-    $('r-detalle-estado-req').style.display = ['UR', 'REP'].includes(est) ? '' : 'none';
-
-    const costo = parseFloat($('r-costo').value);
-    const ayuda = $('r-costo-ayuda');
-    if (costo > state.cat.umbral) {
-      ayuda.textContent = `ALTO VALOR (más de ${fmtMoney(state.cat.umbral)}): toda salida exigirá Acta de Custodia firmada`;
-      ayuda.className = 'rep-ayuda err';
-    } else {
-      ayuda.textContent = '';
-      ayuda.className = 'rep-ayuda';
+      const n = items.length;
+      preview.classList.add('texto');
+      preview.textContent = `${n} repuesto${n === 1 ? '' : 's'} · ${fmtMoney(total)}`;
+      $('r-codigo-titulo').textContent = 'Por registrar';
+      nota.textContent = (altos ? `${altos} de alto valor · ` : '') +
+        (n === 1 ? 'El número global se asigna al guardar' : 'Los números se asignan al guardar, en el orden de la lista');
+      $('btn-guardar').textContent = n === 1 ? 'Guardar repuesto' : `Guardar ${n} repuestos`;
     }
   }
 
@@ -1281,11 +1456,10 @@
   async function prepararFormulario() {
     const p = state.edicion;
     $('tab-btn-registrar').textContent = p ? 'Editar repuesto' : 'Registrar ingreso';
-    $('form-titulo').textContent = p ? `Editar ${p.codigo}` : 'Registrar ingreso de repuesto';
+    $('form-titulo').textContent = p ? `Editar ${p.codigo}` : 'Registrar ingreso de repuestos';
     $('grupo-motivo').style.display = p ? '' : 'none';
-    $('btn-guardar-otra').style.display = p ? 'none' : '';
+    $('r-revisado-ayuda').textContent = p ? 'Persona que revisó el estado de la pieza' : 'Persona que revisó el estado de las piezas (aplica a todos los repuestos del registro)';
     $('btn-limpiar-form').textContent = p ? 'Cancelar edición' : 'Limpiar';
-    $('btn-guardar').textContent = p ? 'Guardar cambios' : 'Guardar repuesto';
 
     await cargarEmpleados();
     if (p && state.formEdicionId !== p.id) {
@@ -1305,13 +1479,11 @@
     set('r-modelo', p.modelo);
     set('r-cliente', p.cliente);
     set('r-proveedor', p.proveedor);
-    set('r-detalle', p.detalle);
-    set('r-categoria', p.categoria);
-    marcarRadio('r-propiedad', p.propiedad);
-    marcarRadio('r-estado', p.estado);
-    set('r-detalle-estado', p.detalle_estado);
-    set('r-costo', p.costo);
     set('r-motivo', '');
+    reiniciarItems({
+      detalle: p.detalle, codigo_auxiliar: p.codigo_auxiliar, categoria: p.categoria, propiedad: p.propiedad,
+      estado: p.estado, detalle_estado: p.detalle_estado, costo: p.costo
+    });
     $('r-ot-estado').textContent = '';
 
     // Revisado por: empleado de la lista, empleado ya inactivo o texto importado sin vincular
@@ -1339,24 +1511,21 @@
     state.edicion = null;
     state.formEdicionId = null;
     $('r-revisado').querySelectorAll('option[data-extra]').forEach(o => o.remove());
-    limpiarFormulario(false);
+    limpiarFormulario();
     prepararFormulario();
   }
 
-  function limpiarFormulario(mantenerOrigen) {
-    const origen = ['r-ot', 'r-placa', 'r-marca', 'r-modelo', 'r-cliente', 'r-proveedor'];
-    const resto = ['r-detalle', 'r-categoria', 'r-detalle-estado', 'r-costo', 'r-revisado', 'r-motivo'];
-    (mantenerOrigen ? resto : [...origen, ...resto]).forEach(id => { $(id).value = ''; });
-    if (!mantenerOrigen) {
-      $('r-localidad').value = state.localidad || state.cat.localidades[0];
-      $('r-ot-estado').textContent = '';
-    }
-    marcarRadio('r-propiedad', '');
-    marcarRadio('r-estado', '');
+  function limpiarFormulario() {
+    ['r-ot', 'r-placa', 'r-marca', 'r-modelo', 'r-cliente', 'r-proveedor', 'r-revisado', 'r-motivo']
+      .forEach(id => { $(id).value = ''; });
+    $('r-localidad').value = state.localidad || state.cat.localidades[0];
+    $('r-ot-estado').textContent = '';
+    reiniciarItems();
     actualizarPreview();
-    $(mantenerOrigen ? 'r-detalle' : 'r-ot').focus();
+    $('r-ot').focus();
   }
 
+  // Datos comunes (origen y control) + un objeto por tarjeta de repuesto
   function leerFormulario() {
     return {
       orden_trabajo: $('r-ot').value.trim(),
@@ -1366,55 +1535,106 @@
       modelo: $('r-modelo').value.trim(),
       cliente: $('r-cliente').value.trim(),
       proveedor: $('r-proveedor').value.trim(),
-      detalle: $('r-detalle').value.trim(),
-      categoria: $('r-categoria').value,
-      propiedad: radioValor('r-propiedad'),
-      estado: radioValor('r-estado'),
-      detalle_estado: $('r-detalle-estado').value.trim(),
-      costo: $('r-costo').value,
-      revisado_por_id: $('r-revisado').value || null
+      revisado_por_id: $('r-revisado').value || null,
+      piezas: itemsFormulario().map(leerItem)
     };
   }
 
+  // Devuelve las líneas de lo que falta (vacío si está completo) y marca las tarjetas incompletas
   function validarFormulario(d) {
-    const faltan = [];
-    if (!d.marca_id) faltan.push('marca');
-    if (!d.detalle) faltan.push('nombre del repuesto');
-    if (!d.categoria) faltan.push('categoría');
-    if (!d.propiedad) faltan.push('propiedad');
-    if (!d.estado) faltan.push('estado');
-    if (['UR', 'REP'].includes(d.estado) && !d.detalle_estado) faltan.push('detalle de estado');
-    if (d.costo === '' || !(Number(d.costo) >= 0)) faltan.push('costo');
-    if (!d.revisado_por_id && !state.edicion?.revisado_por) faltan.push('revisado por');
-    if (state.edicion && !$('r-motivo').value.trim()) faltan.push('motivo de la edición');
-    return faltan.length ? `Complete: ${faltan.join(', ')}.` : '';
+    const lineas = [];
+    const generales = [];
+    if (!d.marca_id) generales.push('marca');
+    if (!d.revisado_por_id && !state.edicion?.revisado_por) generales.push('revisado por');
+    if (state.edicion && !$('r-motivo').value.trim()) generales.push('motivo de la edición');
+    if (generales.length) lineas.push(`Complete: ${generales.join(', ')}.`);
+
+    const els = itemsFormulario();
+    d.piezas.forEach((p, i) => {
+      const faltan = faltantesItem(p);
+      marcarErrorItem(els[i], faltan.length ? `Falta: ${faltan.join(', ')}` : '');
+      if (faltan.length) lineas.push(`${els.length === 1 ? 'Repuesto' : `Repuesto ${i + 1}`}: ${faltan.join(', ')}.`);
+    });
+    return lineas;
   }
 
-  async function guardarPieza(registrarOtra) {
+  async function guardarPieza() {
     const datos = leerFormulario();
     const faltantes = validarFormulario(datos);
-    if (faltantes) { Swal.fire('Faltan datos', faltantes, 'warning'); return; }
+    if (faltantes.length) {
+      $('r-items').querySelector('.rep-item.con-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      Swal.fire({ icon: 'warning', title: 'Faltan datos', html: faltantes.map(escapeHtml).join('<br>') });
+      return;
+    }
 
-    const botones = ['btn-guardar', 'btn-guardar-otra'].map($);
-    botones.forEach(b => { b.disabled = true; });
+    const boton = $('btn-guardar');
+    boton.disabled = true;
     try {
       if (state.edicion) await guardarEdicion(datos);
-      else await guardarNueva(datos, registrarOtra);
+      else await guardarNueva(datos);
     } catch (err) {
       Swal.fire('Error', err.message || 'No se pudo guardar', 'error');
     } finally {
-      botones.forEach(b => { b.disabled = false; });
+      boton.disabled = false;
     }
   }
 
-  async function guardarNueva(datos, registrarOtra) {
+  async function guardarNueva(datos) {
     const { ok, data } = await post('/repuestos/piezas', datos);
-    if (!ok) { Swal.fire('No se pudo registrar', data.error || 'Error', 'error'); return; }
+    if (!ok) {
+      // Errores por repuesto: cada uno se muestra en su tarjeta
+      if (Array.isArray(data.errores)) {
+        const els = itemsFormulario();
+        data.errores.forEach(e => {
+          if (e && els[e.indice]) marcarErrorItem(els[e.indice], (e.errores || []).join(' · '));
+        });
+      }
+      Swal.fire('No se pudo registrar', data.error || 'Error', 'error');
+      return;
+    }
 
-    limpiarFormulario(registrarOtra);
+    limpiarFormulario();
     refrescarListas();
-    await mostrarCodigo(data);
-    $(registrarOtra ? 'r-detalle' : 'r-ot').focus();
+    await mostrarCodigos(data.piezas || [data]);
+    $('r-ot').focus();
+  }
+
+  // Varios repuestos: lista de códigos para escribir en cada pieza
+  function mostrarCodigos(piezas) {
+    if (piezas.length === 1) return mostrarCodigo(piezas[0]);
+    const altos = piezas.filter(p => p.alto_valor).length;
+    return Swal.fire({
+      icon: 'success',
+      title: `${piezas.length} repuestos registrados`,
+      customClass: { popup: 'rep-pop-md' },
+      html: `
+        <div class="rep-modal">
+          <p style="text-align:center;margin:0 0 10px;">Escriba cada código en su pieza:</p>
+          <div class="rep-scroll">
+            <table class="rep-mini-tabla">
+              <thead><tr><th>#</th><th>Código</th><th>Repuesto</th><th></th></tr></thead>
+              <tbody>${piezas.map((p, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><span class="rep-codigo-md">${escapeHtml(p.codigo)}</span>${p.alto_valor ? `<span class="rep-sub">${badge('rep-alto', 'Alto valor')}</span>` : ''}</td>
+                  <td>${escapeHtml(p.detalle)}${p.codigo_auxiliar ? `<span class="rep-sub">Aux: ${escapeHtml(p.codigo_auxiliar)}</span>` : ''}</td>
+                  <td><button type="button" class="btn-obs" data-copiar="${escapeHtml(p.codigo)}">Copiar</button></td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          ${altos ? `<div class="rep-banner-alto">${altos === 1 ? '1 repuesto es' : `${altos} repuestos son`} de ALTO VALOR: toda salida exigirá Acta de Custodia firmada.</div>` : ''}
+          <div style="text-align:center;margin-top:10px;">
+            <button type="button" class="btn-obs" id="btn-copiar-todos">Copiar todos los códigos</button>
+          </div>
+        </div>`,
+      confirmButtonText: 'Listo',
+      didOpen: (popup) => {
+        popup.querySelectorAll('[data-copiar]').forEach(b => b.addEventListener('click', () => copiar(b.dataset.copiar)));
+        $('btn-copiar-todos').onclick = () => copiar(
+          piezas.map(p => `${p.codigo}\t${p.detalle}`).join('\n'), `${piezas.length} códigos copiados`);
+      }
+    });
   }
 
   function mostrarCodigo(pieza) {
@@ -1433,6 +1653,7 @@
             <span><b>${escapeHtml(marca)}</b>marca</span>
             <span><b>${escapeHtml(num)}</b>número global</span>
           </div>
+          ${pieza.codigo_auxiliar ? `<p class="rep-ayuda" style="text-align:center;margin-top:8px;">Código auxiliar: <b>${escapeHtml(pieza.codigo_auxiliar)}</b></p>` : ''}
           ${pieza.alto_valor ? '<div class="rep-banner-alto">Repuesto de ALTO VALOR: toda salida exigirá Acta de Custodia firmada.</div>' : ''}
           <div style="text-align:center;margin-top:10px;">
             <button type="button" class="btn-obs" id="btn-copiar-codigo">Copiar código</button>
@@ -1445,8 +1666,10 @@
 
   async function guardarEdicion(datos) {
     const p = state.edicion;
+    const { piezas, ...comunes } = datos;
     const { ok, status, data } = await put(`/repuestos/piezas/${p.id}`, {
-      ...datos,
+      ...comunes,
+      ...piezas[0],
       motivo: $('r-motivo').value.trim(),
       version: p.version
     });
@@ -1526,7 +1749,7 @@
           <td><input type="checkbox" class="imp-fila" data-i="${i}" ${conError ? 'disabled' : 'checked'}></td>
           <td>${f.fila_excel}</td>
           <td><b>${escapeHtml(f.codigo_patron || '—')}</b>${d.codigo_legacy ? `<span class="rep-sub">antes: ${escapeHtml(d.codigo_legacy)}</span>` : ''}</td>
-          <td>${val(d.detalle)}<span class="rep-sub">${escapeHtml(etiqueta('categorias', d.categoria))}</span></td>
+          <td>${val(d.detalle)}<span class="rep-sub">${escapeHtml(etiqueta('categorias', d.categoria))}${d.codigo_auxiliar ? ` · Aux: ${escapeHtml(d.codigo_auxiliar)}` : ''}</span></td>
           <td>${val(d.marca_nombre)}<span class="rep-sub">${val(d.modelo)}</span></td>
           <td>${val(d.propiedad)} / ${val(d.estado)}</td>
           <td>${val(d.localidad)}</td>
@@ -1664,7 +1887,7 @@
       tbody.innerHTML = data.items.map(s => `
         <tr class="rep-fila${s.anulado ? ' rep-anulada' : ''}" data-pieza="${s.pieza_id}">
           <td>${escapeHtml(s.fecha)}</td>
-          <td><span class="rep-codigo">${escapeHtml(s.codigo)}</span></td>
+          <td><span class="rep-codigo">${escapeHtml(s.codigo)}</span>${s.codigo_auxiliar ? `<span class="rep-sub">Aux: ${escapeHtml(s.codigo_auxiliar)}</span>` : ''}</td>
           <td class="rep-detalle-cel" title="${escapeHtml(s.detalle)}">${escapeHtml(s.detalle)}<span class="rep-sub">${escapeHtml(s.marca)} ${val(s.modelo)}</span></td>
           <td>${escapeHtml(etiqueta('motivos', s.motivo))}${s.anulado ? ' ' + badge('sit-ANULADO', 'Anulada') : ''}</td>
           <td>${s.orden_trabajo ? 'OT ' + escapeHtml(s.orden_trabajo) : '—'}</td>
