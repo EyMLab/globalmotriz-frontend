@@ -425,7 +425,7 @@
           const alerta = document.getElementById('alerta-placa');
           if (placa.length < 3) { alerta.style.display = 'none'; return; }
           try {
-            const r = await apiFetch(`/cotizaciones/solicitudes/check-placa/${encodeURIComponent(placa)}`);
+            const r = await apiFetch(`/cotizaciones/solicitudes/check-placa/${encodeURIComponent(placa)}`, { silencioso: true });
             const d = await safeJson(r);
             if (d.activas && d.activas.length > 0) {
               alerta.style.display = 'block';

@@ -343,15 +343,15 @@ function escNotif(str) {
 async function actualizarContadorNotif() {
   try {
     const [resCot, resRrhh, resCompras, resRepuestos] = await Promise.all([
-      apiFetch('/cotizaciones/notificaciones/count'),
+      apiFetch('/cotizaciones/notificaciones/count', { silencioso: true }),
       ROLES_RRHH_NOTIF.includes(_navRol)
-        ? apiFetch('/rrhh/notificaciones/count').catch(() => null)
+        ? apiFetch('/rrhh/notificaciones/count', { silencioso: true }).catch(() => null)
         : Promise.resolve(null),
       ROLES_COMPRAS_NOTIF.includes(_navRol)
-        ? apiFetch('/compras/notificaciones/count').catch(() => null)
+        ? apiFetch('/compras/notificaciones/count', { silencioso: true }).catch(() => null)
         : Promise.resolve(null),
       ROLES_REPUESTOS_NOTIF.includes(_navRol)
-        ? apiFetch('/repuestos/notificaciones/count').catch(() => null)
+        ? apiFetch('/repuestos/notificaciones/count', { silencioso: true }).catch(() => null)
         : Promise.resolve(null)
     ]);
     const countEl = document.getElementById('notif-count');
@@ -383,15 +383,15 @@ async function cargarNotificaciones() {
   if (!list) return;
   try {
     const [resCot, resRrhh, resCompras, resRepuestos] = await Promise.all([
-      apiFetch('/cotizaciones/notificaciones?limit=15'),
+      apiFetch('/cotizaciones/notificaciones?limit=15', { silencioso: true }),
       ROLES_RRHH_NOTIF.includes(_navRol)
-        ? apiFetch('/rrhh/notificaciones?limit=15').catch(() => null)
+        ? apiFetch('/rrhh/notificaciones?limit=15', { silencioso: true }).catch(() => null)
         : Promise.resolve(null),
       ROLES_COMPRAS_NOTIF.includes(_navRol)
-        ? apiFetch('/compras/notificaciones?limit=15').catch(() => null)
+        ? apiFetch('/compras/notificaciones?limit=15', { silencioso: true }).catch(() => null)
         : Promise.resolve(null),
       ROLES_REPUESTOS_NOTIF.includes(_navRol)
-        ? apiFetch('/repuestos/notificaciones?limit=15').catch(() => null)
+        ? apiFetch('/repuestos/notificaciones?limit=15', { silencioso: true }).catch(() => null)
         : Promise.resolve(null)
     ]);
 
@@ -528,7 +528,7 @@ function cerrarSesion() {
   if (!getToken()) return;
 
   function keepBackendAwake() {
-    apiFetch('/health').catch(() => {});
+    apiFetch('/health', { silencioso: true }).catch(() => {});
   }
 
   keepBackendAwake();

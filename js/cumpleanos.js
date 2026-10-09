@@ -149,7 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(r => {
       if (r.isDenied && idExistente) {
         apiFetch(`/rrhh/celebraciones/${idExistente}`, { method: 'DELETE' })
-          .then(() => {
+          .then(res => {
+            if (!res || !res.ok) throw new Error();
             Swal.fire('Eliminada', '', 'success');
             cargarCumpleanos(anio);
           })

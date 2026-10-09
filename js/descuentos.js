@@ -159,6 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================
   // PANEL 1: PRESTAMOS
   // ==========================================================
+  // Devuelve el JSON de la respuesta. Si el servidor rechazó la petición (403, 500...)
+  // lanza un Error con su mensaje, en vez de tratar el {error} como si fueran datos.
+  function jsonOk(res) {
+    if (!res) throw new Error('Sesión expirada');
+    return res.json().catch(() => ({})).then(data => {
+      if (!res.ok) throw new Error((data && data.error) || `No se pudo completar la acción (${res.status})`);
+      return data;
+    });
+  }
+
   function cargarPrestamos() {
     tablaPrestamos.innerHTML = '<tr><td colspan="10">Cargando...</td></tr>';
 
@@ -232,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.verDetalle = function(id) {
     apiFetch('/descuentos/prestamos/' + id)
-      .then(res => res.json())
+      .then(jsonOk)
       .then(p => {
         const cuotasHtml = p.cuotas.map(c => `
           <tr style="border-bottom:1px solid #e2e8f0;">
@@ -317,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tablaResumen.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
 
     apiFetch('/descuentos/resumen-mensual?mes=' + mes)
-      .then(res => res.json())
+      .then(jsonOk)
       .then(data => {
         kpiEmpleados.textContent = data.total_empleados;
         kpiMonto.textContent = formatMoney(data.total_general);
@@ -358,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.verDetalleResumen = function(empleadoId, mes) {
     apiFetch('/descuentos/resumen-mensual?mes=' + mes)
-      .then(res => res.json())
+      .then(jsonOk)
       .then(data => {
         const emp = data.empleados.find(e => e.empleado_id === empleadoId);
         if (!emp) return;
@@ -403,7 +413,8 @@ document.addEventListener('DOMContentLoaded', () => {
           confirmButtonText: 'Cerrar',
           confirmButtonColor: '#64748b'
         });
-      });
+      })
+      .catch(err => Swal.fire('Error', err.message, 'error'));
   };
 
   function exportarExcel() {
@@ -463,14 +474,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function cargarEmpleados() {
     if (empleadosCargados) return;
     apiFetch('/empleados')
-      .then(res => res.json())
+      .then(jsonOk)
       .then(data => {
         const activos = data.filter(e => e.activo !== false);
         selEmpleado.innerHTML = '<option value="">Seleccionar empleado...</option>' +
           activos.map(e => `<option value="${e.id}">${e.nombre} ${e.apellido} - ${e.cargo || ''}</option>`).join('');
         empleadosCargados = true;
       })
-      .catch(err => console.error('Error cargando empleados:', err));
+      .catch(err => {
+        console.error('Error cargando empleados:', err);
+        selEmpleado.innerHTML = '<option value="">No se pudo cargar la lista de empleados</option>';
+      });
   }
 
   function actualizarPreview() {
@@ -600,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tTipos.innerHTML = '';
 
     apiFetch('/descuentos/resumen-anual?anio=' + anio)
-      .then(res => res.json())
+      .then(jsonOk)
       .then(data => {
         document.getElementById('kpi-anual-total').textContent = formatMoney(data.total_cobrado + data.total_pendiente);
         document.getElementById('kpi-anual-prestamos').textContent = data.total_prestamos;

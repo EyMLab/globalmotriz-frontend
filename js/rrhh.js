@@ -654,7 +654,10 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activo: !activo })
     })
-      .then(() => cargarEmpleados())
+      .then(res => {
+        if (!res || !res.ok) throw new Error();
+        cargarEmpleados();
+      })
       .catch(() => {
         Swal.fire('Error', 'No se pudo cambiar estado', 'error');
       });
@@ -676,7 +679,8 @@ document.addEventListener('DOMContentLoaded', () => {
       apiFetch(`/empleados/${id}`, {
         method: 'DELETE'
       })
-        .then(() => {
+        .then(res => {
+          if (!res || !res.ok) throw new Error();
           Swal.fire('✅ Empleado eliminado', '', 'success');
           cargarEmpleados();
         })

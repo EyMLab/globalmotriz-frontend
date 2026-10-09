@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   async function cargarListaEmpleados() {
     try {
-      const res = await apiFetch('/insumos/lista-empleados');
+      const res = await apiFetch('/insumos/lista-empleados', { silencioso: true });
       const data = await safeJson(res);
       
       if (data && Array.isArray(data)) {
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
           icon: 'question',
           showCancelButton: true
         }).then(r => {
-          if (r.isConfirmed) actualizarRegistro(item.id, nuevo);
+          if (r.isConfirmed) actualizarRegistro(item.id, nuevo, chk);
           else chk.checked = !nuevo;
         });
       });
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return td;
   }
 
-  async function actualizarRegistro(id, value) {
+  async function actualizarRegistro(id, value, chk) {
     try {
       const res = await apiFetch(`/insumos/${id}/registrado`, {
         method: 'PATCH',
@@ -312,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
     } catch {
+      if (chk) chk.checked = !value;
       Swal.fire('Error', 'No se pudo actualizar', 'error');
     }
   }

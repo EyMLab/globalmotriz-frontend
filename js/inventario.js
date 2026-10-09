@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function modalEditar(codigo, localidad) {
     // 1. Obtener datos actuales
     const res = await apiFetch(`/inventario/info/${codigo}/${localidad}`);
-    const data = await safeJson(res);
+    const data = res && res.ok ? await safeJson(res) : null;
 
     if (!data) {
       Swal.fire('Error', 'No se pudo cargar la información', 'error');

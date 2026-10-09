@@ -36,7 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
     tablaUsuarios.innerHTML = `<tr><td colspan="4">Cargando...</td></tr>`;
 
     apiFetch('/usuarios')
-      .then(res => res.json())
+      .then(res => {
+        if (!res || !res.ok) throw new Error();
+        return res.json();
+      })
       .then(data => {
         usuarios = data;
         renderUsuarios();

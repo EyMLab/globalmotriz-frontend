@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function cargarLPR() {
     if (pausaLPR) return;
     try {
-      const res = await apiFetch("/lpr/estado");
+      const res = await apiFetch("/lpr/estado", { silencioso: true });
       if (!res || !res.ok) return;
       const data = await safeJson(res);
       renderKanban(data);

@@ -109,7 +109,7 @@ class Autocomplete {
   async _fetch(q) {
     const loc = this.localidadFn();
     const qs  = `q=${encodeURIComponent(q)}${loc ? `&localidad=${encodeURIComponent(loc)}` : ""}`;
-    const res = await apiFetch(`/taller/clientes?${qs}`);
+    const res = await apiFetch(`/taller/clientes?${qs}`, { silencioso: true });
     if (!res || !res.ok) return;
     const d = await safeJson(res);
     this._show(d.clientes || []);

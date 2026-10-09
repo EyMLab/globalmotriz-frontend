@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function apiFetchJson(path) {
     try {
       const res = await apiFetch(path);
-      if (!res) return null;
+      if (!res || !res.ok) return null;
       return await safeJson(res);
     } catch (e) {
       console.error(e);
