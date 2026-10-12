@@ -419,23 +419,41 @@ const CLIE = (() => {
       `<option value="${e}">${e || "— Limpiar estado —"}</option>`
     ).join("");
 
-    const { isConfirmed, value: estadoElegido } = await Swal.fire({
-      title: `Asignar estado a ${checks.length} documento${checks.length > 1 ? "s" : ""}`,
-      html: `<select id="swal-bulk-eg" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827">${optsHTML}</select>`,
+    const { isConfirmed, value: vals } = await Swal.fire({
+      title: `Asignar a ${checks.length} documento${checks.length > 1 ? "s" : ""}`,
+      html: `<div style="text-align:left">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Estado</div>
+            <select id="swal-bulk-eg" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#111827;height:38px">${optsHTML}</select>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Responsable</div>
+            <input type="text" id="swal-bulk-resp" placeholder="Nombre…"
+              style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#111827;height:38px"/>
+          </div>
+        </div>
+      </div>`,
+      width: 480,
       showCancelButton: true,
       confirmButtonText: "Asignar",
       confirmButtonColor: "#2B7A9E",
       cancelButtonText: "Cancelar",
-      preConfirm: () => document.getElementById("swal-bulk-eg").value,
+      preConfirm: () => ({
+        estado_gestion: document.getElementById("swal-bulk-eg").value,
+        responsable: document.getElementById("swal-bulk-resp").value.trim(),
+      }),
     });
-    if (!isConfirmed) return;
+    if (!isConfirmed || !vals) return;
 
-    Swal.fire({ title: "Asignando estado...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: "Asignando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const ids = checks.map(c => parseInt(c.dataset.id, 10));
+    const body = { ids, estado_gestion: vals.estado_gestion || null };
+    if (vals.responsable !== "") body.responsable = vals.responsable;
     const res = await apiFetch("/clientes-cobrar/documentos/bulk-estado-gestion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids, estado_gestion: estadoElegido || null }),
+      body: JSON.stringify(body),
     });
     if (!res || !res.ok) {
       Swal.fire("Error", "No se pudo asignar el estado.", "error");
