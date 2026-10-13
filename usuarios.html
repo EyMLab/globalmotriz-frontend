@@ -17,28 +17,96 @@
 
   <div class="dashboard-container">
 
-    <!-- =========================
-         SECCIÓN USUARIOS
-    ========================== -->
-    <div class="section-header section-header-flex">
-      <h2>Usuarios del sistema</h2>
-      <button id="btn-nuevo-usuario" class="btn-obs">
-        + Añadir usuario
-      </button>
+    <!-- ============================================================
+         SUB-TABS
+    ============================================================ -->
+    <div class="subtabs-nav">
+      <button class="subtab-btn active" data-tab="usuarios">Usuarios</button>
+      <button class="subtab-btn" data-tab="perfiles">Perfiles</button>
     </div>
 
-    <div class="tabla-estandar-wrap">
-    <table class="tabla-estandar">
-      <thead>
-        <tr>
-          <th>Usuario</th>
-          <th>Rol</th>
-          <th>Localidad</th>
-          <th class="col-acciones">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tabla-usuarios"></tbody>
-    </table>
+    <!-- =========================
+         PANEL 1: USUARIOS
+    ========================== -->
+    <div id="panel-usuarios" class="subtab-panel active">
+
+      <div class="section-header section-header-flex">
+        <h2>Usuarios del sistema</h2>
+        <button id="btn-nuevo-usuario" class="btn-obs">
+          + Añadir usuario
+        </button>
+      </div>
+
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Localidad</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-usuarios"></tbody>
+      </table>
+      </div>
+
+    </div>
+
+    <!-- =========================
+         PANEL 2: PERFILES
+    ========================== -->
+    <div id="panel-perfiles" class="subtab-panel">
+
+      <div class="section-header section-header-flex">
+        <h2>Perfiles de acceso</h2>
+        <button id="btn-nuevo-perfil" class="btn-obs">
+          + Nuevo perfil
+        </button>
+      </div>
+
+      <p class="perf-ayuda">
+        Cada usuario tiene un perfil, y el perfil define qué puede ver y hacer.
+        Aquí ves lo que puede hacer cada uno. Los módulos con
+        <span class="perf-pendiente">🔒 Pendiente</span> se irán activando de uno en uno:
+        hasta entonces siguen funcionando como siempre y aquí solo se muestran.
+      </p>
+
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar perf-tabla-perfiles">
+        <thead>
+          <tr>
+            <th>Perfil</th>
+            <th>Descripción</th>
+            <th class="num-right">Usuarios</th>
+            <th class="num-right">Módulos</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-perfiles"></tbody>
+      </table>
+      </div>
+
+      <!-- Permisos del perfil elegido -->
+      <div id="perfil-detalle" class="perf-detalle" hidden></div>
+
+      <div class="section-header section-header-flex perf-titulo-bitacora">
+        <h2>Historial de cambios</h2>
+      </div>
+      <div class="tabla-estandar-wrap">
+      <table class="tabla-estandar perf-wrap">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Quién</th>
+            <th>Qué hizo</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-auditoria"></tbody>
+      </table>
+      </div>
+
     </div>
 
   </div>
@@ -48,6 +116,7 @@
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/usuarios.js"></script>
+  <script src="js/perfiles.js"></script>
 
 </body>
 </html>

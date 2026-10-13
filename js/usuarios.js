@@ -11,6 +11,55 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
+  // Perfiles (los carga perfiles.js; si no cargaron, se usa la lista de siempre)
+  // ===============================
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+
+  const ROLES_RESPALDO = [
+    ['admin', 'Admin'], ['control', 'Control'], ['bodega', 'Bodega'], ['asesor', 'Asesor'],
+    ['seguro', 'Seguro'], ['asistente_contable', 'Asistente Contable'],
+    ['asistente_administrativo', 'Asistente Administrativo'], ['procesos', 'Procesos']
+  ];
+
+  // Nombre del perfil para mostrar en la tabla
+  function rolTexto(clave) {
+    const perfiles = window.AccesosPerfiles && window.AccesosPerfiles.lista();
+    if (!perfiles) return esc(String(clave).toUpperCase());           // aún no cargan: como siempre
+    const nombre = window.AccesosPerfiles.nombreDe(clave);
+    return nombre
+      ? esc(nombre)
+      : `${esc(clave)} <span class="perf-chip perf-chip-alerta" title="Este rol no es ninguno de los perfiles">sin perfil</span>`;
+  }
+
+  // <option> del desplegable de Rol. Los perfiles que todavía no se pueden usar salen
+  // deshabilitados (salvo el que la persona ya tiene).
+  function opcionesRol(seleccionado) {
+    const perfiles = window.AccesosPerfiles && window.AccesosPerfiles.lista();
+    if (!perfiles || !perfiles.length) {
+      return ROLES_RESPALDO
+        .map(([v, t]) => `<option value="${v}" ${v === seleccionado ? 'selected' : ''}>${t}</option>`)
+        .join('');
+    }
+    let html = '';
+    if (seleccionado && !perfiles.some(p => p.clave === seleccionado)) {
+      html += `<option value="${esc(seleccionado)}" selected disabled>${esc(seleccionado)} (sin perfil)</option>`;
+    }
+    html += perfiles.map(p => {
+      const usable = p.utilizable || p.clave === seleccionado;
+      return `<option value="${esc(p.clave)}" ${p.clave === seleccionado ? 'selected' : ''} ${usable ? '' : 'disabled'}>`
+        + `${esc(p.nombre)}${usable ? '' : ' (aún sin módulos activos)'}</option>`;
+    }).join('');
+    return html;
+  }
+
+  // Cuando terminan de cargar los perfiles, la tabla muestra sus nombres
+  document.addEventListener('perfiles:cargados', () => {
+    if (usuarios.length) renderUsuarios();
+  });
+
+  // ===============================
   // Verificar admin
   // ===============================
   apiFetch('/auth/me')
@@ -65,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tr.innerHTML = `
         <td>${u.usuario}</td>
-        <td>${u.rol.toUpperCase()}</td>
+        <td>${rolTexto(u.rol)}</td>
         <td>${u.localidad}</td>
         <td class="user-actions">
           <button class="btn-obs" onclick="editarUsuario(${u.id}, '${u.usuario}', '${u.rol}', '${u.localidad}')">Editar</button>
@@ -99,14 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="form-group">
             <label>Rol</label>
             <select id="nuevo-rol" class="swal2-select">
-              <option value="admin">Admin</option>
-              <option value="control">Control</option>
-              <option value="bodega">Bodega</option>
-              <option value="asesor">Asesor</option>
-              <option value="seguro">Seguro</option>
-              <option value="asistente_contable">Asistente Contable</option>
-              <option value="asistente_administrativo">Asistente Administrativo</option>
-              <option value="procesos">Procesos</option>
+              <option value="">— Elige un perfil —</option>
+              ${opcionesRol('')}
             </select>
           </div>
 
@@ -128,8 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rol = document.getElementById('nuevo-rol').value;
         const localidad = document.getElementById('nueva-localidad').value;
 
-        if (!usuario || !clave) {
-          Swal.showValidationMessage('Todos los campos son obligatorios');
+        if (!usuario || !clave || !rol) {
+          Swal.showValidationMessage('Todos los campos son obligatorios (incluido el perfil)');
           return false;
         }
 
@@ -173,14 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="form-group">
             <label>Rol</label>
             <select id="rol-edit" class="swal2-select">
-              <option value="admin" ${rol === 'admin' ? 'selected' : ''}>Admin</option>
-              <option value="control" ${rol === 'control' ? 'selected' : ''}>Control</option>
-              <option value="bodega" ${rol === 'bodega' ? 'selected' : ''}>Bodega</option>
-              <option value="asesor" ${rol === 'asesor' ? 'selected' : ''}>Asesor</option>
-              <option value="seguro" ${rol === 'seguro' ? 'selected' : ''}>Seguro</option>
-              <option value="asistente_contable" ${rol === 'asistente_contable' ? 'selected' : ''}>Asistente Contable</option>
-              <option value="asistente_administrativo" ${rol === 'asistente_administrativo' ? 'selected' : ''}>Asistente Administrativo</option>
-              <option value="procesos" ${rol === 'procesos' ? 'selected' : ''}>Procesos</option>
+              ${opcionesRol(rol)}
             </select>
           </div>
 
@@ -204,11 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
           return false;
         }
 
-        return {
+        // El perfil solo se manda si cambió (así se puede seguir editando a quien tiene un rol antiguo)
+        const datos = {
           usuario: usuarioEdit,
-          rol: document.getElementById('rol-edit').value,
           localidad: document.getElementById('localidad-edit').value
         };
+        const rolNuevo = document.getElementById('rol-edit').value;
+        if (rolNuevo && rolNuevo !== rol) datos.rol = rolNuevo;
+        return datos;
       }
     }).then(r => {
       if (!r.isConfirmed) return;

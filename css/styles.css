@@ -2581,3 +2581,44 @@ table.tabla-estandar td { padding: 6px 10px; border-bottom: 1px solid var(--bord
 table.tabla-estandar tbody tr:last-child td { border-bottom: none; }
 table.tabla-estandar tbody tr:hover td { background: #f1f5f9; }
 table.tabla-estandar .num-right { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   ACCESOS → PERFILES (usuarios.html, pestaña «Perfiles»)
+============================================================ */
+.perf-ayuda { margin: 2px 0 14px; color: var(--text-light); font-size: 13px; line-height: 1.6; }
+.perf-nombre { font-weight: 600; color: var(--text); margin-right: 4px; }
+.perf-clave { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--text-light); }
+.perf-vacio { color: #94a3b8; }
+.perf-titulo-bitacora { margin-top: 30px; }
+
+table.tabla-estandar td.perf-celda-perfil { white-space: normal; min-width: 200px; }
+table.tabla-estandar td.perf-desc { white-space: normal; min-width: 220px; max-width: 420px; color: var(--text-light); font-size: 12.5px; }
+table.perf-wrap th, table.perf-wrap td { white-space: normal; }
+table.perf-wrap td.perf-chips { min-width: 260px; }
+table.tabla-estandar tbody tr.perf-fila-activa td { background: #eff6ff; }
+table.tabla-estandar tbody tr.perf-fila-sin td { color: #94a3b8; }
+table.tabla-estandar tbody tr.perf-fila-sin td strong { font-weight: 500; }
+table.tabla-estandar tbody tr.perf-grupo td { background: #e8f1f6; color: var(--primary-dark); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; padding: 5px 10px; }
+table.tabla-estandar tbody tr.perf-grupo:hover td { background: #e8f1f6; }
+.user-actions button:disabled { opacity: .45; cursor: not-allowed; }
+
+.perf-chip { display: inline-block; padding: 2px 9px; margin: 2px 4px 2px 0; border-radius: 999px; font-size: 11.5px; line-height: 1.5; background: #e0f2fe; color: #075985; white-space: normal; }
+.perf-chip-limite { background: #fef3c7; color: #92400e; }
+.perf-chip-sistema { background: #ede9fe; color: #5b21b6; }
+.perf-chip-alerta { background: #fee2e2; color: #991b1b; }
+
+.perf-nivel { display: inline-block; min-width: 96px; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-align: center; }
+.perf-nivel-ninguno { background: #f1f5f9; color: #94a3b8; }
+.perf-nivel-ver { background: #dbeafe; color: #1e40af; }
+.perf-nivel-editar { background: #dcfce7; color: #166534; }
+.perf-ayuda-fila { display: block; margin-top: 3px; max-width: 240px; font-size: 11px; line-height: 1.35; color: var(--text-light); }
+
+.perf-pendiente { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 500; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; white-space: nowrap; cursor: help; }
+
+.perf-detalle { margin-top: 20px; padding: 16px; background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--r-md); box-shadow: var(--shadow-card); }
+.perf-detalle[hidden] { display: none; }
+.perf-detalle-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.perf-detalle-cab h3 { margin: 0; font-size: 16px; color: var(--primary-dark); }
+.perf-nota { margin: 0 0 12px; padding: 8px 12px; border-radius: var(--r-sm); background: #f0f9ff; color: #0c4a6e; font-size: 13px; }
+.perf-nota-alerta { background: #fffbeb; color: #92400e; }
+.perf-nota-modal { margin: 10px 0 0; font-size: 12px; color: var(--text-light); text-align: left; }
