@@ -210,8 +210,10 @@ const CLIE = (() => {
 
     const selTipo = document.getElementById("f-tipo");
     if (selTipo) {
+      const prev = selTipo.value;
       while (selTipo.options.length > 1) selTipo.remove(1);
       (data.tipos || []).forEach(t => selTipo.add(new Option(t, t)));
+      if (prev) selTipo.value = prev;
     }
 
     const selResp = document.getElementById("f-responsable");
@@ -835,21 +837,24 @@ const CLIE = (() => {
     a.click();
   }
 
-  // ── Helper: descargar CSV con separador ; (Excel ES) ──
+  // ── Helper: descargar Excel .xlsx real ──
   function descargarExcel(filename, cols, rows) {
-    const esc = v => {
-      const s = String(v ?? "");
-      return s.includes(";") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g,'""')}"` : s;
-    };
-    const header = cols.map(c => esc(c.label)).join(";");
-    const body = rows.map(r => cols.map(c => esc(c.fn(r))).join(";")).join("\n");
-    const bom = "﻿";
-    const blob = new Blob([bom + header + "\n" + body], { type: "text/csv;charset=utf-8" });
-    const a = Object.assign(document.createElement("a"), {
-      href: URL.createObjectURL(blob),
-      download: filename,
+    const header = cols.map(c => c.label);
+    const data = rows.map(r => cols.map(c => {
+      const v = c.fn(r);
+      const n = parseFloat(v);
+      return v !== "" && v != null && !isNaN(n) && typeof v !== "string" ? n : (v ?? "");
+    }));
+    const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+    const colWidths = cols.map((c, i) => {
+      let max = c.label.length;
+      data.forEach(r => { const l = String(r[i] ?? "").length; if (l > max) max = l; });
+      return { wch: Math.min(max + 2, 40) };
     });
-    a.click(); URL.revokeObjectURL(a.href);
+    ws["!cols"] = colWidths;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Datos");
+    XLSX.writeFile(wb, filename);
   }
 
   // ── Exportar Excel (Documentos) ───────────────────
@@ -877,7 +882,7 @@ const CLIE = (() => {
       { label:"Responsable",    fn: d => d.responsable || "" },
       { label:"Observación",    fn: d => d.observacion || "" },
     ];
-    descargarExcel(`cuentas_cobrar_${new Date().toISOString().slice(0,10)}.csv`, cols, data.documentos);
+    descargarExcel(`cuentas_cobrar_${new Date().toISOString().slice(0,10)}.xlsx`, cols, data.documentos);
   }
 
   // ── Exportar Excel (Antigüedad) ─────────────────
@@ -892,7 +897,7 @@ const CLIE = (() => {
       { label:"1-30d",        fn: r => r.vencido_1_30 || 0 },
       { label:"Max Días",     fn: r => r.max_dias_vencido || 0 },
     ];
-    descargarExcel(`antiguedad_cartera_${new Date().toISOString().slice(0,10)}.csv`, cols, sorted);
+    descargarExcel(`antiguedad_cartera_${new Date().toISOString().slice(0,10)}.xlsx`, cols, sorted);
   }
 
   // ═══════════════════════════════════════════════════
