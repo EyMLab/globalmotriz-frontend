@@ -42,7 +42,7 @@ const FACT = (() => {
 
   // ── Formatting helpers ─────────────────────────────
   const fmt  = n => parseFloat(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtD = v => { if (!v) return "—"; const d = new Date(v + "T00:00:00"); return isNaN(d) ? "—" : d.toLocaleDateString("es-EC"); };
+  const fmtD = v => { if (!v) return "—"; const s = String(v).slice(0,10); const d = new Date(s + "T00:00:00"); return isNaN(d) ? "—" : d.toLocaleDateString("es-EC"); };
 
   // ── Read current filter values from DOM ────────────
   function leerFiltros() {
@@ -264,6 +264,7 @@ const FACT = (() => {
       const data = await safeJson(res);
 
       _totalPaginas = data.totalPaginas || 1;
+      if (data.documentos?.[0]) console.log("DEBUG primer doc:", { fecha: data.documentos[0].fecha, cxc_id: data.documentos[0].cxc_id, cxc_estado: data.documentos[0].cxc_estado });
       $("pag-info-doc").textContent = `Página ${data.pagina} de ${_totalPaginas}`;
       $("btn-prev-doc").disabled = data.pagina <= 1;
       $("btn-next-doc").disabled = data.pagina >= _totalPaginas;
