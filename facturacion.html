@@ -82,6 +82,16 @@
     .filtros-prov input[type="date"] { width:140px; }
     .filtros-prov select { min-width:110px; }
 
+    /* ── Column toggle ────────────────────────── */
+    .cols-panel { display:none; position:absolute; top:calc(100% + 4px); right:0; z-index:300; background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); box-shadow:0 8px 24px rgba(0,0,0,.15); padding:12px 14px; min-width:180px; }
+    .cols-panel.open { display:block; }
+    .cols-panel h4 { font-size:11px; font-weight:700; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin:0 0 8px; }
+    .cols-panel label { display:flex; align-items:center; gap:6px; padding:3px 0; font-size:13px; cursor:pointer; color:var(--text); }
+    .cols-panel label input { width:15px; height:15px; accent-color:var(--primary); cursor:pointer; }
+    .cols-panel-footer { display:flex; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border-subtle); }
+    .cols-panel-footer a { font-size:12px; color:var(--primary); cursor:pointer; text-decoration:none; font-weight:600; }
+    .cols-panel-footer a:hover { text-decoration:underline; }
+
     /* ── Sorting ──────────────────────────────── */
     .sortable { cursor:pointer; user-select:none; padding-right:16px !important; }
     .sort-arrow { font-size:9px; opacity:.4; margin-left:3px; }
@@ -214,30 +224,42 @@
     <div style="display:flex;align-items:center;margin-bottom:8px">
       <div style="flex:1"></div>
       <button class="btn-sm btn-sm-sec" id="btn-excel-docs">↓ Excel</button>
+      <div style="position:relative">
+        <button class="btn-sm btn-sm-sec" id="btn-cols">⚙ Columnas</button>
+        <div class="cols-panel" id="cols-panel">
+          <h4>Mostrar columnas</h4>
+          <div id="cols-checks"></div>
+          <div class="cols-panel-footer">
+            <a id="cols-all">Mostrar todas</a>
+            <a id="cols-default">Restablecer</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="prov-table-wrap">
       <table class="prov-table" id="tabla-docs">
         <thead>
           <tr>
-            <th class="sortable" data-sort="numero_factura" onclick="FACT.ordenar('numero_factura')">Factura<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="forma_pago" onclick="FACT.ordenar('forma_pago')">Forma Pago<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="cliente" onclick="FACT.ordenar('cliente')">Cliente<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="fecha" onclick="FACT.ordenar('fecha')">Fecha<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="estado" onclick="FACT.ordenar('estado')" style="text-align:center">Estado<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="centro_costos" onclick="FACT.ordenar('centro_costos')" style="text-align:center">Localidad<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="total" onclick="FACT.ordenar('total')" style="text-align:right">Total<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="pagado" onclick="FACT.ordenar('pagado')" style="text-align:right">Pagado<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="saldo" onclick="FACT.ordenar('saldo')" style="text-align:right">Saldo<span class="sort-arrow">▲</span></th>
-            <th style="text-align:right">IVA</th>
-            <th style="text-align:right">Descuento</th>
-            <th class="sortable" data-sort="total_servicios" onclick="FACT.ordenar('total_servicios')" style="text-align:right">Servicios<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="total_producto" onclick="FACT.ordenar('total_producto')" style="text-align:right">Producto<span class="sort-arrow">▲</span></th>
-            <th class="sortable" data-sort="total_terceros" onclick="FACT.ordenar('total_terceros')" style="text-align:right">Terceros<span class="sort-arrow">▲</span></th>
-            <th>OT Taller</th>
-            <th>Placa</th>
-            <th>Observación</th>
-            <th>Motivo Anulación</th>
+            <th data-col="numero_factura" class="sortable" data-sort="numero_factura" onclick="FACT.ordenar('numero_factura')">Factura<span class="sort-arrow">▲</span></th>
+            <th data-col="forma_pago" class="sortable" data-sort="forma_pago" onclick="FACT.ordenar('forma_pago')">Forma Pago<span class="sort-arrow">▲</span></th>
+            <th data-col="cliente" class="sortable" data-sort="cliente" onclick="FACT.ordenar('cliente')">Cliente<span class="sort-arrow">▲</span></th>
+            <th data-col="fecha" class="sortable" data-sort="fecha" onclick="FACT.ordenar('fecha')">Fecha<span class="sort-arrow">▲</span></th>
+            <th data-col="estado" class="sortable" data-sort="estado" onclick="FACT.ordenar('estado')" style="text-align:center">Estado<span class="sort-arrow">▲</span></th>
+            <th data-col="centro_costos" class="sortable" data-sort="centro_costos" onclick="FACT.ordenar('centro_costos')" style="text-align:center">Localidad<span class="sort-arrow">▲</span></th>
+            <th data-col="total" class="sortable" data-sort="total" onclick="FACT.ordenar('total')" style="text-align:right">Total<span class="sort-arrow">▲</span></th>
+            <th data-col="pagado" class="sortable" data-sort="pagado" onclick="FACT.ordenar('pagado')" style="text-align:right">Pagado<span class="sort-arrow">▲</span></th>
+            <th data-col="saldo" class="sortable" data-sort="saldo" onclick="FACT.ordenar('saldo')" style="text-align:right">Saldo<span class="sort-arrow">▲</span></th>
+            <th data-col="iva" style="text-align:right">IVA</th>
+            <th data-col="descuento" style="text-align:right">Descuento</th>
+            <th data-col="subtotal_iva" style="text-align:right">Sub Total IVA</th>
+            <th data-col="total_servicios" class="sortable" data-sort="total_servicios" onclick="FACT.ordenar('total_servicios')" style="text-align:right">Servicios<span class="sort-arrow">▲</span></th>
+            <th data-col="total_producto" class="sortable" data-sort="total_producto" onclick="FACT.ordenar('total_producto')" style="text-align:right">Producto<span class="sort-arrow">▲</span></th>
+            <th data-col="total_terceros" class="sortable" data-sort="total_terceros" onclick="FACT.ordenar('total_terceros')" style="text-align:right">Terceros<span class="sort-arrow">▲</span></th>
+            <th data-col="ot_taller">OT Taller</th>
+            <th data-col="placa">Placa</th>
+            <th data-col="observacion">Observación</th>
+            <th data-col="motivo_anulacion">Motivo Anulación</th>
           </tr>
         </thead>
         <tbody id="tbody-docs">

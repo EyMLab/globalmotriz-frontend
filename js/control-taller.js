@@ -1158,6 +1158,17 @@ const CT = (() => {
       });
     });
 
+    // Leer parámetros de URL para filtrado externo (links desde Facturación, etc.)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("orden")) {
+      const fOrden = document.getElementById("f-orden");
+      if (fOrden) fOrden.value = urlParams.get("orden");
+    }
+    if (urlParams.get("factura")) {
+      const fFact = document.getElementById("f-factura");
+      if (fFact) fFact.value = urlParams.get("factura");
+    }
+
     // Carga inicial
     cargarFiltros();
     cargarCards();

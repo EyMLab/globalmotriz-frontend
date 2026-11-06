@@ -8,8 +8,33 @@ const FACT = (() => {
   let _pagina = 1, _totalPaginas = 1, _limit = 50;
   let _sortBy = "fecha", _sortDir = "DESC";
   let _cardActiva = "";
-  let _filtros = {};  // cached filter values from DB
+  let _filtros = {};
   let _charts = {};
+
+  // ── Column definitions ─────────────────────────────
+  const COLS = [
+    { id: "numero_factura",  label: "Factura",         def: true  },
+    { id: "forma_pago",      label: "Forma Pago",      def: false },
+    { id: "cliente",         label: "Cliente",          def: true  },
+    { id: "fecha",           label: "Fecha",            def: true  },
+    { id: "estado",          label: "Estado",           def: true  },
+    { id: "centro_costos",   label: "Localidad",        def: false },
+    { id: "total",           label: "Total",            def: true  },
+    { id: "pagado",          label: "Pagado",           def: true  },
+    { id: "saldo",           label: "Saldo",            def: true  },
+    { id: "iva",             label: "IVA",              def: false },
+    { id: "descuento",       label: "Descuento",        def: false },
+    { id: "subtotal_iva",    label: "Sub Total IVA",    def: false },
+    { id: "total_servicios", label: "Servicios",        def: false },
+    { id: "total_producto",  label: "Producto",         def: false },
+    { id: "total_terceros",  label: "Terceros",         def: false },
+    { id: "ot_taller",       label: "OT Taller",        def: true  },
+    { id: "placa",           label: "Placa",            def: true  },
+    { id: "observacion",     label: "Observación",      def: false },
+    { id: "motivo_anulacion",label: "Motivo Anulación", def: false },
+  ];
+  const colVisible = {};
+  COLS.forEach(c => { colVisible[c.id] = c.def; });
 
   // ── DOM refs ───────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -48,6 +73,7 @@ const FACT = (() => {
     initFiltros();
     initCards();
     initImport();
+    initColumnToggle();
     $("btn-excel-docs")?.addEventListener("click", descargarExcel);
     $("btn-filtrar")?.addEventListener("click", () => { _pagina = 1; cargar(); });
     $("btn-limpiar")?.addEventListener("click", limpiarFiltros);
@@ -56,6 +82,57 @@ const FACT = (() => {
     cargarFiltros();
     cargar();
   });
+
+  // ── Column toggle ─────────────────────────────────
+  function initColumnToggle() {
+    const checksEl = $("cols-checks");
+    if (!checksEl) return;
+
+    checksEl.innerHTML = COLS.map(c =>
+      `<label><input type="checkbox" data-colid="${c.id}" ${colVisible[c.id] ? "checked" : ""}> ${c.label}</label>`
+    ).join("");
+
+    checksEl.addEventListener("change", e => {
+      const cb = e.target;
+      if (!cb.dataset.colid) return;
+      colVisible[cb.dataset.colid] = cb.checked;
+      aplicarColumnas();
+    });
+
+    $("btn-cols")?.addEventListener("click", e => {
+      e.stopPropagation();
+      $("cols-panel")?.classList.toggle("open");
+    });
+    document.addEventListener("click", e => {
+      if (!e.target.closest("#cols-panel") && !e.target.closest("#btn-cols")) {
+        $("cols-panel")?.classList.remove("open");
+      }
+    });
+
+    $("cols-all")?.addEventListener("click", e => {
+      e.preventDefault();
+      COLS.forEach(c => { colVisible[c.id] = true; });
+      checksEl.querySelectorAll("input").forEach(cb => { cb.checked = true; });
+      aplicarColumnas();
+    });
+    $("cols-default")?.addEventListener("click", e => {
+      e.preventDefault();
+      COLS.forEach(c => { colVisible[c.id] = c.def; });
+      checksEl.querySelectorAll("input").forEach(cb => { cb.checked = colVisible[cb.dataset.colid]; });
+      aplicarColumnas();
+    });
+
+    aplicarColumnas();
+  }
+
+  function aplicarColumnas() {
+    COLS.forEach(col => {
+      const show = colVisible[col.id];
+      document.querySelectorAll(`[data-col="${col.id}"]`).forEach(el => {
+        el.style.display = show ? "" : "none";
+      });
+    });
+  }
 
   // ── Tabs ───────────────────────────────────────────
   function initTabs() {
@@ -148,7 +225,7 @@ const FACT = (() => {
   async function actualizarCards() {
     try {
       const f = leerFiltros();
-      const qs = filtrosQS({ ...f, estado: "" }); // cards count across all estados
+      const qs = filtrosQS({ ...f, estado: "" });
       const res = await apiFetch(`/facturacion/cards?${qs}`);
       if (!res.ok) return;
       const data = await safeJson(res);
@@ -179,7 +256,7 @@ const FACT = (() => {
       const f = leerFiltros();
       const qs = filtrosQS(f, { sort_by: _sortBy, sort_dir: _sortDir, page: _pagina, limit: _limit });
       const res = await apiFetch(`/facturacion/documentos?${qs}`);
-      if (!res.ok) { $("tbody-docs").innerHTML = `<tr><td colspan="18" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`; return; }
+      if (!res.ok) { $("tbody-docs").innerHTML = `<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`; return; }
       const data = await safeJson(res);
 
       _totalPaginas = data.totalPaginas || 1;
@@ -188,40 +265,43 @@ const FACT = (() => {
       $("btn-next-doc").disabled = data.pagina >= _totalPaginas;
 
       if (!data.documentos.length) {
-        $("tbody-docs").innerHTML = `<tr><td colspan="18" style="text-align:center;padding:32px;color:var(--text-light)">Sin facturas.</td></tr>`;
+        $("tbody-docs").innerHTML = `<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--text-light)">Sin facturas.</td></tr>`;
         return;
       }
 
       $("tbody-docs").innerHTML = data.documentos.map(d => {
         const estadoCls = d.estado?.toUpperCase() === "ANULADO" ? "badge-anulado" : "badge-autorizado";
         const otLink = d.ot_taller
-          ? `<a class="link-modulo" href="control-taller.html?buscar=${encodeURIComponent(d.ot_taller)}" target="_blank">${esc(d.ot_taller)}</a>`
+          ? `<a class="link-modulo" href="control-taller.html?orden=${encodeURIComponent(d.ot_taller)}" target="_blank">${esc(d.ot_taller)}</a>`
           : "—";
         return `<tr>
-          <td>${esc(d.numero_factura)}</td>
-          <td>${esc(d.forma_pago)}</td>
-          <td>${esc(d.cliente)}</td>
-          <td>${fmtD(d.fecha)}</td>
-          <td style="text-align:center"><span class="badge-estado ${estadoCls}">${esc(d.estado)}</span></td>
-          <td style="text-align:center">${esc(d.centro_costos)}</td>
-          <td class="num-right">$${fmt(d.total)}</td>
-          <td class="num-right">$${fmt(d.pagado)}</td>
-          <td class="num-right">$${fmt(d.saldo)}</td>
-          <td class="num-right">$${fmt(d.iva)}</td>
-          <td class="num-right">$${fmt(d.descuento)}</td>
-          <td class="num-right">$${fmt(d.total_servicios)}</td>
-          <td class="num-right">$${fmt(d.total_producto)}</td>
-          <td class="num-right">$${fmt(d.total_terceros)}</td>
-          <td>${otLink}</td>
-          <td>${esc(d.placa)}</td>
-          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.observacion)}">${esc(d.observacion)}</td>
-          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.motivo_anulacion)}">${esc(d.motivo_anulacion)}</td>
+          <td data-col="numero_factura">${esc(d.numero_factura)}</td>
+          <td data-col="forma_pago">${esc(d.forma_pago)}</td>
+          <td data-col="cliente">${esc(d.cliente)}</td>
+          <td data-col="fecha">${fmtD(d.fecha)}</td>
+          <td data-col="estado" style="text-align:center"><span class="badge-estado ${estadoCls}">${esc(d.estado)}</span></td>
+          <td data-col="centro_costos" style="text-align:center">${esc(d.centro_costos)}</td>
+          <td data-col="total" class="num-right">$${fmt(d.total)}</td>
+          <td data-col="pagado" class="num-right">$${fmt(d.pagado)}</td>
+          <td data-col="saldo" class="num-right">$${fmt(d.saldo)}</td>
+          <td data-col="iva" class="num-right">$${fmt(d.iva)}</td>
+          <td data-col="descuento" class="num-right">$${fmt(d.descuento)}</td>
+          <td data-col="subtotal_iva" class="num-right">$${fmt(d.subtotal_iva)}</td>
+          <td data-col="total_servicios" class="num-right">$${fmt(d.total_servicios)}</td>
+          <td data-col="total_producto" class="num-right">$${fmt(d.total_producto)}</td>
+          <td data-col="total_terceros" class="num-right">$${fmt(d.total_terceros)}</td>
+          <td data-col="ot_taller">${otLink}</td>
+          <td data-col="placa">${esc(d.placa)}</td>
+          <td data-col="observacion" style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.observacion)}">${esc(d.observacion)}</td>
+          <td data-col="motivo_anulacion" style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.motivo_anulacion)}">${esc(d.motivo_anulacion)}</td>
         </tr>`;
       }).join("");
 
+      aplicarColumnas();
+
     } catch (e) {
       console.error("Error cargando docs:", e);
-      $("tbody-docs").innerHTML = `<tr><td colspan="18" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`;
+      $("tbody-docs").innerHTML = `<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`;
     }
   }
 
@@ -337,7 +417,6 @@ const FACT = (() => {
       const data = await safeJson(res);
       const t = data.totales;
 
-      // KPI cards
       $("dash-fin-grid").innerHTML = [
         { n: t.total_facturas, l: "Facturas" },
         { n: `$${fmt(t.total_facturado)}`, l: "Total Facturado" },
@@ -350,13 +429,11 @@ const FACT = (() => {
         { n: `$${fmt(t.total_terceros)}`, l: "Terceros" },
       ].map(c => `<div class="dash-fin-card"><div class="dfn">${c.n}</div><div class="dfl">${c.l}</div></div>`).join("");
 
-      // Destroy old charts
       Object.values(_charts).forEach(c => c.destroy());
       _charts = {};
 
       const COLORS = ["#2B7A9E","#38bdf8","#f59e0b","#10b981","#ef4444","#8b5cf6","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#a855f7","#06b6d4","#e11d48","#22d3ee"];
 
-      // Facturado por mes
       if (data.por_mes?.length) {
         _charts.mes = new Chart($("chart-mes"), {
           type: "bar",
@@ -365,7 +442,6 @@ const FACT = (() => {
         });
       }
 
-      // Top clientes
       if (data.por_cliente?.length) {
         _charts.clientes = new Chart($("chart-clientes"), {
           type: "bar",
@@ -374,14 +450,12 @@ const FACT = (() => {
         });
       }
 
-      // Desglose servicios/producto/terceros
       _charts.desglose = new Chart($("chart-desglose"), {
         type: "doughnut",
         data: { labels: ["Servicios", "Producto", "Terceros"], datasets: [{ data: [+t.total_servicios, +t.total_producto, +t.total_terceros], backgroundColor: ["#2B7A9E","#f59e0b","#10b981"] }] },
         options: { responsive: true },
       });
 
-      // Forma de pago
       if (data.por_forma_pago?.length) {
         _charts.formaPago = new Chart($("chart-forma-pago"), {
           type: "pie",
@@ -390,7 +464,6 @@ const FACT = (() => {
         });
       }
 
-      // Por localidad
       if (data.por_centro?.length) {
         _charts.localidad = new Chart($("chart-localidad"), {
           type: "bar",
@@ -402,6 +475,5 @@ const FACT = (() => {
     } catch (e) { console.error("Error dashboard:", e); }
   }
 
-  // ── Public API ─────────────────────────────────────
   return { ordenar };
 })();
