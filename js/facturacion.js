@@ -252,6 +252,9 @@ const FACT = (() => {
   function cargar() {
     cargarDocs();
     actualizarCards();
+    if (document.querySelector('.prov-tab[data-tab="dashboard"]')?.classList.contains("active")) {
+      cargarDashboard();
+    }
   }
 
   // ── Load documents ─────────────────────────────────
