@@ -265,6 +265,7 @@ const FACT = (() => {
 
       _totalPaginas = data.totalPaginas || 1;
       if (data.documentos?.[0]) console.log("DEBUG primer doc:", { fecha: data.documentos[0].fecha, cxc_id: data.documentos[0].cxc_id, cxc_estado: data.documentos[0].cxc_estado });
+      if (data._debug_cxc) console.log("DEBUG CxC samples:", JSON.stringify(data._debug_cxc));
       $("pag-info-doc").textContent = `Página ${data.pagina} de ${_totalPaginas}`;
       $("btn-prev-doc").disabled = data.pagina <= 1;
       $("btn-next-doc").disabled = data.pagina >= _totalPaginas;
