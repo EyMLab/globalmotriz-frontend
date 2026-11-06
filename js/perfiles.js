@@ -4,8 +4,9 @@
 // Lista los perfiles, muestra qué puede hacer cada uno, y permite crear, duplicar,
 // renombrar y eliminar perfiles. Muestra también la bitácora de cambios.
 //
-// Los permisos de cada módulo todavía NO se editan aquí: los módulos se irán
-// activando de uno en uno y hasta entonces se ven con el candado «Pendiente».
+// Los permisos se editan módulo por módulo: los módulos ya activos («✓ Activo») se pueden
+// cambiar aquí (nivel de acceso + casillas extra) y los demás se ven con el candado
+// «Pendiente» hasta que se activen.
 //
 // También expone window.AccesosPerfiles para que usuarios.js arme el desplegable
 // de Rol con los perfiles reales.
@@ -24,8 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     sinPerfil: [],         // usuarios con un rol que no es un perfil
     catalogo: null,
     auditoria: [],
-    seleccion: null        // clave del perfil cuyo detalle está abierto
+    seleccion: null,       // clave del perfil cuyo detalle está abierto
+    edicion: null          // copia de trabajo de sus permisos: { clave, original: Set, actual: Set }
   };
+
+  const TEXTO_NIVEL = { ninguno: 'Sin acceso', ver: 'Solo ver', editar: 'Ver y editar' };
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -97,12 +101,19 @@ document.addEventListener('DOMContentLoaded', () => {
       tablaAuditoria.innerHTML = '';
       return;
     }
+    renovarEdicion();
     renderTodo();
   }
 
   async function recargar() {
     await Promise.all([cargarPerfiles(), cargarAuditoria()]);
+    renovarEdicion();
     renderTodo();
+  }
+
+  // La copia de trabajo se renueva con lo guardado, salvo que haya cambios sin guardar en el perfil abierto
+  function renovarEdicion() {
+    if (!estado.edicion || estado.edicion.clave !== estado.seleccion || !modulosCambiados().length) iniciarEdicion();
   }
 
   function renderTodo() {
@@ -182,11 +193,180 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // Detalle: qué puede hacer el perfil
   // ===============================
-  function mostrarDetalle(clave) {
+  async function mostrarDetalle(clave) {
+    if (clave !== estado.seleccion && !(await permitirCambiarSeleccion())) return;
+    const cambia = clave !== estado.seleccion;
     estado.seleccion = clave;
+    if (cambia || !estado.edicion) iniciarEdicion();
     renderPerfiles();
     renderDetalle();
     detalle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ===============================
+  // Edición de permisos (solo módulos activos)
+  // ===============================
+  // Copia de trabajo de los permisos del perfil abierto. El administrador no se puede editar.
+  function iniciarEdicion() {
+    const p = estado.seleccion && buscar(estado.seleccion);
+    estado.edicion = (p && !p.es_sistema)
+      ? { clave: p.clave, original: new Set(p.permisos), actual: new Set(p.permisos) }
+      : null;
+  }
+
+  const moduloEditable = (m) => m.migrado && !m.fijo;
+  const delModulo = (m, set) => m.permisos.filter(p => set.has(p.clave)).map(p => p.clave);
+  const mismasClaves = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+
+  function nivelDe(m, set) {
+    const ver = m.permisos.find(p => p.nivel === 'ver');
+    const editar = m.permisos.find(p => p.nivel === 'editar');
+    if (!ver || !set.has(ver.clave)) return 'ninguno';
+    return editar && set.has(editar.clave) ? 'editar' : 'ver';
+  }
+
+  // Cambia el nivel de acceso de un módulo en la copia de trabajo. Sin acceso = sin nada del módulo.
+  function fijarNivel(m, set, nivel) {
+    const ver = m.permisos.find(p => p.nivel === 'ver');
+    const editar = m.permisos.find(p => p.nivel === 'editar');
+    if (nivel === 'ninguno') { m.permisos.forEach(p => set.delete(p.clave)); return; }
+    set.add(ver.clave);
+    if (editar) { if (nivel === 'editar') set.add(editar.clave); else set.delete(editar.clave); }
+  }
+
+  // Módulos activos cuyos permisos ya no coinciden con lo guardado
+  function modulosCambiados() {
+    const e = estado.edicion;
+    if (!e || !estado.catalogo) return [];
+    return estado.catalogo.modulos.filter(m => moduloEditable(m) && !mismasClaves(delModulo(m, e.original), delModulo(m, e.actual)));
+  }
+
+  // Si hay cambios sin guardar, pregunta antes de abandonarlos
+  async function permitirCambiarSeleccion() {
+    if (!modulosCambiados().length) return true;
+    const r = await Swal.fire({
+      title: 'Tienes cambios sin guardar',
+      text: 'Si sigues, esos cambios se pierden.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Descartar cambios',
+      cancelButtonText: 'Seguir editando'
+    });
+    return r.isConfirmed;
+  }
+
+  const etiquetaDe = (clave) => {
+    for (const m of (estado.catalogo ? estado.catalogo.modulos : [])) {
+      const p = m.permisos.find(x => x.clave === clave);
+      if (p) return p.etiqueta;
+    }
+    return clave;
+  };
+
+  async function guardarPermisos() {
+    const e = estado.edicion;
+    const p = e && buscar(e.clave);
+    const cambiados = modulosCambiados();
+    if (!p || !cambiados.length) return;
+
+    // Resumen, en palabras simples, de lo que va a cambiar
+    const lineas = cambiados.map(m => {
+      const antes = delModulo(m, e.original);
+      const ahora = delModulo(m, e.actual);
+      const nA = nivelDe(m, e.original);
+      const nD = nivelDe(m, e.actual);
+      const partes = [];
+      if (nA !== nD) partes.push(`${TEXTO_NIVEL[nA]} → <strong>${TEXTO_NIVEL[nD]}</strong>`);
+      if (nD !== 'ninguno') {
+        const extra = (k) => { const q = m.permisos.find(x => x.clave === k); return q && (q.nivel === 'extra' || q.nivel === 'restriccion'); };
+        const agrega = ahora.filter(k => !antes.includes(k) && extra(k)).map(k => esc(etiquetaDe(k)));
+        const quita = antes.filter(k => !ahora.includes(k) && extra(k)).map(k => esc(etiquetaDe(k)));
+        if (agrega.length) partes.push(`agrega: ${agrega.join('; ')}`);
+        if (quita.length) partes.push(`quita: ${quita.join('; ')}`);
+      }
+      return `<li><strong>${esc(m.nombre)}</strong>: ${partes.join(' · ')}</li>`;
+    }).join('');
+
+    const seguiraUtil = p.es_base || estado.catalogo.modulos.some(m =>
+      m.migrado && m.permisos.some(q => q.nivel !== 'restriccion' && e.actual.has(q.clave)));
+    const quienes = p.usuarios > 0
+      ? `Lo usan <strong>${p.usuarios}</strong> persona${p.usuarios === 1 ? '' : 's'}. Los cambios se aplican al instante, sin que tengan que volver a entrar.`
+      : 'Todavía no lo usa nadie.';
+    const aviso = (p.usuarios > 0 && !seguiraUtil)
+      ? '<p style="color:#b91c1c;font-weight:600;">⚠ El perfil se queda sin ningún módulo activo: las personas que lo tienen no podrán entrar a nada.</p>'
+      : '';
+
+    const r = await Swal.fire({
+      title: `Guardar los permisos de «${p.nombre}»`,
+      html: `<div style="text-align:left;font-size:14px;line-height:1.5;"><p>${quienes}</p><ul style="padding-left:20px;">${lineas}</ul>${aviso}</div>`,
+      icon: seguiraUtil ? 'question' : 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, guardar',
+      cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+
+    try {
+      const permisos = {};
+      cambiados.forEach(m => { permisos[m.clave] = delModulo(m, e.actual); });
+      await llamar(`/perfiles/${encodeURIComponent(p.clave)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permisos })
+      });
+      estado.edicion = null;           // lo guardado manda: se vuelve a leer del servidor
+      Swal.fire({ icon: 'success', title: 'Permisos guardados', timer: 1400, showConfirmButton: false });
+      await recargar();
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error');
+    }
+  }
+
+  // Un solo juego de escuchas para todo el detalle (se vuelve a dibujar al cambiar algo)
+  detalle.addEventListener('change', (ev) => {
+    const e = estado.edicion;
+    if (!e || !estado.catalogo) return;
+    const sel = ev.target.closest('.perf-sel-nivel');
+    const chk = ev.target.closest('.perf-chk');
+    if (sel) {
+      const m = estado.catalogo.modulos.find(x => x.clave === sel.dataset.modulo);
+      if (!m || !moduloEditable(m)) return;
+      fijarNivel(m, e.actual, sel.value);
+    } else if (chk) {
+      if (chk.checked) e.actual.add(chk.dataset.clave); else e.actual.delete(chk.dataset.clave);
+    } else {
+      return;
+    }
+    const foco = sel ? `.perf-sel-nivel[data-modulo="${sel.dataset.modulo}"]` : `.perf-chk[data-clave="${chk.dataset.clave}"]`;
+    renderDetalle();
+    const nuevo = detalle.querySelector(foco);
+    if (nuevo) nuevo.focus();
+  });
+  detalle.addEventListener('click', (ev) => {
+    if (ev.target.closest('#perf-guardar')) return guardarPermisos();
+    if (ev.target.closest('#perf-descartar')) { iniciarEdicion(); renderDetalle(); }
+  });
+
+  // Fila de un módulo activo para un perfil editable: nivel de acceso + casillas extra
+  function filaModuloEditable(m, set) {
+    const ver = m.permisos.find(p => p.nivel === 'ver');
+    const editar = m.permisos.find(p => p.nivel === 'editar');
+    const nivel = nivelDe(m, set);
+    const opciones = ['ninguno', 'ver', ...(editar ? ['editar'] : [])]
+      .map(v => `<option value="${v}" ${v === nivel ? 'selected' : ''}>${TEXTO_NIVEL[v]}</option>`).join('');
+    const ayuda = nivel === 'editar' ? editar.etiqueta : (nivel === 'ver' ? ver.etiqueta : '');
+    const extras = m.permisos.filter(p => p.nivel === 'extra' || p.nivel === 'restriccion').map(p => `
+      <label class="perf-check${nivel === 'ninguno' ? ' perf-check-off' : ''}">
+        <input type="checkbox" class="perf-chk" data-clave="${esc(p.clave)}" ${set.has(p.clave) ? 'checked' : ''} ${nivel === 'ninguno' ? 'disabled' : ''}>
+        <span>${esc(p.etiqueta)}</span>
+      </label>`).join('');
+    const cambiado = !mismasClaves(delModulo(m, estado.edicion.original), delModulo(m, set));
+    return `
+      <tr class="${cambiado ? 'perf-fila-cambio' : ''}${nivel === 'ninguno' ? ' perf-fila-sin' : ''}">
+        <td><strong>${esc(m.nombre)}</strong><span class="perf-activo" title="Este módulo ya obedece los permisos de aquí">✓ Activo</span>${cambiado ? '<span class="perf-chip perf-chip-limite">Sin guardar</span>' : ''}</td>
+        <td><select class="perf-sel-nivel" data-modulo="${esc(m.clave)}" aria-label="Acceso a ${esc(m.nombre)}">${opciones}</select>${ayuda ? `<span class="perf-ayuda-fila">${esc(ayuda)}</span>` : ''}</td>
+        <td class="perf-chips">${extras || '<span class="perf-vacio">—</span>'}</td>
+      </tr>`;
   }
 
   function filaModulo(m, set) {
@@ -214,8 +394,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const marca = m.fijo
       ? '<span class="perf-chip perf-chip-sistema" title="Solo el administrador puede tenerlo">Solo administrador</span>'
-      : (m.migrado ? '' :
-        '<span class="perf-pendiente" title="Este módulo todavía usa los permisos de siempre. Se podrá cambiar desde aquí cuando se active.">🔒 Pendiente</span>');
+      : (m.migrado
+        ? '<span class="perf-activo" title="Este módulo ya obedece los permisos de aquí">✓ Activo</span>'
+        : '<span class="perf-pendiente" title="Este módulo todavía usa los permisos de siempre. Se podrá cambiar desde aquí cuando se active.">🔒 Pendiente</span>');
 
     return `
       <tr class="${nivel === 'ninguno' ? 'perf-fila-sin' : ''}">
@@ -236,16 +417,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const porGrupo = {};
     estado.catalogo.modulos.forEach(m => { (porGrupo[m.grupo] = porGrupo[m.grupo] || []).push(m); });
 
+    // Los módulos activos se pueden cambiar (si el perfil no es el administrador); el resto se ve como siempre
+    const editando = estado.edicion && estado.edicion.clave === p.clave ? estado.edicion : null;
+    const fila = (m) => (editando && moduloEditable(m)) ? filaModuloEditable(m, editando.actual) : filaModulo(m, set);
     const filas = estado.catalogo.grupos.map(g => `
       <tr class="perf-grupo"><td colspan="3">${esc(g)}</td></tr>
-      ${(porGrupo[g] || []).map(m => filaModulo(m, set)).join('')}`).join('');
+      ${(porGrupo[g] || []).map(fila).join('')}`).join('');
 
     let nota = '';
     if (p.es_sistema) {
       nota = '<p class="perf-nota">Administrador: acceso total a todo el sistema. No se puede cambiar.</p>';
-    } else if (!p.utilizable) {
-      nota = '<p class="perf-nota perf-nota-alerta">Este perfil es nuevo: todavía no puede entrar a ningún módulo. Empezará a servir a medida que se vayan activando los módulos.</p>';
+    } else {
+      if (!p.utilizable && !modulosCambiados().length) {
+        nota += '<p class="perf-nota perf-nota-alerta">Este perfil todavía no tiene acceso a ningún módulo activo, así que aún no se puede asignar a nadie. Dale acceso en un módulo marcado «✓ Activo».</p>';
+      }
+      nota += '<p class="perf-nota">Los módulos «✓ Activo» se cambian aquí y el cambio vale al instante para todas las personas con este perfil. Los que tienen candado 🔒 siguen con sus permisos de siempre.</p>';
     }
+
+    const cambios = modulosCambiados().length;
+    const barra = cambios ? `
+      <div class="perf-cambios" role="status">
+        <span>Tienes cambios sin guardar en ${cambios} módulo${cambios === 1 ? '' : 's'}.</span>
+        <button class="btn-primary" id="perf-guardar">Guardar cambios</button>
+        <button class="btn-obs" id="perf-descartar">Descartar</button>
+      </div>` : '';
 
     detalle.innerHTML = `
       <div class="perf-detalle-cab">
@@ -253,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="btn-obs" id="perf-cerrar">Cerrar</button>
       </div>
       ${nota}
+      ${barra}
       <div class="tabla-estandar-wrap">
         <table class="tabla-estandar perf-wrap">
           <thead><tr><th>Módulo</th><th>Acceso</th><th>Además puede / limitaciones</th></tr></thead>
@@ -260,8 +456,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </table>
       </div>`;
     detalle.hidden = false;
-    document.getElementById('perf-cerrar').onclick = () => {
+    document.getElementById('perf-cerrar').onclick = async () => {
+      if (!(await permitirCambiarSeleccion())) return;
       estado.seleccion = null;
+      estado.edicion = null;
       renderPerfiles();
       renderDetalle();
     };
@@ -273,6 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ACCIONES = {
     crear_perfil: 'Creó un perfil',
     editar_perfil: 'Editó un perfil',
+    cambiar_permisos: 'Cambió los permisos de un perfil',
     eliminar_perfil: 'Eliminó un perfil',
     crear_usuario: 'Creó un usuario',
     cambiar_perfil_usuario: 'Cambió el perfil de un usuario',
@@ -290,6 +489,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (d.nombre) partes.push(`Nombre: «${esc(d.nombre.de)}» → «${esc(d.nombre.a)}»`);
         if (d.descripcion) partes.push('Descripción cambiada');
         return partes.join(' · ');
+      }
+      case 'cambiar_permisos': {
+        const partes = [];
+        if ((d.agregados || []).length) partes.push(`Agregó: ${d.agregados.map(k => esc(etiquetaDe(k))).join('; ')}`);
+        if ((d.quitados || []).length) partes.push(`Quitó: ${d.quitados.map(k => esc(etiquetaDe(k))).join('; ')}`);
+        return `${nombre(a.perfil_clave)} · ${partes.join(' · ')}`;
       }
       case 'eliminar_perfil':
         return `«${esc(d.nombre)}» (tenía ${(d.permisos || []).length} permisos)`;
@@ -324,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnNuevo.onclick = () => modalPerfil({});
 
   async function modalPerfil({ base }) {
+    if (!(await permitirCambiarSeleccion())) return;      // no perder cambios sin guardar del perfil abierto
     const opciones = (estado.perfiles || []).map(p =>
       `<option value="${esc(p.clave)}" ${base && base.clave === p.clave ? 'selected' : ''}>${esc(p.nombre)}</option>`
     ).join('');
@@ -346,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${opciones}
           </select>
         </div>
-        <p class="perf-nota-modal">Un perfil nuevo empieza a servir a medida que se activan los módulos (se hace de uno en uno).</p>
+        <p class="perf-nota-modal">Al crearlo se abre su lista de permisos: ahí eliges qué puede hacer en cada módulo marcado «✓ Activo». Los demás módulos se irán activando de uno en uno.</p>
       `,
       showCancelButton: true,
       confirmButtonText: base ? 'Duplicar' : 'Crear',
@@ -374,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(r.value)
       });
       estado.seleccion = data.perfil.clave;
+      estado.edicion = null;           // se arma de nuevo al recargar, ya con el perfil nuevo
       Swal.fire({ icon: 'success', title: 'Perfil creado', text: data.perfil.nombre, timer: 1400, showConfirmButton: false });
       await recargar();      // la lista se actualiza sin esperar a que se cierre el aviso
     } catch (err) {
@@ -444,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       await llamar(`/perfiles/${encodeURIComponent(p.clave)}`, { method: 'DELETE' });
-      if (estado.seleccion === p.clave) estado.seleccion = null;
+      if (estado.seleccion === p.clave) { estado.seleccion = null; estado.edicion = null; }
       Swal.fire({ icon: 'success', title: 'Perfil eliminado', timer: 1200, showConfirmButton: false });
       await recargar();
     } catch (err) {

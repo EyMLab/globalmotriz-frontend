@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rol = data.rol;
     _navRol = rol; // guardamos para las funciones de notificaciones
 
+    // Permisos del perfil que mandó el servidor (si no llegan, todo sigue con las reglas por rol de siempre)
+    Permisos.actualizar(data);
+    // Un módulo ya MIGRADO obedece los permisos de la tabla; los demás, la lista de roles de siempre
+    const acceso = (modulo, clave, rolesDeSiempre) =>
+      (Permisos.disponibles() && Permisos.migrado(modulo))
+        ? Permisos.tiene(clave)
+        : rolesDeSiempre.includes(rol);
+
     // ============================================
     // Detectar página actual (match exacto por nombre de archivo)
     // ============================================
@@ -34,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'control-taller': 'ControlTaller',
       'proveedores':    'Proveedores',
       'clientes':       'Clientes',
+      'facturacion':    'Facturación',
       'lpr':            'Taller',
       'cumpleanos':     'Cumpleaños',
       'rrhh':           'RRHH',
@@ -44,38 +53,88 @@ document.addEventListener('DOMContentLoaded', async () => {
     const archivo = window.location.pathname.split('/').pop().replace('.html', '');
     const pagina = PAGINA_POR_ARCHIVO[archivo] || 'Inventario';
 
+    // ============================================
+    // Páginas con enlace en el menú, en el orden del menú:
+    // [página, archivo, módulo, permiso «ver», roles de siempre]
+    // ============================================
+    const PAGINAS = [
+      ['Inventario',              'inventario.html',           'bodega',       'bodega.ver',       ['admin', 'control', 'bodega', 'asesor']],
+      ['Cotizaciones',            'cotizaciones.html',         'cotizaciones', 'cotizaciones.ver', ['admin', 'control', 'bodega', 'asesor']],
+      ['Compras',                 'compras.html',              'compras',      'compras.ver',      ['admin', 'control', 'bodega']],
+      ['Inventario de Repuestos', 'repuestos-inventario.html', 'repuestos',    'repuestos.ver',    ['admin', 'control', 'bodega', 'asesor', 'procesos']],
+      ['Taller',                  'lpr.html',                  'lpr',          'lpr.ver',          ['admin', 'control', 'seguro']],
+      ['ControlTaller',           'control-taller.html',       'ordenes',      'ordenes.ver',      ['admin', 'control', 'procesos', 'bodega']],
+      ['Asistencia',              'asistencia.html',           'asistencia',   'asistencia.ver',   ['admin', 'asesor', 'control']],
+      ['RRHH',                    'rrhh.html',                 'empleados',    'empleados.ver',    ['admin', 'control', 'asistente_contable']],
+      ['Cumpleaños',              'cumpleanos.html',           'cumpleanos',   'cumpleanos.ver',   ['admin', 'control', 'asistente_contable', 'asistente_administrativo']],
+      ['Descuentos',              'descuentos.html',           'descuentos',   'descuentos.ver',   ['admin', 'asistente_contable']],
+      ['Clientes',                'clientes.html',             'cxc',          'cxc.ver',          ['admin', 'control']],
+      ['Facturación',             'facturacion.html',          'facturacion',  'facturacion.ver',  ['admin', 'control']],
+      ['Finanzas',                'finanzas.html',             'caja',         'caja.ver',         ['admin', 'control', 'asistente_contable', 'asistente_administrativo']],
+      ['Proveedores',             'proveedores.html',          'cxp',          'cxp.ver',          ['admin', 'control', 'asistente_administrativo']]
+    ];
+    const visible = {};
+    PAGINAS.forEach(([p, , modulo, clave, roles]) => { visible[p] = acceso(modulo, clave, roles); });
+
+    // ============================================
+    // Página de un módulo ya MIGRADO: se necesita el permiso «ver» del módulo.
+    // Un perfil NUEVO (no uno de los 8 de siempre) tampoco puede estar en una página sin migrar
+    // que no ve en su menú (ni en Accesos). Quien no puede va a la primera página que sí puede usar.
+    // (Las reglas por rol de abajo solo valen para las páginas de módulos sin migrar y los perfiles de siempre.)
+    // ============================================
+    const filaPagina = PAGINAS.find(f => f[0] === pagina);
+    const paginaMigrada = !!filaPagina && Permisos.disponibles() && Permisos.migrado(filaPagina[2]);
+    const sinPermisoEnPagina = paginaMigrada
+      ? !Permisos.tiene(filaPagina[3])
+      : (Permisos.disponibles() && !Permisos.esBase() &&
+         (filaPagina ? !visible[pagina] : (pagina === 'Usuarios' && rol !== 'admin')));
+    if (sinPermisoEnPagina) {
+      // A su página de inicio (la que calcula el servidor para su perfil); si no hay, a la primera del menú que puede usar
+      const inicio = Permisos.paginaInicio();
+      const destino = (inicio && inicio !== `${archivo}.html`)
+        ? inicio
+        : (PAGINAS.find(f => visible[f[0]] && f[1] !== `${archivo}.html`) || [])[1];
+      if (destino) {
+        irA(destino);
+        return;
+      }
+      // Sin ningún módulo habilitado: se esconde el contenido de la página y se avisa (el menú queda vacío)
+      document.querySelectorAll('body > *:not(#nav-container):not(script)').forEach(el => { el.style.display = 'none'; });
+      setTimeout(() => Swal.fire('Sin módulos habilitados', 'Tu perfil todavía no tiene módulos habilitados. Pide al administrador que lo configure.', 'info'), 300);
+    }
+
     // Bloqueo si intenta acceder a Clientes sin ser admin ni control
-    if (!['admin', 'control'].includes(rol) && pagina === 'Clientes') {
+    if (!paginaMigrada && !['admin', 'control'].includes(rol) && pagina === 'Clientes') {
       window.location.href = 'inventario.html';
       return;
     }
 
     // Bloqueo si intenta acceder a Proveedores sin ser admin, control o asistente_administrativo
-    if (!['admin', 'control', 'asistente_administrativo'].includes(rol) && pagina === 'Proveedores') {
+    if (!paginaMigrada && !['admin', 'control', 'asistente_administrativo'].includes(rol) && pagina === 'Proveedores') {
       window.location.href = 'inventario.html';
       return;
     }
 
     // Seguro solo puede ver Taller
-    if (rol === 'seguro' && pagina !== 'Taller') {
+    if (!paginaMigrada && rol === 'seguro' && pagina !== 'Taller') {
       window.location.href = 'lpr.html';
       return;
     }
 
     // Asistente contable solo puede ver Finanzas, RRHH, Cumpleanos y Descuentos
-    if (rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños' && pagina !== 'Descuentos') {
+    if (!paginaMigrada && rol === 'asistente_contable' && pagina !== 'Finanzas' && pagina !== 'RRHH' && pagina !== 'Cumpleaños' && pagina !== 'Descuentos') {
       window.location.href = 'finanzas.html';
       return;
     }
 
     // Asistente administrativo solo puede ver Finanzas (Caja Chica/Cierre), Cumpleanos y Proveedores (solo lectura)
-    if (rol === 'asistente_administrativo' && pagina !== 'Finanzas' && pagina !== 'Cumpleaños' && pagina !== 'Proveedores') {
+    if (!paginaMigrada && rol === 'asistente_administrativo' && pagina !== 'Finanzas' && pagina !== 'Cumpleaños' && pagina !== 'Proveedores') {
       window.location.href = 'finanzas.html';
       return;
     }
 
     // Procesos solo puede ver Órdenes de Trabajo e Inventario de Repuestos (consultar, reservar y registrar)
-    if (rol === 'procesos' && pagina !== 'ControlTaller' && pagina !== 'Inventario de Repuestos') {
+    if (!paginaMigrada && rol === 'procesos' && pagina !== 'ControlTaller' && pagina !== 'Inventario de Repuestos') {
       window.location.href = 'control-taller.html';
       return;
     }
@@ -87,58 +146,61 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<a href="usuarios.html" class="${pagina === 'Usuarios' ? 'active' : ''}">Accesos</a>`
       : "";
 
-    const enlaceInventario = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
+    const enlaceInventario = visible['Inventario']
       ? `<a href="inventario.html" class="${pagina === 'Inventario' ? 'active' : ''}">Bodega</a>`
       : "";
 
-    const enlaceCompras = ['admin', 'control', 'bodega'].includes(rol)
+    const enlaceCompras = visible['Compras']
       ? `<a href="compras.html" class="${pagina === 'Compras' ? 'active' : ''}">Compras</a>`
       : "";
 
-    const enlaceCotizaciones = ['admin', 'control', 'bodega', 'asesor'].includes(rol)
+    const enlaceCotizaciones = visible['Cotizaciones']
       ? `<a href="cotizaciones.html" class="${pagina === 'Cotizaciones' ? 'active' : ''}">Cotizaciones</a>`
       : "";
 
-    const enlaceInventarioRepuestos = ['admin', 'control', 'bodega', 'asesor', 'procesos'].includes(rol)
+    const enlaceInventarioRepuestos = visible['Inventario de Repuestos']
       ? `<a href="repuestos-inventario.html" class="${pagina === 'Inventario de Repuestos' ? 'active' : ''}">Inventario</a>`
       : "";
 
-    const enlaceLPR = ['admin', 'control', 'seguro'].includes(rol)
+    const enlaceLPR = visible['Taller']
       ? `<a href="lpr.html" class="${pagina === 'Taller' ? 'active' : ''}">Monitoreo LPR</a>`
       : "";
 
-    const enlaceControlTaller = ['admin', 'control', 'procesos', 'bodega'].includes(rol)
+    const enlaceControlTaller = visible['ControlTaller']
       ? `<a href="control-taller.html" class="${pagina === 'ControlTaller' ? 'active' : ''}">Órdenes de Trabajo</a>`
       : "";
 
-    const enlaceAsistencia = ['admin', 'asesor', 'control'].includes(rol)
+    const enlaceAsistencia = visible['Asistencia']
       ? `<a href="asistencia.html" class="${pagina === 'Asistencia' ? 'active' : ''}">Asistencia</a>`
       : "";
 
-    const enlaceRRHH = ['admin', 'control', 'asistente_contable'].includes(rol)
+    const enlaceRRHH = visible['RRHH']
       ? `<a href="rrhh.html" class="${pagina === 'RRHH' ? 'active' : ''}">Lista de Empleados</a>`
       : "";
 
-    const enlaceCumpleanos = ['admin', 'control', 'asistente_contable', 'asistente_administrativo'].includes(rol)
+    const enlaceCumpleanos = visible['Cumpleaños']
       ? `<a href="cumpleanos.html" class="${pagina === 'Cumpleaños' ? 'active' : ''}">Cumpleaños</a>`
       : "";
 
-    const enlaceDescuentos = ['admin', 'asistente_contable'].includes(rol)
+    const enlaceDescuentos = visible['Descuentos']
       ? `<a href="descuentos.html" class="${pagina === 'Descuentos' ? 'active' : ''}">Descuentos</a>`
       : "";
 
-    const enlaceFinanzas = ['admin', 'control', 'asistente_contable', 'asistente_administrativo'].includes(rol)
+    const enlaceFinanzas = visible['Finanzas']
       ? `<a href="finanzas.html" class="${pagina === 'Finanzas' ? 'active' : ''}">Finanzas</a>`
       : "";
 
-    const enlaceProveedores = ['admin', 'control', 'asistente_administrativo'].includes(rol)
+    const enlaceProveedores = visible['Proveedores']
       ? `<a href="proveedores.html" class="${pagina === 'Proveedores' ? 'active' : ''}">Cuentas por Pagar</a>`
       : "";
 
-    const enlaceClientes = ['admin', 'control'].includes(rol)
+    const enlaceClientes = visible['Clientes']
       ? `<a href="clientes.html" class="${pagina === 'Clientes' ? 'active' : ''}">Cuentas por Cobrar</a>`
       : "";
 
+    const enlaceFacturacion = visible['Facturación']
+      ? `<a href="facturacion.html" class="${pagina === 'Facturación' ? 'active' : ''}">Facturación</a>`
+      : "";
 
     // ============================================
     // Renderizado del navbar
@@ -180,11 +242,12 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${enlaceDescuentos}
             </div>
           </div>` : ''}
-          ${(enlaceFinanzas || enlaceProveedores || enlaceClientes) ? `
+          ${(enlaceFinanzas || enlaceProveedores || enlaceClientes || enlaceFacturacion) ? `
           <div class="nav-dropdown">
-            <button class="nav-dropdown-btn ${['Finanzas','Proveedores','Clientes'].includes(pagina) ? 'active' : ''}">Finanzas <span class="nav-arrow">&#9662;</span></button>
+            <button class="nav-dropdown-btn ${['Finanzas','Proveedores','Clientes','Facturación'].includes(pagina) ? 'active' : ''}">Finanzas <span class="nav-arrow">&#9662;</span></button>
             <div class="nav-dropdown-menu">
               ${enlaceClientes}
+              ${enlaceFacturacion}
               ${enlaceFinanzas}
               ${enlaceProveedores}
             </div>
@@ -226,6 +289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (err) {
     console.error("❌ Error al cargar nav:", err.message);
+    Permisos.sinRespuesta();     // que las pantallas no se queden esperando los permisos
     Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
   }
 });

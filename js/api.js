@@ -9,7 +9,7 @@ function getToken() {
 }
 
 // Keys de autenticación guardadas en localStorage
-const AUTH_KEYS = ['token', 'usuario', 'rol'];
+const AUTH_KEYS = ['token', 'usuario', 'rol', 'permisos'];
 
 function clearAuthStorage() {
   AUTH_KEYS.forEach(k => localStorage.removeItem(k));
@@ -19,6 +19,61 @@ function redirectLogin() {
   clearAuthStorage();
   window.location.href = 'index.html';
 }
+
+// Cambia de página (los redirects nuevos pasan por aquí para poder probarlos)
+function irA(url) {
+  window.location.href = url;
+}
+
+// ======================================================
+// Permisos del usuario actual
+// ======================================================
+// Los entrega /auth/me y nav.js los guarda aquí (y en localStorage, para leerlos al instante
+// al abrir otra página). Solo mandan en los módulos ya MIGRADOS (Permisos.migrado(modulo)):
+// el resto de las pantallas sigue con las reglas por rol de siempre. Si el servidor no los
+// manda (disponibles() = false) todo sigue como siempre.
+// Ojo: tiene('bodega.solo_su_sede') = true significa que la persona TIENE esa limitación.
+const Permisos = (() => {
+  let conjunto = null;        // null = el servidor no los mandó
+  let migrados = [];
+  let base = false;           // true = uno de los 8 perfiles de siempre
+  let inicio = null;          // página a la que entra su perfil (la calcula el servidor)
+  let avisarListo;
+  const listo = new Promise(resolver => { avisarListo = resolver; });   // se cumple cuando nav.js ya habló con /auth/me
+
+  function aplicar(permisos, modulosMigrados, perfilBase, paginaInicio) {
+    conjunto = Array.isArray(permisos) ? new Set(permisos) : null;
+    migrados = Array.isArray(modulosMigrados) ? modulosMigrados : [];
+    base = perfilBase === true;
+    inicio = (typeof paginaInicio === 'string' && /^[a-z0-9-]+\.html$/.test(paginaInicio)) ? paginaInicio : null;
+  }
+
+  try {
+    const guardado = JSON.parse(localStorage.getItem('permisos') || 'null');
+    if (guardado) aplicar(guardado.permisos, guardado.migrados, guardado.base, guardado.inicio);
+  } catch { /* no hay permisos guardados */ }
+
+  return {
+    listo,
+    disponibles: () => conjunto !== null,
+    tiene: (clave) => conjunto !== null && conjunto.has(clave),
+    migrado: (modulo) => migrados.includes(modulo),
+    esBase: () => base,
+    paginaInicio: () => inicio,
+    // Recibe la respuesta de /auth/me
+    actualizar(datos) {
+      aplicar(datos && datos.permisos, datos && datos.modulos_migrados, datos && datos.perfil_base, datos && datos.pagina_inicio);
+      try {
+        if (conjunto) localStorage.setItem('permisos', JSON.stringify({ permisos: [...conjunto], migrados, base, inicio }));
+        else localStorage.removeItem('permisos');
+      } catch { /* almacenamiento no disponible */ }
+      avisarListo();
+    },
+    // nav.js lo llama si no pudo hablar con /auth/me: las pantallas dejan de esperar y siguen con
+    // lo que haya (permisos ya guardados o, si no hay, las reglas por rol de siempre)
+    sinRespuesta() { avisarListo(); }
+  };
+})();
 
 // Aviso flotante propio (no usa SweetAlert para no pisar un modal que esté abierto)
 function mostrarAviso(texto) {

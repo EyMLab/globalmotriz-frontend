@@ -13,6 +13,25 @@ const capslockWarn   = document.getElementById('capslock-warning');
 const API_BASE_URL = 'https://globalmotriz-backend.onrender.com';
 
 // =====================================================
+// Página de inicio según el perfil
+// =====================================================
+// La calcula el servidor (/auth/me → pagina_inicio: la de su perfil si puede usarla; si no, la primera
+// que sí puede). Si el servidor no la manda (o es una versión anterior) vale la de siempre según el rol.
+const destinos = {
+  seguro:                    'lpr.html',
+  asistente_contable:        'finanzas.html',
+  asistente_administrativo:  'finanzas.html',
+  procesos:                  'control-taller.html',
+  bodega:                    'inventario.html',
+  asesor:                    'inventario.html'
+};
+
+function destinoInicio(rol, paginaServidor) {
+  if (typeof paginaServidor === 'string' && /^[a-z0-9-]+\.html$/.test(paginaServidor)) return paginaServidor;
+  return destinos[rol] || 'inventario.html';
+}
+
+// =====================================================
 // UTIL: mostrar / ocultar mensaje de error
 // =====================================================
 function mostrarError(msg) {
@@ -108,26 +127,20 @@ form.addEventListener('submit', async function (e) {
     // ✅ Pre-calentar el backend y verificar el token antes de redirigir.
     // Render gratis duerme tras inactividad; al hacer /auth/me ya despierto,
     // la página destino carga rápido y el usuario no ve loaders intermedios.
+    // De paso, /auth/me dice a qué página debe entrar el perfil.
     btnEntrar.textContent = 'Iniciando sesión...';
+    let paginaServidor = null;
     try {
-      await fetch(`${API_BASE_URL}/auth/me`, {
+      const resMe = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${data.token}` }
       });
+      if (resMe.ok) paginaServidor = (await resMe.json()).pagina_inicio;
     } catch (_) {
       // Si /auth/me falla por timeout, igual seguimos con la redirección.
       // La página destino re-verificará la sesión.
     }
 
-    // Redirigir al inicio correcto según rol
-    const destinos = {
-      seguro:                    'lpr.html',
-      asistente_contable:        'finanzas.html',
-      asistente_administrativo:  'finanzas.html',
-      procesos:                  'control-taller.html',
-      bodega:                    'inventario.html',
-      asesor:                    'inventario.html'
-    };
-    window.location.href = destinos[data.rol] || 'inventario.html';
+    window.location.href = destinoInicio(data.rol, paginaServidor);
   } catch (error) {
     console.error('❌ Error en login:', error);
     mostrarError(error.message || 'Error de conexión con el servidor');

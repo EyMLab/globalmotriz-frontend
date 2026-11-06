@@ -159,6 +159,29 @@ class Autocomplete {
   }
 }
 
+// ── Qué puede hacer la persona en este módulo ─────
+// Órdenes de Trabajo ya obedece los permisos de cada perfil (Accesos → Perfiles): se usan los del
+// perfil que manda el servidor. Si no llegan (servidor anterior o sin respuesta) valen las reglas
+// por rol de siempre. Se calculan una vez que nav.js termina de hablar con /auth/me.
+const PERM_OT = { editar: false, importar: false, exportar: false, verResumen: false, verValores: false };
+
+function calcularPermisosOT() {
+  const rol = localStorage.getItem('rol');
+  const porPerfil = Permisos.disponibles() && Permisos.migrado('ordenes');
+  const esRol = (...roles) => roles.includes(rol);
+  PERM_OT.editar     = porPerfil ? Permisos.tiene('ordenes.editar')      : esRol('admin', 'control', 'procesos');
+  PERM_OT.importar   = porPerfil ? Permisos.tiene('ordenes.importar')    : esRol('admin', 'control', 'procesos', 'bodega');
+  PERM_OT.exportar   = porPerfil ? Permisos.tiene('ordenes.exportar')    : esRol('admin', 'control', 'procesos');
+  PERM_OT.verResumen = porPerfil ? Permisos.tiene('ordenes.ver_resumen') : esRol('admin', 'control', 'procesos');
+  PERM_OT.verValores = porPerfil ? Permisos.tiene('ordenes.ver_valores') : rol !== 'bodega';
+}
+
+// nav.js deja los permisos en Permisos al terminar de hablar con /auth/me. Si por algo no avisa,
+// a los 45 s se sigue con las reglas por rol de siempre.
+function esperarPermisos() {
+  return Promise.race([Permisos.listo, new Promise(resolver => setTimeout(resolver, 45000))]);
+}
+
 // ── Módulo Dashboard ──────────────────────────────
 const DASH = (() => {
   const charts = {};   // instancias Chart.js guardadas por id
@@ -295,8 +318,8 @@ const DASH = (() => {
 
   // ── Renderizar todo con datos del resumen ─────────
   function render(d) {
-    // Financiero
-    renderFinCards(d.totales_financieros || {});
+    // Financiero (solo con «ver valores»: sin él el servidor ni manda los montos)
+    if (PERM_OT.verValores) renderFinCards(d.totales_financieros || {});
 
     // Estado donut
     renderEstado(d.por_estado || []);
@@ -317,7 +340,7 @@ const DASH = (() => {
     });
 
     // Aseguradoras — valor total
-    renderHBar({
+    if (PERM_OT.verValores) renderHBar({
       id: "chart-aseg-valor",
       labels: asegLabels,
       datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
@@ -357,7 +380,7 @@ const DASH = (() => {
     });
 
     // Valor mensual (línea)
-    renderLine({
+    if (PERM_OT.verValores) renderLine({
       id: "chart-mes-valor",
       labels: mesLabels,
       datasets: [{
@@ -407,8 +430,10 @@ const DASH = (() => {
     if (_cardActiva && _cardActiva !== "TOTAL") params.set("card", _cardActiva);
 
     // Mostrar loading en las tarjetas
-    document.getElementById("dash-fin-grid").innerHTML =
-      `<div style="padding:20px;color:var(--text-light);font-size:13px;">Cargando...</div>`;
+    if (PERM_OT.verValores) {
+      document.getElementById("dash-fin-grid").innerHTML =
+        `<div style="padding:20px;color:var(--text-light);font-size:13px;">Cargando...</div>`;
+    }
 
     const res = await apiFetch(`/taller/resumen?${params}`);
     if (!res || !res.ok) { return; }
@@ -433,33 +458,34 @@ const CT = (() => {
   // cardActiva → _cardActiva (módulo global, compartida con DASH)
 
   // ── Definición de columnas ────────────────────────
-  const _rolCT = localStorage.getItem('rol');
-  const esBodega = _rolCT === 'bodega';
-  // "bodega" no ve valores monetarios en ningún lado del módulo. "procesos" ve todo.
-  const esSinValores = esBodega;
-
-  const COLS = [
-    { id:"orden",     label:"N° Orden",       def:true,  sticky:true },
-    { id:"localidad", label:"Localidad",       def:false  },
-    { id:"estado",    label:"Estado",          def:true   },
-    { id:"proceso",   label:"Proceso OT",      def:true   },
-    { id:"fingreso",  label:"F. Ingreso",      def:true   },
-    { id:"fsalida",   label:"F. Salida",       def:false  },
-    { id:"fsenv",     label:"F. Salida Env.",  def:true   },
-    { id:"placa",     label:"Placa",           def:true   },
-    { id:"marca",     label:"Marca",           def:false  },
-    { id:"modelo",    label:"Modelo",          def:false  },
-    { id:"color",     label:"Color",           def:false  },
-    { id:"cliente",   label:"Cliente",         def:true   },
-    { id:"aseg",      label:"Aseguradora",     def:true   },
-    { id:"usuario",   label:"Usuario",         def:false  },
-    { id:"factura",   label:"N° Factura",      def:false  },
-    { id:"vtotal",    label:"V. Total",        def:!esSinValores, noToggle:esSinValores },
-    { id:"obs",       label:"Observación",     def:false  },
-    { id:"acciones",  label:"Acciones",        def:!esBodega, noToggle:true },
-  ];
+  // Sin «ver valores» no hay columna V. Total; sin «editar» no hay columna Acciones.
+  // Se arman en init(), cuando ya se saben los permisos de la persona.
+  let COLS = [];
   const colVisible = {};
-  COLS.forEach(c => { colVisible[c.id] = c.def; });
+
+  function definirColumnas() {
+    COLS = [
+      { id:"orden",     label:"N° Orden",       def:true,  sticky:true },
+      { id:"localidad", label:"Localidad",       def:false  },
+      { id:"estado",    label:"Estado",          def:true   },
+      { id:"proceso",   label:"Proceso OT",      def:true   },
+      { id:"fingreso",  label:"F. Ingreso",      def:true   },
+      { id:"fsalida",   label:"F. Salida",       def:false  },
+      { id:"fsenv",     label:"F. Salida Env.",  def:true   },
+      { id:"placa",     label:"Placa",           def:true   },
+      { id:"marca",     label:"Marca",           def:false  },
+      { id:"modelo",    label:"Modelo",          def:false  },
+      { id:"color",     label:"Color",           def:false  },
+      { id:"cliente",   label:"Cliente",         def:true   },
+      { id:"aseg",      label:"Aseguradora",     def:true   },
+      { id:"usuario",   label:"Usuario",         def:false  },
+      { id:"factura",   label:"N° Factura",      def:false  },
+      { id:"vtotal",    label:"V. Total",        def:PERM_OT.verValores, noToggle:!PERM_OT.verValores },
+      { id:"obs",       label:"Observación",     def:false  },
+      { id:"acciones",  label:"Acciones",        def:PERM_OT.editar, noToggle:true },
+    ];
+    COLS.forEach(c => { colVisible[c.id] = c.def; });
+  }
 
   // ── Helpers ───────────────────────────────────────
   function fmtFecha(iso) {
@@ -501,6 +527,7 @@ const CT = (() => {
 
   // ── Cargar conteos de tarjetas ────────────────────
   async function cargarCards(localidad = "") {
+    if (!PERM_OT.verResumen) return;      // sin «ver resumen» las tarjetas no se muestran
     const qs  = localidad ? `?localidad=${encodeURIComponent(localidad)}` : "";
     const res = await apiFetch(`/taller/cards${qs}`);
     if (!res || !res.ok) return;
@@ -902,8 +929,8 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo exportar.", "error"); return; }
     const data = await safeJson(res);
     const filas = data.ordenes;
-    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro", ...(esSinValores ? [] : ["total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total"]),"observacion"];
-    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO", ...(esSinValores ? [] : ["TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL"]),"OBSERVACIÓN"];
+    const cols  = ["numero_orden","localidad","estado","proceso_ot","fecha_ingreso","fecha_salida","fecha_salida_enviada","placa","marca","modelo","color","cliente","aseguradora","usuario_registro", ...(PERM_OT.verValores ? ["total_servicios","total_servicios_terce","total_repuestos","sub_total","valor_total"] : []),"observacion"];
+    const hdr   = ["N° ORDEN","LOCALIDAD","ESTADO","PROCESO OT","F. INGRESO","F. SALIDA","F. SALIDA ENV.","PLACA","MARCA","MODELO","COLOR","CLIENTE","ASEGURADORA","USUARIO", ...(PERM_OT.verValores ? ["TOTAL SERV.","SERV. TERCEROS","TOTAL REP.","SUB TOTAL","VALOR TOTAL"] : []),"OBSERVACIÓN"];
     const csv   = [hdr.join(","), ...filas.map(o => cols.map(c => `"${(o[c]??'').toString().replace(/"/g,'""')}"`).join(","))].join("\n");
     const blob  = new Blob(["﻿"+csv], { type:"text/csv;charset=utf-8;" });
     const url   = URL.createObjectURL(blob);
@@ -954,7 +981,7 @@ const CT = (() => {
     if (!res || !res.ok) { Swal.fire("Error", "No se pudo cargar el resumen.", "error"); return; }
     const d = await safeJson(res);
 
-    if (!esSinValores) {
+    if (PERM_OT.verValores) {
       const fin = d.totales_financieros || {};
       document.getElementById("fin-grid").innerHTML = [
         { lbl: "Valor Total",     val: fin.valor_total              },
@@ -1014,20 +1041,29 @@ const CT = (() => {
   }
 
   // ── Init ──────────────────────────────────────────
-  function init() {
-    // "procesos" y "bodega" no ven valores monetarios en ningún lado del módulo
-    if (esSinValores) document.body.classList.add('rol-sin-valores');
+  async function init() {
+    // Primero se saben los permisos de la persona; de ellos depende lo que se muestra
+    await esperarPermisos();
+    calcularPermisosOT();
+    definirColumnas();
 
-    // "bodega" solo ve la tabla de Órdenes con sus filtros (para confirmar qué ya se
-    // importó) + Importar. Sin tarjetas, sin Dashboard, sin Resumen, sin exportar,
-    // sin editar (esto último ya vía COLS/acciones).
-    if (esBodega) {
-      document.getElementById('cards-estado')?.style.setProperty('display', 'none');
-      document.querySelector('.taller-tab[data-tab="dashboard"]')?.style.setProperty('display', 'none');
-      document.querySelector('.taller-tab[data-tab="resumen"]')?.style.setProperty('display', 'none');
-      document.getElementById('btn-export-csv')?.style.setProperty('display', 'none');
-      document.getElementById('btn-export-excel')?.style.setProperty('display', 'none');
+    // Sin «ver valores» no hay dinero en ningún lado del módulo (tabla, Dashboard, Resumen ni Excel)
+    if (!PERM_OT.verValores) document.body.classList.add('rol-sin-valores');
+
+    // Cada pieza de la pantalla se muestra solo si el perfil tiene su permiso. Ejemplo: bodega
+    // ve la tabla con sus filtros (para confirmar qué ya se importó) + Importar; sin tarjetas,
+    // sin Dashboard, sin Resumen, sin exportar y sin editar (la columna Acciones va por COLS).
+    const ocultar = (el) => el?.style.setProperty('display', 'none');
+    if (!PERM_OT.verResumen) {
+      ocultar(document.getElementById('cards-estado'));
+      ocultar(document.querySelector('.taller-tab[data-tab="dashboard"]'));
+      ocultar(document.querySelector('.taller-tab[data-tab="resumen"]'));
     }
+    if (!PERM_OT.exportar) {
+      ocultar(document.getElementById('btn-export-csv'));
+      ocultar(document.getElementById('btn-export-excel'));
+    }
+    if (!PERM_OT.importar) ocultar(document.getElementById('btn-importar'));
 
     // Tabs — al cambiar de pestaña, recargar con filtros actuales
     document.querySelectorAll(".taller-tab").forEach(btn => {
