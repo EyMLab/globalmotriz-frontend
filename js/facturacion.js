@@ -413,7 +413,8 @@ const FACT = (() => {
         const res = await apiFetch("/facturacion/importar", { method: "POST", body: fd, raw: true });
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data?.error || "Error al importar");
-        await Swal.fire("Listo", `Nuevos: ${data.nuevos} | Actualizados: ${data.actualizados}`, "success");
+        const dbg = data._debug || {};
+        await Swal.fire("Listo", `Nuevos: ${data.nuevos} | Actualizados: ${data.actualizados}\n\nDEBUG:\nidxFecha: ${dbg.idxFecha}\nfechaEjemplo: ${dbg.fechaEjemplo}\nfechaRaw: ${JSON.stringify(dbg.fechaRaw)}\nHeaders: ${(dbg.headers||[]).join(", ")}`, "info");
         cargarFiltros();
         cargar();
       } catch (e) {
