@@ -28,8 +28,9 @@
     .estado-card .ec-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
     .card-activa { box-shadow:0 0 0 3px currentColor !important; }
     .cards-con-activa .estado-card:not(.card-activa) { opacity:.45; }
-    .ec-autorizado { border-color:#86efac; color:#15803d; }
-    .ec-anulado    { border-color:#fca5a5; color:#b91c1c; }
+    .ec-autorizado  { border-color:#86efac; color:#15803d; }
+    .ec-anulado     { border-color:#fca5a5; color:#b91c1c; }
+    .ec-descartado  { border-color:#d4d4d8; color:#71717a; }
 
     /* ── Tabs ──────────────────────────────────── */
     .prov-tabs { display:flex; gap:4px; border-bottom:2px solid var(--border-subtle); margin-bottom:18px; }
@@ -55,8 +56,14 @@
     .prov-table .num-right { text-align:right; font-variant-numeric:tabular-nums; }
 
     .badge-estado { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; display:inline-block; }
-    .badge-autorizado { background:#f0fdf4; color:#15803d; }
-    .badge-anulado    { background:#fef2f2; color:#b91c1c; }
+    .badge-autorizado  { background:#f0fdf4; color:#15803d; }
+    .badge-anulado     { background:#fef2f2; color:#b91c1c; }
+    .badge-descartado  { background:#f4f4f5; color:#71717a; text-decoration:line-through; }
+
+    .btn-descartar { padding:2px 8px; border-radius:var(--r-input); font-size:11px; font-weight:600; cursor:pointer; border:1.5px solid #d4d4d8; background:transparent; color:#71717a; transition:all .12s; font-family:var(--font-main); white-space:nowrap; }
+    .btn-descartar:hover { background:#71717a; color:#fff; }
+    .btn-restaurar { padding:2px 8px; border-radius:var(--r-input); font-size:11px; font-weight:600; cursor:pointer; border:1.5px solid #15803d; background:transparent; color:#15803d; transition:all .12s; font-family:var(--font-main); white-space:nowrap; }
+    .btn-restaurar:hover { background:#15803d; color:#fff; }
 
     .paginacion { display:flex; align-items:center; gap:10px; justify-content:center; margin-top:14px; font-size:13px; }
     .paginacion button { padding:5px 14px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--white); cursor:pointer; font-size:12px; font-family:var(--font-main); }
@@ -104,6 +111,11 @@
     /* ── Link cross-module ────────────────────── */
     .link-modulo { color:var(--primary); text-decoration:none; font-weight:600; }
     .link-modulo:hover { text-decoration:underline; }
+
+    .badge-cxc { padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; display:inline-block; }
+    .badge-cxc-activo    { background:#fef3c7; color:#a16207; }
+    .badge-cxc-cobrado   { background:#f0fdf4; color:#15803d; }
+    .badge-cxc-descartado{ background:#f1f5f9; color:#64748b; }
 
     /* ── Dashboard ─────────────────────────────── */
     .dash-fin-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
@@ -153,6 +165,11 @@
       <div class="ec-monto" id="ec-m-anulado">$0.00</div>
       <div class="ec-lbl">Anulado</div>
     </button>
+    <button class="estado-card ec-descartado" data-card="Descartado">
+      <div class="ec-num" id="ec-n-descartado">0</div>
+      <div class="ec-monto" id="ec-m-descartado">$0.00</div>
+      <div class="ec-lbl">Descartado</div>
+    </button>
   </div>
 
   <!-- ── Filtros ─────────────────────────────────── -->
@@ -161,9 +178,10 @@
       <div class="fg">
         <label>Estado</label>
         <select id="f-estado">
-          <option value="">Todos</option>
           <option value="Autorizado">Autorizado</option>
           <option value="Anulado">Anulado</option>
+          <option value="Descartado">Descartado</option>
+          <option value="">Todos</option>
         </select>
       </div>
       <div class="fg">
@@ -260,10 +278,12 @@
             <th data-col="placa">Placa</th>
             <th data-col="observacion">Observación</th>
             <th data-col="motivo_anulacion">Motivo Anulación</th>
+            <th data-col="cxc" style="text-align:center">CxC</th>
+            <th style="text-align:center;width:80px">Acción</th>
           </tr>
         </thead>
         <tbody id="tbody-docs">
-          <tr><td colspan="18" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
+          <tr><td colspan="20" style="text-align:center;padding:32px;color:var(--text-light)">Cargando…</td></tr>
         </tbody>
       </table>
     </div>

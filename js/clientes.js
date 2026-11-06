@@ -1455,6 +1455,15 @@ const CLIE = (() => {
     initTabs();
     initColumnToggle();
 
+    // Leer parámetro ?buscar= de la URL (link desde Facturación)
+    const _urlParams = new URLSearchParams(window.location.search);
+    if (_urlParams.get("buscar")) {
+      const fEstado = document.getElementById("f-estado");
+      if (fEstado) fEstado.value = "";  // buscar en todos los estados
+      const fCliente = document.getElementById("f-cliente");
+      if (fCliente) fCliente.value = _urlParams.get("buscar");
+    }
+
     await cargarFiltros();
     await cargarDocumentos(1);
     actualizarCards();

@@ -32,6 +32,7 @@ const FACT = (() => {
     { id: "placa",           label: "Placa",            def: true  },
     { id: "observacion",     label: "Observación",      def: false },
     { id: "motivo_anulacion",label: "Motivo Anulación", def: false },
+    { id: "cxc",             label: "CxC",              def: true  },
   ];
   const colVisible = {};
   COLS.forEach(c => { colVisible[c.id] = c.def; });
@@ -232,15 +233,18 @@ const FACT = (() => {
       const map = {};
       (data.cards || []).forEach(c => { map[c.estado] = c; });
 
-      const aut = map["Autorizado"] || { cantidad: 0, monto: 0 };
-      const anu = map["Anulado"]    || { cantidad: 0, monto: 0 };
+      const aut = map["Autorizado"]  || { cantidad: 0, monto: 0 };
+      const anu = map["Anulado"]     || { cantidad: 0, monto: 0 };
+      const des = map["Descartado"]  || { cantidad: 0, monto: 0 };
 
-      $("ec-n-autorizado").textContent = aut.cantidad;
-      $("ec-m-autorizado").textContent = `$${fmt(aut.monto)}`;
-      $("ec-n-anulado").textContent    = anu.cantidad;
-      $("ec-m-anulado").textContent    = `$${fmt(anu.monto)}`;
+      $("ec-n-autorizado").textContent  = aut.cantidad;
+      $("ec-m-autorizado").textContent  = `$${fmt(aut.monto)}`;
+      $("ec-n-anulado").textContent     = anu.cantidad;
+      $("ec-m-anulado").textContent     = `$${fmt(anu.monto)}`;
+      $("ec-n-descartado").textContent  = des.cantidad;
+      $("ec-m-descartado").textContent  = `$${fmt(des.monto)}`;
 
-      $("c-total-fact").textContent = aut.cantidad + anu.cantidad;
+      $("c-total-fact").textContent = aut.cantidad + anu.cantidad + des.cantidad;
     } catch (e) { console.error("Error cards:", e); }
   }
 
@@ -256,7 +260,7 @@ const FACT = (() => {
       const f = leerFiltros();
       const qs = filtrosQS(f, { sort_by: _sortBy, sort_dir: _sortDir, page: _pagina, limit: _limit });
       const res = await apiFetch(`/facturacion/documentos?${qs}`);
-      if (!res.ok) { $("tbody-docs").innerHTML = `<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`; return; }
+      if (!res.ok) { $("tbody-docs").innerHTML = `<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`; return; }
       const data = await safeJson(res);
 
       _totalPaginas = data.totalPaginas || 1;
@@ -265,12 +269,13 @@ const FACT = (() => {
       $("btn-next-doc").disabled = data.pagina >= _totalPaginas;
 
       if (!data.documentos.length) {
-        $("tbody-docs").innerHTML = `<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--text-light)">Sin facturas.</td></tr>`;
+        $("tbody-docs").innerHTML = `<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text-light)">Sin facturas.</td></tr>`;
         return;
       }
 
       $("tbody-docs").innerHTML = data.documentos.map(d => {
-        const estadoCls = d.estado?.toUpperCase() === "ANULADO" ? "badge-anulado" : "badge-autorizado";
+        const estUp = (d.estado || "").toUpperCase();
+        const estadoCls = estUp === "ANULADO" ? "badge-anulado" : estUp === "DESCARTADO" ? "badge-descartado" : "badge-autorizado";
         const otLink = d.ot_taller
           ? `<a class="link-modulo" href="control-taller.html?orden=${encodeURIComponent(d.ot_taller)}" target="_blank">${esc(d.ot_taller)}</a>`
           : "—";
@@ -294,6 +299,8 @@ const FACT = (() => {
           <td data-col="placa">${esc(d.placa)}</td>
           <td data-col="observacion" style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.observacion)}">${esc(d.observacion)}</td>
           <td data-col="motivo_anulacion" style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.motivo_anulacion)}">${esc(d.motivo_anulacion)}</td>
+          <td data-col="cxc" style="text-align:center">${renderCxC(d)}</td>
+          <td style="text-align:center">${renderAccion(d)}</td>
         </tr>`;
       }).join("");
 
@@ -301,11 +308,53 @@ const FACT = (() => {
 
     } catch (e) {
       console.error("Error cargando docs:", e);
-      $("tbody-docs").innerHTML = `<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`;
+      $("tbody-docs").innerHTML = `<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text-light)">Error al cargar.</td></tr>`;
     }
   }
 
   function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  function renderCxC(d) {
+    if (!d.cxc_id) return '<span style="color:var(--text-light);font-size:11px">—</span>';
+    const est = (d.cxc_estado || "").toUpperCase();
+    let cls = "badge-cxc-activo", label = "Pendiente";
+    if (est === "COBRADO")    { cls = "badge-cxc-cobrado";    label = "Cobrado"; }
+    if (est === "DESCARTADO") { cls = "badge-cxc-descartado"; label = "Descartado"; }
+    const saldo = d.cxc_saldo ? ` $${fmt(d.cxc_saldo)}` : "";
+    return `<a class="link-modulo" href="clientes.html?buscar=${encodeURIComponent(d.cliente)}" target="_blank" title="Ver en CxC: ${esc(d.cliente)}"><span class="badge-cxc ${cls}">${label}${saldo}</span></a>`;
+  }
+
+  function renderAccion(d) {
+    const estUp = (d.estado || "").toUpperCase();
+    if (estUp === "DESCARTADO") {
+      return `<button class="btn-restaurar" onclick="FACT.cambiarEstado(${d.id},'Autorizado')">Restaurar</button>`;
+    }
+    return `<button class="btn-descartar" onclick="FACT.cambiarEstado(${d.id},'Descartado')">Descartar</button>`;
+  }
+
+  async function cambiarEstado(id, nuevoEstado) {
+    const accion = nuevoEstado === "Descartado" ? "descartar" : "restaurar";
+    const { isConfirmed } = await Swal.fire({
+      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} esta factura?`,
+      text: nuevoEstado === "Descartado"
+        ? "No se tomará en cuenta en totales ni reportes."
+        : "Volverá a contarse normalmente.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: `Sí, ${accion}`,
+      cancelButtonText: "Cancelar",
+    });
+    if (!isConfirmed) return;
+    try {
+      const res = await apiFetch(`/facturacion/facturas/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+      if (!res.ok) { const e = await safeJson(res); Swal.fire("Error", e.error || "No se pudo actualizar.", "error"); return; }
+      cargar();
+    } catch (e) { Swal.fire("Error", e.message, "error"); }
+  }
 
   // ── Sorting ────────────────────────────────────────
   function ordenar(col) {
@@ -475,5 +524,5 @@ const FACT = (() => {
     } catch (e) { console.error("Error dashboard:", e); }
   }
 
-  return { ordenar };
+  return { ordenar, cambiarEstado };
 })();
