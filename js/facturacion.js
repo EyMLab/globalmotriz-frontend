@@ -463,23 +463,26 @@ const FACT = (() => {
   async function cargarDashboard() {
     try {
       const f = leerFiltros();
-      const qs = filtrosQS(f);
+      const qs = filtrosQS({ ...f, estado: "" });
       const res = await apiFetch(`/facturacion/dashboard?${qs}`);
       if (!res.ok) return;
       const data = await safeJson(res);
       const t = data.totales;
 
-      $("dash-fin-grid").innerHTML = [
+      const card = c => `<div class="dash-fin-card"><div class="dfn">${c.n}</div><div class="dfl">${c.l}</div></div>`;
+      $("dash-fin-row1").innerHTML = [
         { n: t.total_facturas, l: "Facturas" },
         { n: `$${fmt(t.total_facturado)}`, l: "Total Facturado" },
         { n: `$${fmt(t.total_pagado)}`, l: "Total Pagado" },
         { n: `$${fmt(t.total_saldo)}`, l: "Saldo Pendiente" },
         { n: t.autorizados, l: "Autorizados" },
         { n: t.anulados, l: "Anulados" },
+      ].map(card).join("");
+      $("dash-fin-row2").innerHTML = [
         { n: `$${fmt(t.total_servicios)}`, l: "Servicios" },
         { n: `$${fmt(t.total_producto)}`, l: "Producto" },
         { n: `$${fmt(t.total_terceros)}`, l: "Terceros" },
-      ].map(c => `<div class="dash-fin-card"><div class="dfn">${c.n}</div><div class="dfl">${c.l}</div></div>`).join("");
+      ].map(card).join("");
 
       Object.values(_charts).forEach(c => c.destroy());
       _charts = {};
