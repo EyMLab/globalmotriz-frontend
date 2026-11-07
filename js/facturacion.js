@@ -505,43 +505,36 @@ const FACT = (() => {
         });
       }
 
-      const pctPlugin = {
-        id: "pctLabels",
-        afterDatasetsDraw(chart) {
-          const { ctx } = chart;
-          chart.data.datasets.forEach((ds, di) => {
-            const meta = chart.getDatasetMeta(di);
-            const total = ds.data.reduce((a, b) => a + b, 0);
-            if (!total) return;
-            meta.data.forEach((el, i) => {
-              const pct = ((ds.data[i] / total) * 100).toFixed(1);
-              if (+pct < 3) return;
-              const { x, y } = el.tooltipPosition();
-              ctx.save();
-              ctx.fillStyle = "#fff";
-              ctx.font = "bold 11px sans-serif";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(`${pct}%`, x, y);
-              ctx.restore();
+      function pctLegend(chart) {
+        const ds = chart.data.datasets[0];
+        const total = ds.data.reduce((a, b) => a + b, 0);
+        return {
+          labels: { generateLabels(ch) {
+            return ch.data.labels.map((l, i) => {
+              const pct = total ? ((ds.data[i] / total) * 100).toFixed(1) : "0.0";
+              return {
+                text: `${l}  ${pct}%`,
+                fillStyle: ds.backgroundColor[i],
+                strokeStyle: ds.backgroundColor[i],
+                hidden: !ch.getDataVisibility(i),
+                index: i,
+              };
             });
-          });
-        },
-      };
+          }},
+        };
+      }
 
       _charts.desglose = new Chart($("chart-desglose"), {
         type: "doughnut",
         data: { labels: ["Servicios", "Producto", "Terceros"], datasets: [{ data: [+t.total_servicios, +t.total_producto, +t.total_terceros], backgroundColor: ["#2B7A9E","#f59e0b","#10b981"] }] },
-        options: { responsive: true },
-        plugins: [pctPlugin],
+        options: { responsive: true, plugins: { legend: pctLegend } },
       });
 
       if (data.por_forma_pago?.length) {
         _charts.formaPago = new Chart($("chart-forma-pago"), {
           type: "pie",
           data: { labels: data.por_forma_pago.map(f => f.forma_pago || "Sin dato"), datasets: [{ data: data.por_forma_pago.map(f => +f.total_facturado), backgroundColor: COLORS }] },
-          options: { responsive: true },
-          plugins: [pctPlugin],
+          options: { responsive: true, plugins: { legend: pctLegend } },
         });
       }
 
@@ -549,8 +542,7 @@ const FACT = (() => {
         _charts.localidad = new Chart($("chart-localidad"), {
           type: "doughnut",
           data: { labels: data.por_centro.map(c => c.centro_costos || "Sin dato"), datasets: [{ data: data.por_centro.map(c => +c.total_facturado), backgroundColor: COLORS }] },
-          options: { responsive: true },
-          plugins: [pctPlugin],
+          options: { responsive: true, plugins: { legend: pctLegend } },
         });
       }
 
