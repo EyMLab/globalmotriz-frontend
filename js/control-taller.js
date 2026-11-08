@@ -269,16 +269,54 @@ const DASH = (() => {
     });
   }
 
+  // Suma de las series visibles (las que no se ocultaron desde la leyenda) en una columna
+  function totalColumna(chart, i) {
+    return chart.data.datasets.reduce((s, ds, k) =>
+      chart.isDatasetVisible(k) ? s + (Number(ds.data[i]) || 0) : s, 0);
+  }
+
+  // Escribe el total encima de cada barra apilada
+  const pluginTotalApilado = {
+    id: "totalApilado",
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      let ultimo = -1;
+      data.datasets.forEach((_, k) => { if (chart.isDatasetVisible(k)) ultimo = k; });
+      if (ultimo < 0) return;
+      const barras = chart.getDatasetMeta(ultimo).data;
+      ctx.save();
+      ctx.font = "600 11px sans-serif";
+      ctx.fillStyle = "#334155";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      data.labels.forEach((_, i) => {
+        const total = totalColumna(chart, i);
+        if (!total || !barras[i]) return;
+        // y más alto de la columna (la serie visible de arriba puede valer 0)
+        let yTop = Infinity;
+        data.datasets.forEach((_, k) => {
+          if (!chart.isDatasetVisible(k)) return;
+          const b = chart.getDatasetMeta(k).data[i];
+          if (b) yTop = Math.min(yTop, b.y);
+        });
+        ctx.fillText(total.toLocaleString("es-EC"), barras[i].x, yTop - 3);
+      });
+      ctx.restore();
+    },
+  };
+
   // ── Barras verticales genéricas ──────────────────
-  function renderVBar({ id, labels, datasets, unit = "", stacked = false }) {
+  function renderVBar({ id, labels, datasets, unit = "", stacked = false, mostrarTotal = false }) {
     destroyChart(id);
     const ctx = document.getElementById(id)?.getContext("2d");
     if (!ctx) return;
     charts[id] = new Chart(ctx, {
       type: "bar",
       data: { labels, datasets },
+      plugins: mostrarTotal ? [pluginTotalApilado] : [],
       options: {
         responsive: true,
+        layout: mostrarTotal ? { padding: { top: 18 } } : {},
         plugins: {
           legend: { display: datasets.length > 1, position: "bottom", labels: { font: { size: 11 }, padding: 10 } },
           tooltip: {
@@ -286,6 +324,9 @@ const DASH = (() => {
               label: ctx => unit === "$"
                 ? ` ${ctx.dataset.label}: $${Number(ctx.raw).toLocaleString("es-EC",{minimumFractionDigits:0,maximumFractionDigits:0})}`
                 : ` ${ctx.dataset.label}: ${ctx.raw}`,
+              footer: items => mostrarTotal && items.length
+                ? `Total del mes: ${totalColumna(items[0].chart, items[0].dataIndex).toLocaleString("es-EC")}`
+                : "",
             }
           },
         },
@@ -371,6 +412,7 @@ const DASH = (() => {
       id: "chart-mes",
       labels: mesLabels,
       stacked: true,
+      mostrarTotal: true,
       datasets: [
         { label: "ABIERTO",   data: meses.map(r => +r.abierto   || 0), backgroundColor: CHART_COLORS.ABIERTO.bg,   borderColor: CHART_COLORS.ABIERTO.border,   borderWidth: 1 },
         { label: "TERMINADO", data: meses.map(r => +r.terminado || 0), backgroundColor: CHART_COLORS.TERMINADO.bg, borderColor: CHART_COLORS.TERMINADO.border, borderWidth: 1 },
