@@ -1319,7 +1319,9 @@ const CLIE = (() => {
       { label:"Total Cargos", val: t.total_cargos, fmt: true },
       { label:"Total Cobrado", val: t.total_cobrado, fmt: true, color:"#16a34a" },
       { label:"Retenciones", val: t.total_retencion, fmt: true, color:"#7c3aed" },
-      { label:"Saldo Pendiente", val: t.total_saldo, fmt: true, color:"#dc2626" },
+      { label:`Por Cobrar (${t.docs_positivos || 0} docs)`, val: t.saldo_positivo, fmt: true, color:"#dc2626" },
+      { label:`A Favor (${t.docs_negativos || 0} docs)`, val: Math.abs(parseFloat(t.saldo_negativo || 0)), fmt: true, color:"#2563eb" },
+      { label:"Saldo Neto", val: t.total_saldo, fmt: true, color:"#111827" },
     ];
     document.getElementById("dash-fin-grid").innerHTML = cards.map(c => {
       const topColor = c.color || "";
