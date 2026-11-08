@@ -170,7 +170,7 @@ const CLIE = (() => {
     return {
       estado:        document.getElementById("f-estado")?.value    || "",
       cliente:       document.getElementById("f-cliente")?.value.trim() || "",
-      tipo_doc:      document.getElementById("f-tipo")?.value      || "",
+      tipo_doc:      Array.from(document.getElementById("f-tipo")?.selectedOptions || []).map(o => o.value).join(",") || "",
       centro_costos: document.getElementById("f-centro")?.value    || "",
       fecha_desde:   document.getElementById("f-desde")?.value     || "",
       fecha_hasta:   document.getElementById("f-hasta")?.value     || "",
@@ -211,10 +211,13 @@ const CLIE = (() => {
 
     const selTipo = document.getElementById("f-tipo");
     if (selTipo) {
-      const prev = selTipo.value;
-      while (selTipo.options.length > 1) selTipo.remove(1);
-      (data.tipos || []).forEach(t => selTipo.add(new Option(t, t)));
-      if (prev) selTipo.value = prev;
+      const prevVals = Array.from(selTipo.selectedOptions).map(o => o.value);
+      selTipo.innerHTML = "";
+      (data.tipos || []).forEach(t => {
+        const opt = new Option(t, t);
+        opt.selected = prevVals.includes(t);
+        selTipo.add(opt);
+      });
     }
 
     const selResp = document.getElementById("f-responsable");
@@ -1312,33 +1315,43 @@ const CLIE = (() => {
     if (!res || !res.ok) return;
     const d = await safeJson(res);
 
-    // ── KPI cards principales ─────────────────────
+    // ── KPI cards ─────────────────────────────────
     const t = d.totales;
-    const mainKpis = [
-      { label:`Por Cobrar · ${t.docs_positivos || 0} docs`, val: t.saldo_positivo, color:"#dc2626" },
-      { label:`A Favor · ${t.docs_negativos || 0} docs`, val: Math.abs(parseFloat(t.saldo_negativo || 0)), color:"#2563eb" },
-      { label:"Saldo Neto", val: t.total_saldo, color:"#1e3a5f" },
-    ];
-    document.getElementById("dash-kpi-main").innerHTML = mainKpis.map(c =>
-      `<div class="kpi" style="border-left-color:${c.color}">
-        <div class="kpi-val" style="color:${c.color}">${fmtMoney(c.val)}</div>
-        <div class="kpi-lbl">${c.label}</div>
-      </div>`
-    ).join("");
+    const kpiCard = (label, val, color, fmt = true, highlight = false) =>
+      `<div class="kpi-card${highlight ? " kpi-highlight" : ""}" style="border-left-color:${color}">
+        <div class="kpi-val" style="color:${color}">${fmt ? fmtMoney(val) : val}</div>
+        <div class="kpi-lbl">${label}</div>
+      </div>`;
 
-    // ── KPI cards secundarias ────────────────────
-    const secKpis = [
-      { label:"Total Documentos", val: t.total_docs, fmt: false },
-      { label:"Total Cargos", val: t.total_cargos, fmt: true },
-      { label:"Total Cobrado", val: t.total_cobrado, fmt: true },
-      { label:"Retenciones", val: t.total_retencion, fmt: true },
-    ];
-    document.getElementById("dash-kpi-sec").innerHTML = secKpis.map(c =>
-      `<div class="kpi-sm">
-        <div class="kpi-val">${c.fmt ? fmtMoney(c.val) : c.val}</div>
-        <div class="kpi-lbl">${c.label}</div>
-      </div>`
-    ).join("");
+    // Fila positivos (por cobrar)
+    document.getElementById("dash-kpi-positivos").innerHTML =
+      `<div class="dash-section-title" style="color:#b91c1c">Por Cobrar · ${t.pos_docs || 0} documentos</div>
+       <div class="dash-kpi-row cols-5">
+         ${kpiCard("Facturado", t.pos_cargos, "#1e3a5f")}
+         ${kpiCard("Cobrado", t.pos_cobrado, "#15803d")}
+         ${kpiCard("Retenciones", t.pos_retencion, "#7c3aed")}
+         ${kpiCard("N. Crédito", t.pos_n_credito, "#0369a1")}
+         ${kpiCard("Pendiente", t.pos_saldo, "#dc2626", true, true)}
+       </div>`;
+
+    // Fila negativos (a favor)
+    document.getElementById("dash-kpi-negativos").innerHTML =
+      `<div class="dash-section-title" style="color:#2563eb">A Favor del Cliente · ${t.neg_docs || 0} documentos</div>
+       <div class="dash-kpi-row cols-4">
+         ${kpiCard("Cargos", t.neg_cargos, "#1e3a5f")}
+         ${kpiCard("Cobrado", t.neg_cobrado, "#15803d")}
+         ${kpiCard("Retenciones", t.neg_retencion, "#7c3aed")}
+         ${kpiCard("Saldo", Math.abs(parseFloat(t.neg_saldo || 0)), "#2563eb", true, true)}
+       </div>`;
+
+    // Saldo neto
+    document.getElementById("dash-kpi-neto").innerHTML =
+      `<div class="dash-section-title" style="color:#1e3a5f">Resumen · ${t.total_docs} documentos</div>
+       <div class="dash-kpi-row cols-3">
+         ${kpiCard("Pendiente", t.pos_saldo, "#dc2626", true, true)}
+         ${kpiCard("A Favor", Math.abs(parseFloat(t.neg_saldo || 0)), "#2563eb", true, true)}
+         ${kpiCard("Saldo Neto", t.total_saldo, "#1e3a5f", true, true)}
+       </div>`;
 
     // ── Bar: Aging ────────────────────────────────
     destroyChart("chart-aging");
@@ -1404,30 +1417,44 @@ const CLIE = (() => {
       },
     });
 
-    // ── Bar: Por mes ──────────────────────────────
+    // ── Bar+Line: Por mes ──────────────────────────
     destroyChart("chart-mes");
     _charts["chart-mes"] = new Chart(document.getElementById("chart-mes"), {
       type: "bar",
       data: {
         labels: d.por_mes.map(r => fmtMes(r.mes)),
-        datasets: [{
-          label: "Saldo",
-          data: d.por_mes.map(r => parseFloat(r.total_saldo)),
-          backgroundColor: "rgba(43,122,158,.7)",
-          borderColor: "#2B7A9E",
-          borderWidth: 1,
-          borderRadius: 4,
-        }],
+        datasets: [
+          {
+            label: "Saldo",
+            data: d.por_mes.map(r => parseFloat(r.total_saldo)),
+            backgroundColor: "rgba(43,122,158,.7)",
+            borderColor: "#2B7A9E",
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+          {
+            label: "Documentos",
+            data: d.por_mes.map(r => r.cantidad),
+            type: "line",
+            borderColor: "#1e3a5f",
+            backgroundColor: "rgba(30,58,95,.1)",
+            yAxisID: "y1",
+            tension: .3,
+            pointRadius: 3,
+            pointBackgroundColor: "#1e3a5f",
+          },
+        ],
       },
       options: {
         responsive: true,
         plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => " $" + parseFloat(ctx.raw).toLocaleString("es-EC", { minimumFractionDigits: 2 }) } },
+          legend: { position: "bottom", labels: { font: { size: 11 }, padding: 16 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label === "Saldo" ? " $" + parseFloat(ctx.raw).toLocaleString("es-EC", { minimumFractionDigits: 2 }) : " " + ctx.raw + " docs" } },
         },
         scales: {
-          y: { ticks: { callback: v => "$" + v.toLocaleString() }, grid: { color: "#f1f5f9" } },
-          x: { grid: { display: false } },
+          y:  { position: "left", ticks: { callback: v => "$" + v.toLocaleString() }, grid: { color: "#f1f5f9" } },
+          y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } },
+          x:  { grid: { display: false } },
         },
       },
     });
@@ -1494,7 +1521,8 @@ const CLIE = (() => {
       recargarTabActivo();
     });
     document.getElementById("btn-limpiar-cli")?.addEventListener("click", () => {
-      ["f-estado","f-centro","f-tipo","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
+      ["f-estado","f-centro","f-responsable"].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === "f-estado" ? "ACTIVO" : ""; });
+      const selTipo = document.getElementById("f-tipo"); if (selTipo) Array.from(selTipo.options).forEach(o => o.selected = false);
       ["f-cliente","f-desde","f-hasta","f-dias-desde","f-dias-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       _sortBy = "cliente"; _sortDir = "ASC";
       _cardActiva = null;

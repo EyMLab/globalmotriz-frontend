@@ -131,15 +131,20 @@
     .btn-gestion.tiene-datos { border-color:#2B7A9E; color:#2B7A9E; background:#eff6ff; }
 
     /* ── Dashboard ──────────────────────────────────── */
-    .dash-kpi-main { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
-    .dash-kpi-main .kpi { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); padding:18px 20px; text-align:center; box-shadow:var(--shadow-card); border-left:4px solid var(--primary); }
-    .dash-kpi-main .kpi .kpi-val { font-size:24px; font-weight:800; line-height:1; }
-    .dash-kpi-main .kpi .kpi-lbl { font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin-top:6px; }
-    .dash-kpi-sec { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
-    .dash-kpi-sec .kpi-sm { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:10px 12px; text-align:center; }
-    .dash-kpi-sec .kpi-sm .kpi-val { font-size:15px; font-weight:700; color:var(--primary-dark); }
-    .dash-kpi-sec .kpi-sm .kpi-lbl { font-size:9px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.3px; margin-top:3px; }
-    @media(max-width:700px) { .dash-kpi-main { grid-template-columns:1fr; } .dash-kpi-sec { grid-template-columns:repeat(2,1fr); } }
+    .dash-section { margin-bottom:18px; }
+    .dash-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; padding-left:4px; display:flex; align-items:center; gap:8px; }
+    .dash-section-title::after { content:""; flex:1; height:1px; background:var(--border-subtle); }
+    .dash-kpi-row { display:grid; gap:10px; }
+    .dash-kpi-row.cols-5 { grid-template-columns:repeat(5,1fr); }
+    .dash-kpi-row.cols-4 { grid-template-columns:repeat(4,1fr); }
+    .dash-kpi-row.cols-3 { grid-template-columns:repeat(3,1fr); }
+    .kpi-card { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:12px 14px; text-align:center; border-left:3px solid var(--primary); }
+    .kpi-card .kpi-val { font-size:18px; font-weight:800; line-height:1; }
+    .kpi-card .kpi-lbl { font-size:9px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.3px; margin-top:5px; }
+    .kpi-card.kpi-highlight { padding:16px 14px; }
+    .kpi-card.kpi-highlight .kpi-val { font-size:22px; }
+    .kpi-card.kpi-highlight .kpi-lbl { font-size:10px; }
+    @media(max-width:700px) { .dash-kpi-row.cols-5, .dash-kpi-row.cols-4, .dash-kpi-row.cols-3 { grid-template-columns:repeat(2,1fr); } }
     .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
     @media(max-width:900px) { .dash-grid { grid-template-columns:1fr; } }
     .dash-grid-full { grid-column:1/-1; }
@@ -220,8 +225,7 @@
       </div>
       <div class="fg">
         <label>Tipo Doc</label>
-        <select id="f-tipo">
-          <option value="">Todos</option>
+        <select id="f-tipo" multiple size="1" style="min-width:130px;height:32px">
         </select>
       </div>
       <div class="fg">
@@ -338,8 +342,9 @@
        TAB: DASHBOARD
   ═══════════════════════════════════════════════ -->
   <div class="prov-tab-panel" id="panel-dashboard">
-    <div class="dash-kpi-main" id="dash-kpi-main"></div>
-    <div class="dash-kpi-sec" id="dash-kpi-sec"></div>
+    <div id="dash-kpi-positivos" class="dash-section"></div>
+    <div id="dash-kpi-negativos" class="dash-section"></div>
+    <div id="dash-kpi-neto" class="dash-section"></div>
     <div class="dash-grid">
       <div class="dash-chart-card">
         <h3>Antigüedad de Cartera</h3>
