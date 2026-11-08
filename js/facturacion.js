@@ -324,7 +324,7 @@ const FACT = (() => {
     if (est === "COBRADO")    { cls = "badge-cxc-cobrado";    label = "Cobrado"; }
     if (est === "DESCARTADO") { cls = "badge-cxc-descartado"; label = "Descartado"; }
     const saldo = d.cxc_saldo ? ` $${fmt(d.cxc_saldo)}` : "";
-    return `<a class="link-modulo" href="clientes.html?buscar=${encodeURIComponent(d.cliente)}" target="_blank" title="Ver en CxC: ${esc(d.cliente)}"><span class="badge-cxc ${cls}">${label}${saldo}</span></a>`;
+    return `<a class="link-modulo" href="clientes.html?documento=${encodeURIComponent(d.numero_factura)}" target="_blank" title="Ver en CxC: ${esc(d.numero_factura)}"><span class="badge-cxc ${cls}">${label}${saldo}</span></a>`;
   }
 
   function renderAccion(d) {

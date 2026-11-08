@@ -12,6 +12,7 @@ const CLIE = (() => {
   let _sortDir      = "ASC";
   let _cardActiva   = null;   // estado gestión seleccionado via tarjeta
   let _tabActivo    = "documentos";
+  let _filtroDocumento = "";  // filtro por numero_documento (desde URL)
 
   // ── Columnas toggle ─────────────────────────────
   const COLS = [
@@ -302,6 +303,7 @@ const CLIE = (() => {
     const f = leerFiltros();
     const qs = new URLSearchParams({ page: pag, limit: 50, sort_by: _sortBy, sort_dir: _sortDir, ...f });
     Object.keys(f).forEach(k => { if (!f[k]) qs.delete(k); });
+    if (_filtroDocumento) qs.set("numero_documento", _filtroDocumento);
 
     const res = await apiFetch(`/clientes-cobrar/documentos?${qs}`);
     const tbody = document.getElementById("tbody-docs");
@@ -1455,11 +1457,15 @@ const CLIE = (() => {
     initTabs();
     initColumnToggle();
 
-    // Leer parámetro ?buscar= de la URL (link desde Facturación)
+    // Leer parámetros de URL (links desde Facturación)
     const _urlParams = new URLSearchParams(window.location.search);
-    if (_urlParams.get("buscar")) {
+    if (_urlParams.get("documento")) {
+      _filtroDocumento = _urlParams.get("documento");
       const fEstado = document.getElementById("f-estado");
-      if (fEstado) fEstado.value = "";  // buscar en todos los estados
+      if (fEstado) fEstado.value = "";
+    } else if (_urlParams.get("buscar")) {
+      const fEstado = document.getElementById("f-estado");
+      if (fEstado) fEstado.value = "";
       const fCliente = document.getElementById("f-cliente");
       if (fCliente) fCliente.value = _urlParams.get("buscar");
     }
@@ -1487,6 +1493,7 @@ const CLIE = (() => {
       ["f-cliente","f-desde","f-hasta","f-dias-desde","f-dias-hasta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       _sortBy = "cliente"; _sortDir = "ASC";
       _cardActiva = null;
+      _filtroDocumento = "";
       document.getElementById("cards-estado")?.classList.remove("cards-con-activa");
       document.querySelectorAll(".estado-card").forEach(b => b.classList.remove("card-activa"));
       document.querySelectorAll(".sortable").forEach(th => { th.classList.remove("sort-asc","sort-desc"); const a = th.querySelector(".sort-arrow"); if(a) a.textContent="▲"; });
