@@ -131,15 +131,20 @@
     .btn-gestion.tiene-datos { border-color:#2B7A9E; color:#2B7A9E; background:#eff6ff; }
 
     /* ── Dashboard ──────────────────────────────────── */
-    .dash-fin-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-    .dash-fin-card { flex:1 1 140px; background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); padding:14px 16px; text-align:center; box-shadow:var(--shadow-card); border-top:3px solid var(--primary); }
-    .dash-fin-card .dfn { font-size:20px; font-weight:800; color:var(--primary-dark); line-height:1; }
-    .dash-fin-card .dfl { font-size:10px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin-top:5px; }
+    .dash-kpi-main { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+    .dash-kpi-main .kpi { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); padding:18px 20px; text-align:center; box-shadow:var(--shadow-card); border-left:4px solid var(--primary); }
+    .dash-kpi-main .kpi .kpi-val { font-size:24px; font-weight:800; line-height:1; }
+    .dash-kpi-main .kpi .kpi-lbl { font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.4px; margin-top:6px; }
+    .dash-kpi-sec { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+    .dash-kpi-sec .kpi-sm { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:10px 12px; text-align:center; }
+    .dash-kpi-sec .kpi-sm .kpi-val { font-size:15px; font-weight:700; color:var(--primary-dark); }
+    .dash-kpi-sec .kpi-sm .kpi-lbl { font-size:9px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.3px; margin-top:3px; }
+    @media(max-width:700px) { .dash-kpi-main { grid-template-columns:1fr; } .dash-kpi-sec { grid-template-columns:repeat(2,1fr); } }
     .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
     @media(max-width:900px) { .dash-grid { grid-template-columns:1fr; } }
     .dash-grid-full { grid-column:1/-1; }
     .dash-chart-card { background:var(--white); border:1px solid var(--border-subtle); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow-card); }
-    .dash-chart-card h3 { margin:0; padding:10px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:var(--primary-dark); color:#fff; }
+    .dash-chart-card h3 { margin:0; padding:10px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--primary-dark); border-bottom:1px solid var(--border-subtle); }
     .dash-chart-body { padding:16px; }
     .dash-chart-body canvas { max-height:300px; }
 
@@ -333,12 +338,9 @@
        TAB: DASHBOARD
   ═══════════════════════════════════════════════ -->
   <div class="prov-tab-panel" id="panel-dashboard">
-    <div class="dash-fin-grid" id="dash-fin-grid"></div>
+    <div class="dash-kpi-main" id="dash-kpi-main"></div>
+    <div class="dash-kpi-sec" id="dash-kpi-sec"></div>
     <div class="dash-grid">
-      <div class="dash-chart-card">
-        <h3>Distribución por Estado</h3>
-        <div class="dash-chart-body"><canvas id="chart-estado-gestion"></canvas></div>
-      </div>
       <div class="dash-chart-card">
         <h3>Antigüedad de Cartera</h3>
         <div class="dash-chart-body"><canvas id="chart-aging"></canvas></div>
@@ -348,14 +350,10 @@
         <div class="dash-chart-body"><canvas id="chart-clientes"></canvas></div>
       </div>
       <div class="dash-chart-card">
-        <h3>Por Tipo de Documento</h3>
-        <div class="dash-chart-body"><canvas id="chart-tipo-doc"></canvas></div>
-      </div>
-      <div class="dash-chart-card">
         <h3>Por Localidad</h3>
         <div class="dash-chart-body"><canvas id="chart-localidad"></canvas></div>
       </div>
-      <div class="dash-chart-card dash-grid-full">
+      <div class="dash-chart-card">
         <h3>Saldo por Mes de Emisión</h3>
         <div class="dash-chart-body"><canvas id="chart-mes"></canvas></div>
       </div>

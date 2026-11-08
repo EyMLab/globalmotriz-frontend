@@ -1312,35 +1312,33 @@ const CLIE = (() => {
     if (!res || !res.ok) return;
     const d = await safeJson(res);
 
-    // ── KPI cards ────────────────────────────────
+    // ── KPI cards principales ─────────────────────
     const t = d.totales;
-    const cards = [
+    const mainKpis = [
+      { label:`Por Cobrar · ${t.docs_positivos || 0} docs`, val: t.saldo_positivo, color:"#dc2626" },
+      { label:`A Favor · ${t.docs_negativos || 0} docs`, val: Math.abs(parseFloat(t.saldo_negativo || 0)), color:"#2563eb" },
+      { label:"Saldo Neto", val: t.total_saldo, color:"#1e3a5f" },
+    ];
+    document.getElementById("dash-kpi-main").innerHTML = mainKpis.map(c =>
+      `<div class="kpi" style="border-left-color:${c.color}">
+        <div class="kpi-val" style="color:${c.color}">${fmtMoney(c.val)}</div>
+        <div class="kpi-lbl">${c.label}</div>
+      </div>`
+    ).join("");
+
+    // ── KPI cards secundarias ────────────────────
+    const secKpis = [
       { label:"Total Documentos", val: t.total_docs, fmt: false },
       { label:"Total Cargos", val: t.total_cargos, fmt: true },
-      { label:"Total Cobrado", val: t.total_cobrado, fmt: true, color:"#16a34a" },
-      { label:"Retenciones", val: t.total_retencion, fmt: true, color:"#7c3aed" },
-      { label:`Por Cobrar (${t.docs_positivos || 0} docs)`, val: t.saldo_positivo, fmt: true, color:"#dc2626" },
-      { label:`A Favor (${t.docs_negativos || 0} docs)`, val: Math.abs(parseFloat(t.saldo_negativo || 0)), fmt: true, color:"#2563eb" },
-      { label:"Saldo Neto", val: t.total_saldo, fmt: true, color:"#111827" },
+      { label:"Total Cobrado", val: t.total_cobrado, fmt: true },
+      { label:"Retenciones", val: t.total_retencion, fmt: true },
     ];
-    document.getElementById("dash-fin-grid").innerHTML = cards.map(c => {
-      const topColor = c.color || "";
-      return `<div class="dash-fin-card"${topColor ? ` style="border-top-color:${topColor}"` : ""}>
-        <div class="dfn"${topColor ? ` style="color:${topColor}"` : ""}>${c.fmt ? fmtMoney(c.val) : c.val}</div>
-        <div class="dfl">${c.label}</div>
-      </div>`;
-    }).join("");
-
-    // ── Donut: Estado Gestión ─────────────────────
-    destroyChart("chart-estado-gestion");
-    const egLabels = d.por_estado_gestion.map(r => r.estado_gestion);
-    const egData   = d.por_estado_gestion.map(r => r.cantidad);
-    const egColors = egLabels.map(l => EG_COLORS[l] || "#94a3b8");
-    _charts["chart-estado-gestion"] = new Chart(document.getElementById("chart-estado-gestion"), {
-      type: "doughnut",
-      data: { labels: egLabels, datasets: [{ data: egData, backgroundColor: egColors, borderWidth: 2, borderColor: "#fff" }] },
-      options: { responsive: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } },
-    });
+    document.getElementById("dash-kpi-sec").innerHTML = secKpis.map(c =>
+      `<div class="kpi-sm">
+        <div class="kpi-val">${c.fmt ? fmtMoney(c.val) : c.val}</div>
+        <div class="kpi-lbl">${c.label}</div>
+      </div>`
+    ).join("");
 
     // ── Bar: Aging ────────────────────────────────
     destroyChart("chart-aging");
@@ -1348,12 +1346,22 @@ const CLIE = (() => {
     _charts["chart-aging"] = new Chart(document.getElementById("chart-aging"), {
       type: "bar",
       data: {
-        labels: ["> 90 días", "31-90 días", "1-30 días", "Al día"],
-        datasets: [
-          { label: "Monto", data: [ag.monto_90, ag.monto_3090, ag.monto_130, ag.monto_dia], backgroundColor: ["#dc2626","#ea580c","#d97706","#16a34a"] },
-        ],
+        labels: [`> 90 días (${ag.docs_90})`, `31-90 días (${ag.docs_3090})`, `1-30 días (${ag.docs_130})`, `Al día (${ag.docs_dia})`],
+        datasets: [{
+          label: "Monto",
+          data: [ag.monto_90, ag.monto_3090, ag.monto_130, ag.monto_dia],
+          backgroundColor: ["#b91c1c","#c2410c","#ca8a04","#15803d"],
+          borderRadius: 4,
+        }],
       },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => "$" + v.toLocaleString() } } } },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => " $" + parseFloat(ctx.raw).toLocaleString("es-EC", { minimumFractionDigits: 2 }) } },
+        },
+        scales: { y: { ticks: { callback: v => "$" + v.toLocaleString() }, grid: { color: "#f1f5f9" } }, x: { grid: { display: false } } },
+      },
     });
 
     // ── HBar: Top clientes ────────────────────────
@@ -1361,21 +1369,22 @@ const CLIE = (() => {
     _charts["chart-clientes"] = new Chart(document.getElementById("chart-clientes"), {
       type: "bar",
       data: {
-        labels: d.por_cliente.map(r => r.cliente.length > 25 ? r.cliente.slice(0,25) + "…" : r.cliente),
-        datasets: [{ label: "Saldo", data: d.por_cliente.map(r => parseFloat(r.total_saldo)), backgroundColor: PALETTE.slice(0, d.por_cliente.length) }],
+        labels: d.por_cliente.map(r => r.cliente.length > 30 ? r.cliente.slice(0,30) + "…" : r.cliente),
+        datasets: [{
+          label: "Saldo",
+          data: d.por_cliente.map(r => parseFloat(r.total_saldo)),
+          backgroundColor: "#2B7A9E",
+          borderRadius: 4,
+        }],
       },
-      options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => "$" + v.toLocaleString() } } } },
-    });
-
-    // ── Donut: Tipo doc ───────────────────────────
-    destroyChart("chart-tipo-doc");
-    _charts["chart-tipo-doc"] = new Chart(document.getElementById("chart-tipo-doc"), {
-      type: "doughnut",
-      data: {
-        labels: d.por_tipo_doc.map(r => r.tipo_doc || "—"),
-        datasets: [{ data: d.por_tipo_doc.map(r => r.cantidad), backgroundColor: PALETTE.slice(0, d.por_tipo_doc.length), borderWidth: 2, borderColor: "#fff" }],
+      options: {
+        indexAxis: "y", responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => " $" + parseFloat(ctx.raw).toLocaleString("es-EC", { minimumFractionDigits: 2 }) } },
+        },
+        scales: { x: { ticks: { callback: v => "$" + v.toLocaleString() }, grid: { color: "#f1f5f9" } }, y: { grid: { display: false } } },
       },
-      options: { responsive: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } },
     });
 
     // ── Donut: Localidad ──────────────────────────
@@ -1384,28 +1393,41 @@ const CLIE = (() => {
       type: "doughnut",
       data: {
         labels: d.por_localidad.map(r => fmtCentro(r.centro_costos)),
-        datasets: [{ data: d.por_localidad.map(r => parseFloat(r.total_saldo)), backgroundColor: ["#2563eb","#16a34a","#d97706","#7c3aed"], borderWidth: 2, borderColor: "#fff" }],
+        datasets: [{ data: d.por_localidad.map(r => parseFloat(r.total_saldo)), backgroundColor: ["#2B7A9E","#1e3a5f"], borderWidth: 2, borderColor: "#fff" }],
       },
-      options: { responsive: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } },
+      options: {
+        responsive: true, cutout: "55%",
+        plugins: {
+          legend: { position: "bottom", labels: { font: { size: 12 }, padding: 16 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${parseFloat(ctx.raw).toLocaleString("es-EC", { minimumFractionDigits: 2 })}` } },
+        },
+      },
     });
 
-    // ── Line+Bar: Por mes ─────────────────────────
+    // ── Bar: Por mes ──────────────────────────────
     destroyChart("chart-mes");
     _charts["chart-mes"] = new Chart(document.getElementById("chart-mes"), {
       type: "bar",
       data: {
         labels: d.por_mes.map(r => fmtMes(r.mes)),
-        datasets: [
-          { label: "Saldo", data: d.por_mes.map(r => parseFloat(r.total_saldo)), backgroundColor: "rgba(37,99,235,.6)", borderColor: "#2563eb", borderWidth: 1 },
-          { label: "Docs", data: d.por_mes.map(r => r.cantidad), type: "line", borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,.1)", yAxisID: "y1", tension: .3, pointRadius: 3 },
-        ],
+        datasets: [{
+          label: "Saldo",
+          data: d.por_mes.map(r => parseFloat(r.total_saldo)),
+          backgroundColor: "rgba(43,122,158,.7)",
+          borderColor: "#2B7A9E",
+          borderWidth: 1,
+          borderRadius: 4,
+        }],
       },
       options: {
         responsive: true,
-        plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => " $" + parseFloat(ctx.raw).toLocaleString("es-EC", { minimumFractionDigits: 2 }) } },
+        },
         scales: {
-          y: { position: "left", ticks: { callback: v => "$" + v.toLocaleString() } },
-          y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } },
+          y: { ticks: { callback: v => "$" + v.toLocaleString() }, grid: { color: "#f1f5f9" } },
+          x: { grid: { display: false } },
         },
       },
     });
