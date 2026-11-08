@@ -497,10 +497,22 @@ const FACT = (() => {
         });
       }
 
-      if (data.por_cliente?.length) {
-        _charts.clientes = new Chart($("chart-clientes"), {
+      if (data.por_aseguradora?.length) {
+        const asegData = [...data.por_aseguradora];
+        const tp = data.total_particulares || { cantidad: 0, total_facturado: 0 };
+        if (+tp.total_facturado > 0) asegData.push({ cliente: "PARTICULARES", cantidad: tp.cantidad, total_facturado: tp.total_facturado });
+        asegData.sort((a, b) => +b.total_facturado - +a.total_facturado);
+        _charts.aseguradoras = new Chart($("chart-aseguradoras"), {
           type: "bar",
-          data: { labels: data.por_cliente.map(c => c.cliente.substring(0, 25)), datasets: [{ label: "Facturado", data: data.por_cliente.map(c => +c.total_facturado), backgroundColor: COLORS }] },
+          data: { labels: asegData.map(c => c.cliente.substring(0, 25)), datasets: [{ label: "Facturado", data: asegData.map(c => +c.total_facturado), backgroundColor: COLORS }] },
+          options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+
+      if (data.por_particular?.length) {
+        _charts.particulares = new Chart($("chart-particulares"), {
+          type: "bar",
+          data: { labels: data.por_particular.map(c => c.cliente.substring(0, 25)), datasets: [{ label: "Facturado", data: data.por_particular.map(c => +c.total_facturado), backgroundColor: COLORS }] },
           options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } } },
         });
       }
