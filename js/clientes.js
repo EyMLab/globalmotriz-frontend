@@ -1317,40 +1317,40 @@ const CLIE = (() => {
 
     // ── KPI cards ─────────────────────────────────
     const t = d.totales;
-    const kpiCard = (label, val, color, fmt = true, highlight = false) =>
-      `<div class="kpi-card${highlight ? " kpi-highlight" : ""}" style="border-left-color:${color}">
-        <div class="kpi-val" style="color:${color}">${fmt ? fmtMoney(val) : val}</div>
-        <div class="kpi-lbl">${label}</div>
+    const card = (label, val, color, fmt = true) =>
+      `<div class="dash-fin-card" style="border-top-color:${color}">
+        <div class="dfn" style="color:${color}">${fmt ? fmtMoney(val) : val}</div>
+        <div class="dfl">${label}</div>
       </div>`;
 
     // Fila positivos (por cobrar)
     document.getElementById("dash-kpi-positivos").innerHTML =
-      `<div class="dash-section-title" style="color:#b91c1c">Por Cobrar · ${t.pos_docs || 0} documentos</div>
-       <div class="dash-kpi-row cols-5">
-         ${kpiCard("Facturado", t.pos_cargos, "#1e3a5f")}
-         ${kpiCard("Cobrado", t.pos_cobrado, "#15803d")}
-         ${kpiCard("Retenciones", t.pos_retencion, "#7c3aed")}
-         ${kpiCard("N. Crédito", t.pos_n_credito, "#0369a1")}
-         ${kpiCard("Pendiente", t.pos_saldo, "#dc2626", true, true)}
+      `<div class="dash-section-title">Por Cobrar · ${t.pos_docs || 0} documentos</div>
+       <div class="dash-fin-grid">
+         ${card("Facturado", t.pos_cargos, "var(--primary)")}
+         ${card("Cobrado", t.pos_cobrado, "#16a34a")}
+         ${card("Retenciones", t.pos_retencion, "#7c3aed")}
+         ${card("N. Crédito", t.pos_n_credito, "#0369a1")}
+         ${card("Pendiente", t.pos_saldo, "#dc2626")}
        </div>`;
 
     // Fila negativos (a favor)
     document.getElementById("dash-kpi-negativos").innerHTML =
-      `<div class="dash-section-title" style="color:#2563eb">A Favor del Cliente · ${t.neg_docs || 0} documentos</div>
-       <div class="dash-kpi-row cols-4">
-         ${kpiCard("Cargos", t.neg_cargos, "#1e3a5f")}
-         ${kpiCard("Cobrado", t.neg_cobrado, "#15803d")}
-         ${kpiCard("Retenciones", t.neg_retencion, "#7c3aed")}
-         ${kpiCard("Saldo", Math.abs(parseFloat(t.neg_saldo || 0)), "#2563eb", true, true)}
+      `<div class="dash-section-title">A Favor del Cliente · ${t.neg_docs || 0} documentos</div>
+       <div class="dash-fin-grid">
+         ${card("Cargos", t.neg_cargos, "var(--primary)")}
+         ${card("Cobrado", t.neg_cobrado, "#16a34a")}
+         ${card("Retenciones", t.neg_retencion, "#7c3aed")}
+         ${card("Saldo", Math.abs(parseFloat(t.neg_saldo || 0)), "#2563eb")}
        </div>`;
 
-    // Saldo neto
+    // Resumen
     document.getElementById("dash-kpi-neto").innerHTML =
-      `<div class="dash-section-title" style="color:#1e3a5f">Resumen · ${t.total_docs} documentos</div>
-       <div class="dash-kpi-row cols-3">
-         ${kpiCard("Pendiente", t.pos_saldo, "#dc2626", true, true)}
-         ${kpiCard("A Favor", Math.abs(parseFloat(t.neg_saldo || 0)), "#2563eb", true, true)}
-         ${kpiCard("Saldo Neto", t.total_saldo, "#1e3a5f", true, true)}
+      `<div class="dash-section-title">Resumen · ${t.total_docs} documentos</div>
+       <div class="dash-fin-grid">
+         ${card("Pendiente", t.pos_saldo, "#dc2626")}
+         ${card("A Favor", Math.abs(parseFloat(t.neg_saldo || 0)), "#2563eb")}
+         ${card("Saldo Neto", t.total_saldo, "var(--primary-dark)")}
        </div>`;
 
     // ── Bar: Aging ────────────────────────────────
