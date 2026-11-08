@@ -380,14 +380,20 @@ const DASH = (() => {
       ],
     });
 
-    // Aseguradoras — valor total
-    if (PERM_OT.verValores) renderHBar({
-      id: "chart-aseg-valor",
-      labels: asegLabels,
-      datasets: [{ label: "Valor Total", data: asegTop.map(r => parseFloat(r.valor_total) || 0),
-        backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
-      unit: "$",
-    });
+    // Aseguradoras — valor total (las 15 de mayor valor, de mayor a menor)
+    if (PERM_OT.verValores) {
+      const asegValor = [...(d.por_aseguradora || [])]
+        .sort((a, b) => (parseFloat(b.valor_total) || 0) - (parseFloat(a.valor_total) || 0))
+        .slice(0, 15);
+      renderHBar({
+        id: "chart-aseg-valor",
+        labels: asegValor.map(r => r.aseguradora.length > 25
+          ? r.aseguradora.slice(0, 25) + "…" : r.aseguradora),
+        datasets: [{ label: "Valor Total", data: asegValor.map(r => parseFloat(r.valor_total) || 0),
+          backgroundColor: PALETTE.map(c => c + "CC"), borderColor: PALETTE, borderWidth: 1 }],
+        unit: "$",
+      });
+    }
 
     // Por usuario (top 12)
     const usrTop = (d.por_usuario || []).slice(0, 12);
