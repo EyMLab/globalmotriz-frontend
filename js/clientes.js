@@ -160,9 +160,10 @@ const CLIE = (() => {
   }
 
   function recargarTabActivo() {
+    actualizarCards();
     if (_tabActivo === "documentos")  cargarDocumentos(1);
     if (_tabActivo === "dashboard")   cargarDashboard();
-    if (_tabActivo === "antiguedad")  { if (!_resumenData) cargarResumenInterno().then(cargarAntiguedad); else cargarAntiguedad(); }
+    if (_tabActivo === "antiguedad")  { cargarResumenInterno().then(cargarAntiguedad); }
   }
 
   // ── Filtros ─────────────────────────────────────
@@ -1471,10 +1472,7 @@ const CLIE = (() => {
         const panel = document.getElementById(`panel-${btn.dataset.tab}`);
         if (panel) panel.classList.add("active");
 
-        if (btn.dataset.tab === "dashboard") cargarDashboard();
-        if (btn.dataset.tab === "antiguedad") {
-          cargarResumenInterno().then(() => cargarAntiguedad());
-        }
+        recargarTabActivo();
       });
     });
   }
