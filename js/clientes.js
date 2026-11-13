@@ -814,7 +814,11 @@ const CLIE = (() => {
     const cols = ["cliente","identificacion","tipo_doc","centro_costos","numero_documento","fecha_emision","dias_vencimiento","cargos","cobrado","n_credito","retencion","saldo","observacion","estado"];
     const header = cols.join(",");
     const rows = data.documentos.map(d =>
-      cols.map(c => `"${String(d[c] ?? "").replace(/"/g, '""')}"`).join(",")
+      cols.map(c => {
+        let v = d[c] ?? "";
+        if (c === "fecha_emision") v = String(v).slice(0,10);
+        return `"${String(v).replace(/"/g, '""')}"`;
+      }).join(",")
     );
     const csv = [header, ...rows].join("\n");
     const a = Object.assign(document.createElement("a"), {

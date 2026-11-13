@@ -439,7 +439,7 @@ const FACT = (() => {
         "Sub Total IVA","IVA","Total","Pagado","Saldo","Descuento",
         "Tot. Servicios","Tot. Producto","Tot. Terceros","OT Taller","Placa","Observación","Motivo Anulación"];
       const rows = data.documentos.map(d => [
-        d.numero_factura, d.forma_pago, d.cliente, d.fecha, d.estado, d.centro_costos,
+        d.numero_factura, d.forma_pago, d.cliente, d.fecha ? String(d.fecha).slice(0,10) : "", d.estado, d.centro_costos,
         +d.subtotal_iva, +d.iva, +d.total, +d.pagado, +d.saldo, +d.descuento,
         +d.total_servicios, +d.total_producto, +d.total_terceros,
         d.ot_taller, d.placa, d.observacion, d.motivo_anulacion,
